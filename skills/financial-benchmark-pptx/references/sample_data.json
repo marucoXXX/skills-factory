@@ -1,0 +1,100 @@
+{
+  "source": "出典：各社有価証券報告書・決算短信（FY2024 連結決算ベース）、SPEEDA",
+  "main_message": "対象会社は売上規模は競合中位だが成長率・ROEで下位、収益性改善と資本効率向上を優先すべき",
+  "chart_title": "財務ベンチマーク：対象会社 vs 主要競合4社（FY2024）",
+  "target_company": "対象会社",
+  "companies": [
+    {"name": "対象会社"},
+    {"name": "競合A"},
+    {"name": "競合B"},
+    {"name": "競合C"},
+    {"name": "競合D"}
+  ],
+  "metrics": [
+    {
+      "name": "売上高",
+      "unit": "億円",
+      "decimals": 0,
+      "higher_is_better": true,
+      "sort": "desc",
+      "values": {
+        "対象会社": 2800,
+        "競合A": 4200,
+        "競合B": 3500,
+        "競合C": 1900,
+        "競合D": 1200
+      }
+    },
+    {
+      "name": "売上成長率（3年CAGR）",
+      "unit": "%",
+      "decimals": 1,
+      "show_sign": true,
+      "higher_is_better": true,
+      "sort": "desc",
+      "values": {
+        "対象会社": 3.2,
+        "競合A": 8.5,
+        "競合B": 5.1,
+        "競合C": 12.4,
+        "競合D": -1.3
+      }
+    },
+    {
+      "name": "営業利益率",
+      "unit": "%",
+      "decimals": 1,
+      "higher_is_better": true,
+      "sort": "desc",
+      "values": {
+        "対象会社": 6.8,
+        "競合A": 10.5,
+        "競合B": 8.2,
+        "競合C": 11.3,
+        "競合D": 4.1
+      }
+    },
+    {
+      "name": "EBITDAマージン",
+      "unit": "%",
+      "decimals": 1,
+      "higher_is_better": true,
+      "sort": "desc",
+      "values": {
+        "対象会社": 11.5,
+        "競合A": 15.8,
+        "競合B": 13.2,
+        "競合C": 16.5,
+        "競合D": 8.9
+      }
+    },
+    {
+      "name": "ROE",
+      "unit": "%",
+      "decimals": 1,
+      "higher_is_better": true,
+      "sort": "desc",
+      "values": {
+        "対象会社": 7.5,
+        "競合A": 14.2,
+        "競合B": 10.8,
+        "競合C": 18.6,
+        "競合D": 3.2
+      }
+    },
+    {
+      "name": "自己資本比率",
+      "unit": "%",
+      "decimals": 1,
+      "higher_is_better": true,
+      "sort": "desc",
+      "values": {
+        "対象会社": 48.5,
+        "競合A": 42.3,
+        "競合B": 55.1,
+        "競合C": 38.7,
+        "競合D": 62.4
+      }
+    }
+  ]
+}

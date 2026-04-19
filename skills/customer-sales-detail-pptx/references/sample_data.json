@@ -1,0 +1,140 @@
+{
+  "main_message": "主要販売先はジップ社が売上の約半数を占めており、顧客集中リスクを評価すべき",
+  "chart_title": "主要販売先からの完成工事売上高と割合(2024/6期-3月累計)",
+  "source": "受領資料「総勘定元帳」、東京商工リサーチよりP&E作成",
+  "unit": "千円",
+  "customers": [
+    {
+      "rank": 1,
+      "name": "ジップ",
+      "revenue": 185890,
+      "share": 45.8,
+      "business": "発送代行業、事務代行業、アウトソーシング、充電",
+      "headquarters": "瀬戸内市長船町長船",
+      "listing": "未上場",
+      "latest_revenue": 19885873,
+      "profit": 683905,
+      "profit_margin": 3.4
+    },
+    {
+      "rank": 2,
+      "name": "大気社",
+      "revenue": 76975,
+      "share": 19.0,
+      "business": "空調設備設計・工事・管理業、塗装業、産業自動化業、植物工場業",
+      "headquarters": "東京都新宿区西新宿",
+      "listing": "東証プライム",
+      "latest_revenue": null,
+      "profit": null,
+      "profit_margin": null
+    },
+    {
+      "rank": 3,
+      "name": "日宝綜合製本",
+      "revenue": 58613,
+      "share": 14.4,
+      "business": "製本業、小売業",
+      "headquarters": "岡山市中区今在家",
+      "listing": "未上場",
+      "latest_revenue": 2874579,
+      "profit": 51218,
+      "profit_margin": 1.8
+    },
+    {
+      "rank": 4,
+      "name": "妹尾不動産",
+      "revenue": 15940,
+      "share": 3.9,
+      "business": "不動産売買、賃貸、仲介、管理",
+      "headquarters": "岡山市南区妹尾",
+      "listing": "未上場",
+      "latest_revenue": 353413,
+      "profit": -10809,
+      "profit_margin": -3.1
+    },
+    {
+      "rank": 5,
+      "name": "藤原健一邸　改装工事",
+      "revenue": 12355,
+      "share": 3.0,
+      "business": null,
+      "headquarters": null,
+      "listing": null,
+      "latest_revenue": null,
+      "profit": null,
+      "profit_margin": null
+    },
+    {
+      "rank": 6,
+      "name": "ダン環境設備",
+      "revenue": 10800,
+      "share": 2.7,
+      "business": "管・電気・水道、消防施設工事",
+      "headquarters": "広島県広島市安佐北区深川町",
+      "listing": "未上場",
+      "latest_revenue": 1654000,
+      "profit": 16000,
+      "profit_margin": 1.0
+    },
+    {
+      "rank": 7,
+      "name": "大東建託",
+      "revenue": 8566,
+      "share": 2.1,
+      "business": "建設事業、不動産事業、金融事業、その他事業",
+      "headquarters": "東京都港区港南",
+      "listing": "Bプライム",
+      "latest_revenue": 470003000,
+      "profit": 5921900,
+      "profit_margin": 1.3
+    },
+    {
+      "rank": 8,
+      "name": "英和商工",
+      "revenue": 5920,
+      "share": 1.5,
+      "business": "業務用設備機器のメンテナンス、業務用空調設備機器の販売、クリーンルームの施工",
+      "headquarters": "大阪府摂津市鶴野町",
+      "listing": "未上場",
+      "latest_revenue": 1929000,
+      "profit": 64246,
+      "profit_margin": 3.3
+    },
+    {
+      "rank": 9,
+      "name": "タナカ",
+      "revenue": 5586,
+      "share": 1.4,
+      "business": "被服縫製業",
+      "headquarters": "岡山市南区迫川",
+      "listing": "未上場",
+      "latest_revenue": null,
+      "profit": null,
+      "profit_margin": null
+    },
+    {
+      "rank": 10,
+      "name": "京都テクニカル",
+      "revenue": 5250,
+      "share": 1.3,
+      "business": "管工事",
+      "headquarters": "京都市南区上鳥羽南花名町",
+      "listing": "未上場",
+      "latest_revenue": 2244757,
+      "profit": 28704,
+      "profit_margin": 1.3
+    },
+    {
+      "rank": -1,
+      "name": "その他",
+      "revenue": 20026,
+      "share": 4.9,
+      "business": null,
+      "headquarters": null,
+      "listing": null,
+      "latest_revenue": null,
+      "profit": null,
+      "profit_margin": null
+    }
+  ]
+}

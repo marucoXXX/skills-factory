@@ -1,0 +1,43 @@
+{
+  "source": "出典：経済産業省、METI、IEA、IEEJ、業界レポート、各種報道（2024年時点）",
+  "main_message": "EV市場は政策・社会の追い風と技術進化の恩恵を受ける一方、経済環境と一部規制がリスクとなっており、政策インセンティブを最大活用すべき",
+  "chart_title": "PEST分析：日本のEV（電気自動車）市場",
+  "pest": {
+    "political": {
+      "items": [
+        {"text": "2035年ガソリン新車販売禁止方針（政府目標）", "impact": "positive"},
+        {"text": "CEV補助金・税制優遇の継続（購入支援）", "impact": "positive"},
+        {"text": "充電インフラ整備への公的支援拡大", "impact": "positive"},
+        {"text": "中国・欧州の自国EVメーカー優遇政策による輸出障壁", "impact": "negative"},
+        {"text": "バッテリーリサイクル規制の強化（EUを中心に）", "impact": "neutral"}
+      ]
+    },
+    "economic": {
+      "items": [
+        {"text": "円安による原材料・バッテリー調達コスト上昇", "impact": "negative"},
+        {"text": "金利上昇によるEV購入ローン負担増", "impact": "negative"},
+        {"text": "リチウム・ニッケル等レアメタル価格の乱高下", "impact": "negative"},
+        {"text": "新興国（東南アジア・インド）の中間層拡大", "impact": "positive"},
+        {"text": "ガソリン価格の高止まりによるEV経済性優位", "impact": "positive"}
+      ]
+    },
+    "social": {
+      "items": [
+        {"text": "環境意識の高まり（特にZ世代・ミレニアル世代）", "impact": "positive"},
+        {"text": "カーシェア・MaaS普及による所有離れ", "impact": "neutral"},
+        {"text": "地方の高齢化によるEV充電インフラへの抵抗", "impact": "negative"},
+        {"text": "ESG投資拡大による企業フリートの電動化需要", "impact": "positive"},
+        {"text": "リモートワーク定着による通勤需要の減少", "impact": "negative"}
+      ]
+    },
+    "technological": {
+      "items": [
+        {"text": "全固体電池の実用化見込み（2027-2030年）", "impact": "positive"},
+        {"text": "急速充電技術の進化（150kW超の普及）", "impact": "positive"},
+        {"text": "自動運転技術の実用化進展", "impact": "positive"},
+        {"text": "バッテリーコスト低下（年率7-10%）", "impact": "positive"},
+        {"text": "OTA（Over-the-Air）アップデートの標準化", "impact": "neutral"}
+      ]
+    }
+  }
+}

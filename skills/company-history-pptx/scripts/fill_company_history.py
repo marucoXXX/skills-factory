@@ -1,0 +1,278 @@
+"""
+fill_company_history.py — 会社沿革データをPPTXネイティブテーブルとして生成するスクリプト
+
+テンプレート構造（company-history-template.pptx）:
+  - Title 1   (TEXT_BOX): スライドタイトル（デフォルト: 会社沿革）
+  - Table 1   (TABLE):    2列テーブル（年 | 概要）。ヘッダー行+データ行1行をテンプレートとして保持
+
+使い方:
+  python fill_company_history.py \
+    --data /home/claude/company_history_data.json \
+    --template <SKILL_DIR>/assets/company-history-template.pptx \
+    --output /mnt/user-data/outputs/CompanyHistory_output.pptx
+"""
+
+import argparse
+import copy
+import json
+import os
+import sys
+
+from pptx import Presentation
+from pptx.util import Emu, Inches, Pt
+from pptx.enum.text import PP_ALIGN
+from pptx.dml.color import RGBColor
+from pptx.oxml.ns import qn
+from lxml import etree
+
+
+# ── Shape名マッピング ──────────────────────────────────
+SHAPE_MAIN_MESSAGE = "Title 1"
+SHAPE_CHART_TITLE  = "Text Placeholder 2"
+SHAPE_TABLE        = "Table 1"
+# ────────────────────────────────────────────────────────
+
+
+def find_shape(slide, name):
+    for shape in slide.shapes:
+        if shape.name == name:
+            return shape
+    print(f"  ⚠ WARNING: Shape '{name}' not found", file=sys.stderr)
+    return None
+
+
+def set_textbox_text(shape, text):
+    """TextBoxのテキストを上書き（既存スタイルを保持）"""
+    if shape is None:
+        return
+    tf = shape.text_frame
+    para = tf.paragraphs[0]
+    if para.runs:
+        para.runs[0].text = text
+        for run in para.runs[1:]:
+            run.text = ""
+    else:
+        r_elem = etree.SubElement(para._p, qn("a:r"))
+        etree.SubElement(r_elem, qn("a:rPr"), attrib={"lang": "ja-JP"})
+        t_elem = etree.SubElement(r_elem, qn("a:t"))
+        t_elem.text = text
+
+
+def rebuild_history_table(slide, history_data):
+    """
+    テンプレートのテーブルを削除し、沿革データに応じた行数でネイティブテーブルを再構築する。
+    ヘッダー行・データ行のセルスタイルはテンプレートから複製する。
+    """
+    table_shape = find_shape(slide, SHAPE_TABLE)
+    if table_shape is None:
+        print("  ⚠ WARNING: Table shape not found", file=sys.stderr)
+        return
+
+    old_table = table_shape.table
+
+    # セルスタイル（tcPr）をテンプレートからコピー
+    header_tcPr_0 = copy.deepcopy(old_table.cell(0, 0)._tc.find(qn("a:tcPr")))
+    header_tcPr_1 = copy.deepcopy(old_table.cell(0, 1)._tc.find(qn("a:tcPr")))
+    data_tcPr_0   = copy.deepcopy(old_table.cell(1, 0)._tc.find(qn("a:tcPr")))
+    data_tcPr_1   = copy.deepcopy(old_table.cell(1, 1)._tc.find(qn("a:tcPr")))
+
+    # runスタイル（rPr）をテンプレートからコピー
+    def get_rPr(cell):
+        for para in cell.text_frame.paragraphs:
+            for run in para.runs:
+                rPr = run._r.find(qn("a:rPr"))
+                if rPr is not None:
+                    return copy.deepcopy(rPr)
+        return None
+
+    header_rPr_0 = get_rPr(old_table.cell(0, 0))
+    header_rPr_1 = get_rPr(old_table.cell(0, 1))
+    data_rPr_0   = get_rPr(old_table.cell(1, 0))
+    data_rPr_1   = get_rPr(old_table.cell(1, 1))
+
+    # 位置・サイズ・列幅を保存
+    tbl_left   = table_shape.left
+    tbl_top    = table_shape.top
+    tbl_width  = table_shape.width
+    tbl_height = table_shape.height
+    col0_width = old_table.columns[0].width
+    col1_width = old_table.columns[1].width
+
+    # 既存テーブルを削除
+    sp_tree = slide.shapes._spTree
+    sp_tree.remove(table_shape._element)
+
+    # テーブル配置の計算
+    SLIDE_HEIGHT      = Inches(7.5)
+    BOTTOM_MARGIN     = Inches(0.15)
+    HEADER_ROW_HEIGHT = Inches(0.35)
+    MAX_TABLE_HEIGHT  = SLIDE_HEIGHT - tbl_top - BOTTOM_MARGIN
+
+    n_rows = len(history_data) + 1  # ヘッダー行 + データ行
+    n_cols = 2
+
+    # データ行の高さを動的算出（残りスペースを均等割り、上限0.4inで制限）
+    available_for_data = MAX_TABLE_HEIGHT - HEADER_ROW_HEIGHT
+    data_row_height = int(available_for_data / len(history_data))
+    MAX_DATA_ROW = Inches(0.4)
+    if data_row_height > MAX_DATA_ROW:
+        data_row_height = MAX_DATA_ROW
+    dynamic_height = HEADER_ROW_HEIGHT + data_row_height * len(history_data)
+
+    new_shape = slide.shapes.add_table(n_rows, n_cols, tbl_left, tbl_top, tbl_width, dynamic_height)
+    new_shape.name = SHAPE_TABLE
+    new_table = new_shape.table
+
+    # 列幅を復元
+    new_table.columns[0].width = col0_width
+    new_table.columns[1].width = col1_width
+
+    # 行の高さを明示的に設定
+    tbl_xml = new_shape._element.find('.//' + qn('a:tbl'))
+    for i, tr in enumerate(tbl_xml.findall(qn('a:tr'))):
+        if i == 0:
+            tr.set('h', str(HEADER_ROW_HEIGHT))
+        else:
+            tr.set('h', str(data_row_height))
+
+    print(f"  ✓ テーブル高さ: {dynamic_height/914400:.2f}in (データ行: {data_row_height/914400:.2f}in × {len(history_data)}行)")
+
+    # tblPrを設定（デフォルトスタイル除去）
+    ns = {'a': 'http://schemas.openxmlformats.org/drawingml/2006/main'}
+    tbl_elem = new_shape._element.find('.//a:tbl', ns)
+    old_tblPr = tbl_elem.find('a:tblPr', ns)
+    if old_tblPr is not None:
+        tbl_elem.remove(old_tblPr)
+    tblPr = etree.SubElement(tbl_elem, qn('a:tblPr'), attrib={
+        'firstRow': '1', 'bandRow': '0'
+    })
+    tbl_elem.insert(0, tblPr)
+
+    def apply_cell_single(cell, text, tcPr_tmpl, rPr_tmpl):
+        """セルに単一テキストを設定（スタイルをテンプレートから複製）"""
+        tc = cell._tc
+        txBody = tc.find(qn("a:txBody"))
+        if txBody is None:
+            txBody = etree.SubElement(tc, qn("a:txBody"))
+            etree.SubElement(txBody, qn("a:bodyPr"))
+            etree.SubElement(txBody, qn("a:lstStyle"))
+
+        # 既存の段落をすべて削除
+        for p in txBody.findall(qn("a:p")):
+            txBody.remove(p)
+
+        # 段落を追加
+        p_elem = etree.SubElement(txBody, qn("a:p"))
+        pPr = etree.SubElement(p_elem, qn("a:pPr"))
+        pPr.set("algn", "l")  # 左寄せ
+        r_elem = etree.SubElement(p_elem, qn("a:r"))
+        if rPr_tmpl is not None:
+            r_elem.append(copy.deepcopy(rPr_tmpl))
+        else:
+            etree.SubElement(r_elem, qn("a:rPr"), attrib={"lang": "ja-JP", "sz": "1400"})
+        t_elem = etree.SubElement(r_elem, qn("a:t"))
+        t_elem.text = str(text)
+
+        # tcPrを適用
+        old_tcPr = tc.find(qn("a:tcPr"))
+        if old_tcPr is not None:
+            tc.remove(old_tcPr)
+        if tcPr_tmpl is not None:
+            tc.append(copy.deepcopy(tcPr_tmpl))
+
+    def apply_cell_multiline(cell, lines, tcPr_tmpl, rPr_tmpl):
+        """セルに複数行テキストを設定（各行を別段落として追加）"""
+        tc = cell._tc
+        txBody = tc.find(qn("a:txBody"))
+        if txBody is None:
+            txBody = etree.SubElement(tc, qn("a:txBody"))
+            etree.SubElement(txBody, qn("a:bodyPr"))
+            etree.SubElement(txBody, qn("a:lstStyle"))
+
+        # 既存の段落をすべて削除
+        for p in txBody.findall(qn("a:p")):
+            txBody.remove(p)
+
+        # 各行を個別の段落として追加
+        for line in lines:
+            p_elem = etree.SubElement(txBody, qn("a:p"))
+            pPr = etree.SubElement(p_elem, qn("a:pPr"))
+            pPr.set("algn", "l")  # 左寄せ
+            r_elem = etree.SubElement(p_elem, qn("a:r"))
+            if rPr_tmpl is not None:
+                r_elem.append(copy.deepcopy(rPr_tmpl))
+            else:
+                etree.SubElement(r_elem, qn("a:rPr"), attrib={"lang": "ja-JP", "sz": "1400"})
+            t_elem = etree.SubElement(r_elem, qn("a:t"))
+            t_elem.text = str(line)
+
+        # tcPrを適用
+        old_tcPr = tc.find(qn("a:tcPr"))
+        if old_tcPr is not None:
+            tc.remove(old_tcPr)
+        if tcPr_tmpl is not None:
+            tc.append(copy.deepcopy(tcPr_tmpl))
+
+    # ── ヘッダー行 ──
+    apply_cell_single(new_table.cell(0, 0), "年",   header_tcPr_0, header_rPr_0)
+    apply_cell_single(new_table.cell(0, 1), "概要", header_tcPr_1, header_rPr_1)
+    print("  ✓ ヘッダー行: 年 | 概要")
+
+    # ── データ行 ──
+    for r_idx, item in enumerate(history_data):
+        year = str(item.get("year", ""))
+        events = item.get("events", [])
+        if isinstance(events, str):
+            events = [events]
+
+        # 年セル（単一テキスト）
+        apply_cell_single(new_table.cell(r_idx + 1, 0), year, data_tcPr_0, data_rPr_0)
+
+        # 概要セル（複数イベントは「、」で結合して1行にする）
+        events_text = "、".join(events)
+        apply_cell_single(new_table.cell(r_idx + 1, 1), events_text, data_tcPr_1, data_rPr_1)
+
+        print(f"  ✓ [{year}] {events_text[:60]}{'...' if len(events_text) > 60 else ''}")
+
+    print(f"  ✓ テーブル生成完了: {n_rows}行 × {n_cols}列")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="会社沿革 PowerPoint ジェネレーター")
+    parser.add_argument("--data", required=True, help="JSONデータファイルのパス")
+    parser.add_argument("--template", required=True, help="PPTXテンプレートのパス")
+    parser.add_argument("--output", required=True, help="出力PPTXファイルのパス")
+    args = parser.parse_args()
+
+    # JSONデータ読み込み
+    with open(args.data, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    print(f"  データ読み込み完了: {len(data.get('history', []))}件の沿革")
+
+    # テンプレート読み込み
+    prs = Presentation(args.template)
+    slide = prs.slides[0]
+
+    # 1. メインメッセージ設定
+    main_message = data.get("main_message", "")
+    set_textbox_text(find_shape(slide, SHAPE_MAIN_MESSAGE), main_message)
+    print(f"  ✓ メインメッセージ: {main_message}")
+
+    # 2. チャートタイトル設定
+    chart_title = data.get("chart_title", "会社沿革")
+    set_textbox_text(find_shape(slide, SHAPE_CHART_TITLE), chart_title)
+    print(f"  ✓ チャートタイトル: {chart_title}")
+
+    # 3. テーブル再構築
+    history = data.get("history", [])
+    rebuild_history_table(slide, history)
+
+    # 3. 出力
+    os.makedirs(os.path.dirname(args.output), exist_ok=True)
+    prs.save(args.output)
+    print(f"\n  ✅ 出力完了: {args.output}")
+
+
+if __name__ == "__main__":
+    main()

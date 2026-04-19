@@ -1,0 +1,31 @@
+{
+  "main_message": "対象会社は設備事業を中心に19名体制で運営しており、有資格者を多く擁する技術者集団である",
+  "chart_title": "人員構成",
+  "source": "出典：対象会社提供資料",
+  "headcount_trend": {
+    "title": "在籍人員数の推移",
+    "unit": "人",
+    "series_labels": {
+      "total": "総従業員数",
+      "new_hires": "入社人数",
+      "departures": "退職人数"
+    },
+    "periods": [
+      {"label": "21/6期", "total": 21, "new_hires": 1, "departures": -2},
+      {"label": "22/6期", "total": 20, "new_hires": 0, "departures": -2},
+      {"label": "23/6期", "total": 18, "new_hires": 1, "departures": 0},
+      {"label": "24/6期", "total": 19, "new_hires": 0, "departures": 0}
+    ]
+  },
+  "department_table": {
+    "title": "24/6期（5月現在）の人員構成",
+    "columns": ["部署名", "人数", "平均年齢", "平均勤続年数", "管理職数", "有資格者数"],
+    "departments": [
+      {"name": "設備事業", "headcount": 12, "avg_age": 42.5, "avg_tenure": 18.3, "managers": 3, "certified": 5},
+      {"name": "内作・土木・諸工事", "headcount": 3, "avg_age": 38.0, "avg_tenure": 12.3, "managers": 1, "certified": 2},
+      {"name": "不動産事業", "headcount": 1, "avg_age": 45.0, "avg_tenure": 7.0, "managers": 0, "certified": 0},
+      {"name": "総務・経理", "headcount": 2, "avg_age": 50.0, "avg_tenure": null, "managers": 1, "certified": 0}
+    ],
+    "show_total": true
+  }
+}

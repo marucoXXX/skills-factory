@@ -1,0 +1,45 @@
+{
+  "source": "出典：各社公式HP・プレスリリース・IR資料、MarkLines、業界レポート（2024年時点）",
+  "main_message": "対象会社は中価格・汎用領域で競合が密集しており、高価格・専門特化にポジションを移すことで差別化と利益率向上を図るべき",
+  "chart_title": "競合ポジショニングマップ：EV市場における価格帯×専門性",
+  "target_company": "対象会社",
+  "section_title": "ポジショニングマップ",
+  "x_axis": {
+    "label": "製品専門性",
+    "low": "汎用モデル中心",
+    "high": "専門・高機能モデル",
+    "min": 0,
+    "max": 10
+  },
+  "y_axis": {
+    "label": "価格帯",
+    "low": "低価格帯",
+    "high": "高価格帯",
+    "min": 0,
+    "max": 10
+  },
+  "quadrants": {
+    "top_left": "高価格・汎用",
+    "top_right": "ハイエンド・専門",
+    "bottom_left": "マス・コモディティ",
+    "bottom_right": "ニッチ・専門"
+  },
+  "players": [
+    {"name": "対象会社", "x": 4.5, "y": 5.0, "size": 50, "color": "#E15759", "label_position": "bottom"},
+    {"name": "テスラ", "x": 8.0, "y": 8.0, "size": 90, "label_position": "left"},
+    {"name": "ポルシェ", "x": 9.0, "y": 9.3, "size": 40, "label_position": "bottom"},
+    {"name": "BYD", "x": 5.5, "y": 3.0, "size": 95, "label_position": "bottom"},
+    {"name": "VW", "x": 3.5, "y": 5.8, "size": 70, "label_position": "top"},
+    {"name": "現代自動車", "x": 5.5, "y": 4.2, "size": 60, "label_position": "right"},
+    {"name": "日産", "x": 2.5, "y": 4.0, "size": 45, "label_position": "left"},
+    {"name": "リビアン", "x": 7.0, "y": 9.0, "size": 25, "label_position": "top"}
+  ],
+  "implications_title": "ポジショニングからの示唆",
+  "implications": [
+    "対象会社は中価格・汎用領域（マップ中央）に位置し、VW・現代自動車と競合密集",
+    "テスラは高価格・高専門性でポジション確立、圧倒的な売上規模",
+    "BYDは低価格・中専門性で販売台数No.1、価格戦略で対象会社に脅威",
+    "ポルシェ・リビアンはハイエンド・高専門ニッチでプレミアム戦略",
+    "対象会社は『高価格・専門特化』象限への移行で差別化余地あり"
+  ]
+}

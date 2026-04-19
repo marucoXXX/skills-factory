@@ -1,0 +1,36 @@
+{
+  "main_message": "対象会社は創業者一族が100%株式を保有するオーナー企業であり、ガバナンス構造を評価すべき",
+  "chart_title": "対象会社概要：株主構成",
+  "source": "インフォメーション・メモランダム",
+  "shareholders": {
+    "section_title": "株主構成",
+    "columns": ["#", "株主", "役職", "関係", "持株数", "議決権比率(%)", "備考"],
+    "rows": [
+      {"number": 1, "name": "藤原 康弘", "position": "無し", "relation": "本人", "shares": "548株", "voting_ratio": 54.8, "note": "本件依頼者・創業者"},
+      {"number": 2, "name": "藤原 健一", "position": "代表取締役", "relation": "子", "shares": "156株", "voting_ratio": 15.6, "note": ""},
+      {"number": 3, "name": "藤原 美紀", "position": "社外", "relation": "配偶者", "shares": "110株", "voting_ratio": 11.0, "note": ""},
+      {"number": 4, "name": "藤原 静香", "position": "取締役", "relation": "義子", "shares": "74株", "voting_ratio": 7.4, "note": ""},
+      {"number": 5, "name": "藤原 銀晟", "position": "社外", "relation": "孫", "shares": "74株", "voting_ratio": 7.4, "note": ""},
+      {"number": 6, "name": "荒金 真沙美", "position": "取締役", "relation": "子", "shares": "11株", "voting_ratio": 1.1, "note": ""},
+      {"number": 7, "name": "藤原 凛", "position": "社外", "relation": "孫", "shares": "6株", "voting_ratio": 0.6, "note": ""},
+      {"number": 8, "name": "野口 寿利也", "position": "取締役", "relation": "義子", "shares": "6株", "voting_ratio": 0.6, "note": ""},
+      {"number": 9, "name": "野口 彩", "position": "無し", "relation": "子", "shares": "5株", "voting_ratio": 0.5, "note": ""},
+      {"number": 10, "name": "藤原 克彦", "position": "無し", "relation": "甥", "shares": "5株", "voting_ratio": 0.5, "note": ""},
+      {"number": 11, "name": "藤原 雅宏", "position": "社外", "relation": "甥", "shares": "5株", "voting_ratio": 0.5, "note": ""}
+    ],
+    "total": {
+      "shares": "1,000株",
+      "voting_ratio": 100.0
+    }
+  },
+  "directors": {
+    "section_title": "役員構成",
+    "columns": ["#", "氏名", "役職", "関係", "役員報酬", "備考"],
+    "rows": [
+      {"number": 1, "name": "藤原 健一", "position": "代表取締役", "relation": "子", "compensation": "22,720千円", "note": "譲渡後継続、報酬要相談"},
+      {"number": 2, "name": "荒川 真沙美", "position": "取締役", "relation": "子", "compensation": "0千円", "note": "経理担当、使用人分給与のみ、経営管理責任者資格あり"},
+      {"number": 3, "name": "藤原 静香", "position": "取締役", "relation": "義子", "compensation": "0千円", "note": "庶務担当"},
+      {"number": 4, "name": "野口 寿利也", "position": "取締役", "relation": "義子", "compensation": "0千円", "note": "使用人分給与のみ"}
+    ]
+  }
+}

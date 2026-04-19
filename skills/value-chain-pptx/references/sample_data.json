@@ -1,0 +1,54 @@
+{
+  "source": "出典：業界レポート（富士経済・矢野経済）、対象会社有報・決算短信、各社IR資料（2024年度ベース）",
+  "main_message": "業界の利益プールは川下（販売・アフターサービス）に偏在しており、対象会社は川上偏重のポートフォリオから川下へのシフトを加速すべき",
+  "chart_title": "バリューチェーン・利益プール分析：自動車業界",
+  "stages": [
+    {
+      "name": "原材料調達",
+      "activity": "鉄鋼・樹脂・電子部品",
+      "profit_pool_pct": 5,
+      "position": "weak"
+    },
+    {
+      "name": "部品製造",
+      "activity": "エンジン・電池・電装品",
+      "profit_pool_pct": 12,
+      "position": "medium"
+    },
+    {
+      "name": "完成車組立",
+      "activity": "車両組立・品質管理",
+      "profit_pool_pct": 15,
+      "position": "strong"
+    },
+    {
+      "name": "流通・物流",
+      "activity": "輸送・在庫管理",
+      "profit_pool_pct": 8,
+      "position": "medium"
+    },
+    {
+      "name": "販売・ディーラー",
+      "activity": "新車販売・顧客対応",
+      "profit_pool_pct": 25,
+      "position": "strong"
+    },
+    {
+      "name": "アフターサービス",
+      "activity": "メンテナンス・修理・部品",
+      "profit_pool_pct": 30,
+      "position": "weak"
+    },
+    {
+      "name": "金融・保険",
+      "activity": "自動車ローン・保険",
+      "profit_pool_pct": 5,
+      "position": "medium"
+    }
+  ],
+  "implications": [
+    "利益プールの55%が川下（販売+アフターサービス）に集中、対象会社は販売で強みを持つが、アフターサービスで弱み",
+    "アフターサービス（利益プール30%）での弱さが最大の機会損失、ディーラー網を活かした整備・部品事業の強化が急務",
+    "原材料・流通は利益プールが小さく、川下投資への資源シフトが正当化される"
+  ]
+}

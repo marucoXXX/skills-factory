@@ -1,0 +1,14 @@
+{
+  "source": "出典：対象会社提供資料",
+  "main_message": "対象会社は過去3年間で売上高CAGR+5.1%と堅調に成長しており、収益基盤の安定性を評価すべき",
+  "chart_title": "売上分析ー売上高・EBITDAの推移",
+  "unit_label": "（単位：百万円、%）",
+  "bar_label": "売上高",
+  "line_label": "EBITDA率",
+  "data": [
+    {"year": "22/3期", "revenue": 4800, "ebitda": 720},
+    {"year": "23/3期", "revenue": 5100, "ebitda": 790},
+    {"year": "24/3期", "revenue": 5500, "ebitda": 880},
+    {"year": "25/3期(見込み)", "revenue": 5800, "ebitda": 930}
+  ]
+}

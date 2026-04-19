@@ -1,0 +1,26 @@
+{
+  "source": "出典：生命保険協会「生命保険事業概況」、各社決算資料（2022-2024年度）、富士経済「保険ビジネスの実態」",
+  "main_message": "対象会社は市場シェア3位で伸び悩む一方、外資系が急伸しており、差別化戦略の再構築が急務",
+  "chart_title": "市場シェア分析：日本の個人生命保険市場",
+  "target_company": "対象会社",
+  "years": ["2022", "2023", "2024"],
+  "players": [
+    {"name": "日本生命", "color": "#4E79A7", "shares": [16.8, 16.5, 16.2]},
+    {"name": "第一生命", "color": "#F28E2B", "shares": [14.2, 14.0, 13.7]},
+    {"name": "対象会社", "color": "#E15759", "shares": [12.5, 12.4, 12.3]},
+    {"name": "明治安田生命", "color": "#59A14F", "shares": [11.3, 11.2, 11.0]},
+    {"name": "住友生命", "color": "#76B7B2", "shares": [9.8, 9.5, 9.3]},
+    {"name": "かんぽ生命", "color": "#EDC948", "shares": [8.2, 7.8, 7.5]},
+    {"name": "外資系大手", "color": "#B07AA1", "shares": [10.5, 11.8, 13.2]},
+    {"name": "その他", "color": "#BAB0AC", "shares": [16.7, 16.8, 16.8]}
+  ],
+  "left_panel": {
+    "section_title": "市場シェア（2024年）",
+    "total_size_label": "市場規模: 29.6兆円（保有契約年換算保険料）"
+  },
+  "right_panel": {
+    "section_title": "主要プレイヤー別シェア推移",
+    "show_ranking": true,
+    "show_yoy_change": true
+  }
+}

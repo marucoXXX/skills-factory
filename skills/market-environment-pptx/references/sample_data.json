@@ -1,0 +1,71 @@
+{
+  "main_message": "建設工事業の完成工事高は全国的に堅調に推移しており、市場環境の安定性を評価すべき",
+  "chart_title": "建設工事業の完成工事高の推移（全国）",
+  "source": "国土交通省「建設工事施工統計調査」",
+  "chart": {
+    "unit_label": "（単位：兆円、%）",
+    "num_format": "0.0",
+    "y_axis_label": "",
+    "stacked_bars": [
+      {
+        "series_name": "下請完成工事高",
+        "color": "#4E79A7"
+      },
+      {
+        "series_name": "元請完成工事高",
+        "color": "#E8923F"
+      }
+    ],
+    "line": {
+      "series_name": "元請比率",
+      "color": "#333333",
+      "marker_size": 8
+    },
+    "data": [
+      {"year": "2013", "bars": [52.3, 29.9], "line_value": 85.4, "total_label": "82.2"},
+      {"year": "2014", "bars": [54.9, 30.5], "line_value": 64.3, "total_label": ""},
+      {"year": "2015", "bars": [56.4, 31.8], "line_value": 63.9, "total_label": "88.2"},
+      {"year": "2016", "bars": [55.5, 31.0], "line_value": 64.2, "total_label": "86.6"},
+      {"year": "2017", "bars": [57.2, 30.6], "line_value": 65.1, "total_label": "87.8"},
+      {"year": "2018", "bars": [59.8, 31.3], "line_value": 65.6, "total_label": "91.0"},
+      {"year": "2019", "bars": [61.3, 33.4], "line_value": 64.7, "total_label": "94.7"},
+      {"year": "2020", "bars": [75.5, 49.4], "line_value": 60.5, "total_label": "125.1"},
+      {"year": "2021", "bars": [76.7, 47.5], "line_value": 61.8, "total_label": "124.2"},
+      {"year": "2022", "bars": [82.5, 53.0], "line_value": 60.9, "total_label": "135.5"}
+    ],
+    "period_separator": {
+      "after_index": 6,
+      "label": "推計方法の変更"
+    },
+    "cagr_annotations": [
+      {
+        "label": "CAGR（2013→2019）",
+        "items": [
+          {"name": "下請", "value": "+1.8%"},
+          {"name": "元請", "value": "+2.7%"}
+        ]
+      },
+      {
+        "label": "CAGR（2020→2022）",
+        "items": [
+          {"name": "下請", "value": "+3.8%"},
+          {"name": "元請", "value": "+4.4%"}
+        ]
+      }
+    ],
+    "growth_annotations": [
+      {
+        "start_index": 0,
+        "end_index": 6,
+        "value": "+2.4%",
+        "position": "top"
+      },
+      {
+        "start_index": 7,
+        "end_index": 9,
+        "value": "+4.1%",
+        "position": "top"
+      }
+    ]
+  }
+}

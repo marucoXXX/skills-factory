@@ -1,0 +1,41 @@
+{
+  "source": "出典：対象会社提供資料、マネジメントインタビュー",
+  "main_message": "ケース別に今後の全体売上・EBITDAの見立てを整理し、投資判断の前提とすべき",
+  "chart_title": "今後の見立て ー ケース別 ー 全体売上/EBITDA",
+  "series_labels": {"base": "Base", "upside": "Upside", "downside": "Downside"},
+  "period_type_labels": {"actual": "実績", "forecast": "見込", "plan": "計画"},
+  "left_chart": {
+    "title": "売上高",
+    "unit": "（単位：百万円）",
+    "y_max": 1400,
+    "y_step": 200,
+    "periods": [
+      {"label": "21/6期", "type": "actual",   "base": 374, "upside": 374,  "downside": 374},
+      {"label": "22/6期", "type": "actual",   "base": 423, "upside": 423,  "downside": 423},
+      {"label": "23/6期", "type": "forecast", "base": 664, "upside": 664,  "downside": 664},
+      {"label": "24/6期", "type": "plan",     "base": 554, "upside": 554,  "downside": 543},
+      {"label": "25/6期", "type": "plan",     "base": 589, "upside": 854,  "downside": 553},
+      {"label": "26/6期", "type": "plan",     "base": 691, "upside": 1086, "downside": 629},
+      {"label": "27/6期", "type": "plan",     "base": 829, "upside": 1146, "downside": 705},
+      {"label": "28/6期", "type": "plan",     "base": 921, "upside": 1146, "downside": 735},
+      {"label": "29/6期", "type": "plan",     "base": 967, "upside": 1206, "downside": 765}
+    ]
+  },
+  "right_chart": {
+    "title": "調整後EBITDA",
+    "unit": "（単位：百万円）",
+    "y_max": 300,
+    "y_step": 50,
+    "periods": [
+      {"label": "21/6期", "type": "actual",   "base": 90,  "upside": 90,  "downside": 90},
+      {"label": "22/6期", "type": "actual",   "base": 86,  "upside": 86,  "downside": 86},
+      {"label": "23/6期", "type": "forecast", "base": 202, "upside": 202, "downside": 202},
+      {"label": "24/6期", "type": "plan",     "base": 141, "upside": 135, "downside": 132},
+      {"label": "25/6期", "type": "plan",     "base": 135, "upside": 165, "downside": 134},
+      {"label": "26/6期", "type": "plan",     "base": 196, "upside": 250, "downside": 143},
+      {"label": "27/6期", "type": "plan",     "base": 201, "upside": 261, "downside": 156},
+      {"label": "28/6期", "type": "plan",     "base": 223, "upside": 261, "downside": 156},
+      {"label": "29/6期", "type": "plan",     "base": 234, "upside": 272, "downside": 156}
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "claude_ai",
+  "vars": {
+    "INPUT_DIR": "/mnt/user-data/uploads",
+    "WORK_DIR": "/home/claude",
+    "OUTPUT_DIR": "/mnt/user-data/outputs",
+    "SKILL_DIR": ".",
+    "PIP_FLAGS": "--break-system-packages",
+    "PYTHON_BIN": "python3",
+    "OPEN_CMD": ""
+  }
+}

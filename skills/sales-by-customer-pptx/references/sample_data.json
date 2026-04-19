@@ -1,0 +1,61 @@
+{
+  "main_message": "主要販売先はジップ・大気社を中心に安定した取引基盤を有しており、顧客集中リスクを評価すべき",
+  "chart_title": "主要販売先からの完成工事売上高と割合",
+  "source": "対象会社提供資料",
+  "subtitle_note": "",
+  "continuous_label": "継続的な顧客",
+  "continuous_threshold_label": "三期",
+  "periods": [
+    {
+      "label": "21/6期",
+      "unit": "千円",
+      "customers": [
+        {"rank": 1, "name": "ジップ", "revenue": 67830, "share": 18.1},
+        {"rank": 2, "name": "大気社", "revenue": 67764, "share": 18.1},
+        {"rank": 3, "name": "ダン環境設備", "revenue": 63000, "share": 16.8},
+        {"rank": 4, "name": "大和設備", "revenue": 62330, "share": 16.7},
+        {"rank": 5, "name": "両名設備", "revenue": 35724, "share": 9.5},
+        {"rank": 6, "name": "高砂熱学工業", "revenue": 30800, "share": 8.2},
+        {"rank": 7, "name": "日宝綜合製本", "revenue": 17720, "share": 4.7},
+        {"rank": 8, "name": "犬飼 裕太", "revenue": 8182, "share": 2.2},
+        {"rank": 9, "name": "ヒカリ産業", "revenue": 6599, "share": 1.8},
+        {"rank": 10, "name": "時長龍太郎", "revenue": 6300, "share": 1.7},
+        {"rank": -1, "name": "その他", "revenue": 7909, "share": 2.1}
+      ]
+    },
+    {
+      "label": "22/6期",
+      "unit": "千円",
+      "customers": [
+        {"rank": 1, "name": "ジップ", "revenue": 126955, "share": 30.1},
+        {"rank": 2, "name": "大気社", "revenue": 105792, "share": 25.1},
+        {"rank": 3, "name": "日宝綜合製本", "revenue": 46621, "share": 11.1},
+        {"rank": 4, "name": "大和設備", "revenue": 38000, "share": 9.0},
+        {"rank": 5, "name": "まつもとコーポレーション", "revenue": 30300, "share": 7.2},
+        {"rank": 6, "name": "三愛オブリテック", "revenue": 16260, "share": 3.9},
+        {"rank": 7, "name": "ダン環境設備", "revenue": 16000, "share": 3.8},
+        {"rank": 8, "name": "古松原設計建築事務所", "revenue": 15000, "share": 3.6},
+        {"rank": 9, "name": "英和商工", "revenue": 7880, "share": 1.9},
+        {"rank": 10, "name": "大野 譲 土地造成代", "revenue": 4560, "share": 1.1},
+        {"rank": -1, "name": "その他", "revenue": 19028, "share": 4.5}
+      ]
+    },
+    {
+      "label": "23/6期",
+      "unit": "千円",
+      "customers": [
+        {"rank": 1, "name": "大気社", "revenue": 239502, "share": 36.2},
+        {"rank": 2, "name": "日宝綜合製本", "revenue": 184258, "share": 27.8},
+        {"rank": 3, "name": "ジップ", "revenue": 148237, "share": 22.4},
+        {"rank": 4, "name": "三愛オブリテック", "revenue": 15560, "share": 2.4},
+        {"rank": 5, "name": "ソーデン社", "revenue": 13501, "share": 2.0},
+        {"rank": 6, "name": "ダン環境設備", "revenue": 13000, "share": 2.0},
+        {"rank": 7, "name": "TMJ", "revenue": 10685, "share": 1.6},
+        {"rank": 8, "name": "古松原設計事務所", "revenue": 10000, "share": 1.5},
+        {"rank": 9, "name": "まつもとコーポレーション", "revenue": 8033, "share": 1.2},
+        {"rank": 10, "name": "高砂熱学工業", "revenue": 5100, "share": 0.8},
+        {"rank": -1, "name": "その他", "revenue": 14228, "share": 2.1}
+      ]
+    }
+  ]
+}

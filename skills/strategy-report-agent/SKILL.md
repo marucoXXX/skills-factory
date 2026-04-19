@@ -1,0 +1,760 @@
+---
+name: strategy-report-agent
+description: >
+  戦略コンサルティングファームが作成する企業調査レポート（BDD・競合分析・M&Aターゲット評価・
+  新規参入調査・投資検討・経営企画向けベンチマーク等）のPowerPointデッキを生成する
+  オーケストレータースキル。本スキル自体はスクリプトを持たず、Web検索と複数の既存スキルを
+  呼び出してデッキ全体を組み立てる役割に特化する。
+  v5.0では「事業環境の理解 → 対象会社の戦い方の理解」の4セクション構成へ思想転換。
+  公開情報のみで書けない「戦略的示唆・推奨アクション」を廃止し、
+  代わりに「今後検証すべき論点」でレポートを着地させる知的誠実性を重視した構成へ進化。
+  デッキの深度（基本/標準/拡張/カスタム）を対話でユーザーに選択してもらい、
+  対象会社の概要理解・外部環境・戦い方・検証論点の各セクションのスライドを順次生成する。
+
+  以下のいずれかのトリガーで必ずこのスキルを使うこと：
+  - 「競合調査」「競合分析」「Competitor Analysis」「Competitive Landscape」という言葉が出た場合
+  - 「企業調査レポート」「企業分析レポート」「Strategy Research Report」の作成要望
+  - 「BDD」「ビジネスDD」「ビジネスデューデリジェンス」でレポートを作りたい場合
+  - 「M&Aターゲット評価」「買収候補分析」「投資対象レポート」の作成要望
+  - 「新規参入調査」「市場参入レポート」「Entry Strategy Report」の要望
+  - 「対象会社の競合を調べてスライドにして」「競合を分析して資料化して」という要望
+  - ユーザーが対象会社名のみを伝えて「レポート作って」「分析して資料化して」と求めた場合
+  - 戦略コンサルティング品質の企業調査PPTXを求められた場合
+---
+
+# 戦略コンサル向け企業調査レポート オーケストレーター v5.0
+
+戦略コンサルティングファーム（BCG / McKinsey / ベイン / 日系コンサル 等）が作成する
+**企業調査PowerPointレポート**を自動生成するオーケストレータースキル。
+
+## 対応する調査タイプ
+
+| 調査タイプ | 典型的な用途 | 推奨デッキ深度 |
+|---|---|---|
+| **BDD（ビジネスDD）** | M&A時のターゲット事業性評価（フェーズ1：公開情報） | 標準 or 拡張 |
+| **競合分析** | 経営企画・中計策定のための競合ベンチマーク | 標準 or 拡張 |
+| **M&Aターゲット評価** | 買収候補の魅力度・リスク評価 | 拡張 |
+| **新規参入調査** | 新事業・新市場への参入可能性検討 | 拡張 |
+| **投資検討** | VC・PE・事業会社の投資判断 | 標準 or 拡張 |
+| **経営企画ベンチマーク** | 自社の相対ポジション把握 | 標準 |
+
+---
+
+## v5.0の思想転換（最重要）
+
+### 従来（v4.x）の思想と問題点
+
+v4.xは「**事実 → 示唆 → アクション**」という戦略示唆を含む構成だったが、本スキルは
+**Web情報（公開情報）のみ**で作成されるため、以下の問題があった:
+
+- 内部の経営判断・KPI・リソース配分の情報がないと、まともな「〜すべき」は提言できない
+- 書いたとしても「DX推進すべき」「海外展開すべき」等の一般論に陥りがち
+- 戦略コンサルの実務でも、公開情報フェーズで提言は書かない（IM・マネジメントインタビューを経て初めて書く）
+
+### v5.0の新しい思想
+
+**「事業環境の理解 → 対象会社の戦い方の理解 → 今後検証すべき論点の提示」**
+
+- **Web情報で書けること**に徹底的に注力する（無理に提言を書かない）
+- 対象会社の概要・事業環境・戦い方を**事実記述ベース**で深く理解する
+- 公開情報で見えなかった点・仮説にとどまる点は「**今後検証すべき論点**」として率直に提示
+- 「〜すべき」と断定せず、「〜という構造になっている」「〜を確認する必要がある」と記述する
+- これは戦略コンサルの **BDDフェーズ1（公開情報調査）の正しい姿** に沿った設計
+
+| v4.x | v5.0 |
+|---|---|
+| 事実 → 示唆 → アクション | **事業環境の理解 → 対象会社の戦い方の理解** |
+| recommendation-action を結論に | **issue-risk-list（検証論点一覧）で着地** |
+| 「〜すべき」で締める | 「〜という構造である」「〜を確認する必要がある」で記述する |
+| value-chain-pptx → 戦略示唆 | value-chain-pptx → **業界の利益構造（外部環境）** |
+| value-chain-matrix → （未組込） | **value-chain-matrix → 対象会社のポジショニング記述（戦い方）** |
+| business-model → （未組込） | **business-model → 対象会社の取引構造理解（概要）** |
+
+---
+
+## デッキ構成（v5.0: 4セクション構成）
+
+### セクション設計
+
+| Section | テーマ | 色 | 含まれるスライド |
+|---|---|---|---|
+| **Section 1** | 対象会社の概要理解 | 紺 | 対象会社プロファイル / 事業ポートフォリオ / ビジネスモデル |
+| **Section 2** | 外部環境（業界・市場・競合） | 青 | PEST / Five Forces / 業界バリューチェーン・利益プール / 市場規模 / 市場シェア / ポジショニングマップ / 競合比較サマリー / 財務ベンチマーク / 各競合プロファイル |
+| **Section 3** | 対象会社の戦い方 | 緑 | SWOT / バリューチェーン・ポジショニング・マトリクス / 成長ドライバー分析 |
+| **Section 4** | 今後検証すべき論点 | オレンジ | 検証論点一覧 |
+
+### Section 2内の論理的グルーピング（並び順で表現）
+
+Section 2は10スライド前後と厚いため、**並び順で以下の論理構造を表現**する（中扉は追加しない）:
+
+```
+[マクロ]     PEST
+[業界構造]   Five Forces → 業界バリューチェーン・利益プール
+[市場]       市場規模 → 市場シェア → ポジショニングマップ
+[競合]       競合比較サマリー → 財務ベンチマーク → 各競合プロファイル
+```
+
+この並び順でマクロから徐々にズームイン（マクロ→業界→市場→競合）する読み手の思考に沿う。
+
+---
+
+### 🏃 基本版（7-8枚 / Quick）
+
+最小構成。時間制約や情報量が限定的な場合に使用。中扉なし。
+
+| # | スライド | スキル |
+|---|---|---|
+| 1 | エグゼクティブサマリー | `executive-summary-pptx` |
+| 2 | 目次 | `table-of-contents-pptx` |
+| 3 | 対象会社プロファイル | `customer-profile-pptx` |
+| 4 | 事業ポートフォリオ | `business-portfolio-pptx` |
+| 5 | ビジネスモデル | `business-model-pptx` ⭐ |
+| 6 | 市場環境（市場規模） | `market-environment-pptx` |
+| 7 | 競合比較サマリー | `competitor-summary-pptx` |
+| 8 | **今後検証すべき論点** | `issue-risk-list-pptx` ⭐ |
+| (末尾) | データアベイラビリティ（オプション） | `data-availability-pptx` |
+
+### 📊 標準版（13-15枚 / Standard）
+
+実務で使われる定番構成。**推奨**。中扉なし（セクション境界は目次で示す）。
+
+| # | スライド | スキル |
+|---|---|---|
+| 1 | エグゼクティブサマリー | `executive-summary-pptx` |
+| 2 | 目次 | `table-of-contents-pptx` |
+| 3 | 対象会社プロファイル | `customer-profile-pptx` |
+| 4 | 事業ポートフォリオ | `business-portfolio-pptx` |
+| 5 | ビジネスモデル | `business-model-pptx` ⭐ |
+| 6 | マクロ環境 PEST分析 | `pest-analysis-pptx` |
+| 7 | 業界構造 Five Forces | `five-forces-pptx` |
+| 8 | 市場環境(市場規模) | `market-environment-pptx` |
+| 9 | 市場シェア分析 | `market-share-pptx` |
+| 10 | 競合比較サマリー | `competitor-summary-pptx` |
+| 11 | 財務ベンチマーク | `financial-benchmark-pptx` |
+| 12 | 対象会社 SWOT | `swot-pptx` |
+| 13 | **バリューチェーン・ポジショニング・マトリクス** | `value-chain-matrix-pptx` ⭐ |
+| 14 | 成長ドライバー分析 | `growth-driver-pptx` |
+| 15 | **今後検証すべき論点** | `issue-risk-list-pptx` ⭐ |
+| (末尾) | データアベイラビリティ（オプション） | `data-availability-pptx` |
+
+### 🎯 拡張版（20-25枚 / Comprehensive）
+
+戦略コンサル品質。マクロ→業界→市場→競合→自社の戦い方→論点の完全な俯瞰分析。
+中扉4枚（各セクション冒頭）で構造を明示。
+
+| # | スライド | スキル |
+|---|---|---|
+| 1 | エグゼクティブサマリー | `executive-summary-pptx` |
+| 2 | 目次 | `table-of-contents-pptx` |
+| 3 | (中扉) 対象会社の概要理解 | `section-divider-pptx` |
+| 4 | 対象会社プロファイル | `customer-profile-pptx` |
+| 5 | 事業ポートフォリオ | `business-portfolio-pptx` |
+| 6 | ビジネスモデル | `business-model-pptx` ⭐ |
+| 7 | (中扉) 外部環境（業界・市場・競合） | `section-divider-pptx` |
+| 8 | マクロ環境 PEST分析 | `pest-analysis-pptx` |
+| 9 | 業界構造 Five Forces | `five-forces-pptx` |
+| 10 | **業界バリューチェーン・利益プール** | `value-chain-pptx` ⭐ |
+| 11 | 市場環境(市場規模) | `market-environment-pptx` |
+| 12 | 市場シェア分析 | `market-share-pptx` |
+| 13 | ポジショニングマップ | `positioning-map-pptx` |
+| 14 | 競合比較サマリー | `competitor-summary-pptx` |
+| 15 | 財務ベンチマーク | `financial-benchmark-pptx` |
+| 16〜 | 各競合プロファイル | `customer-profile-pptx` or `company-overview-pptx-v2` |
+| ## | (中扉) 対象会社の戦い方 | `section-divider-pptx` |
+| ## | 対象会社 SWOT | `swot-pptx` |
+| ## | **バリューチェーン・ポジショニング・マトリクス** | `value-chain-matrix-pptx` ⭐ |
+| ## | 成長ドライバー分析 | `growth-driver-pptx` |
+| ## | (中扉) 今後検証すべき論点 | `section-divider-pptx` |
+| ## | **今後検証すべき論点** | `issue-risk-list-pptx` ⭐ |
+| (末尾) | データアベイラビリティ | `data-availability-pptx` |
+
+⭐ = **v5.0で組み込まれた新スキル（`business-model-pptx` / `value-chain-matrix-pptx` / `issue-risk-list-pptx`）**
+
+**最終結合**: 全モード共通で `merge-pptxv2` で1つのPPTXにまとめる
+
+---
+
+## 処理フロー（パターン別）
+
+### パターンA：対象会社名のみ入力された場合
+
+**いきなりPowerPointを作成しない。必ず以下の順で進行する。**
+
+1. **Step 0**: 調査タイプとデッキ深度をユーザーに確認
+2. **Step 1**: Web検索で情報収集
+3. **Step 2**: データアベイラビリティ整理
+4. **Step 3**: Markdownで全情報をユーザーに提示 → 承認
+5. **Step 4**: 競合ごとの詳細形式をユーザーに確認（財務データ欠損時のみ）
+6. **Step 5**: エグゼクティブサマリーのKey Findings 3-5個を整理（事実記述ベース）
+7. **Step 6**: 検証論点 3-7個を整理（v5.0で変更：推奨アクション → 検証論点）
+8. **Step 7〜N**: 選択されたモードに応じて各スライド生成
+9. **Step 最終**: `merge-pptxv2` で結合
+
+### パターンB：対象会社名＋競合リストが指定された場合
+
+- Step 0 は深度確認のみ、競合企業の特定はスキップ
+
+### パターンC：全情報が整理済みで入力された場合
+
+- Step 0-4をスキップし、Step 7以降に進む
+
+---
+
+## Step 0: 調査タイプとデッキ深度の確認
+
+```python
+questions = [
+    {
+        "question": "どの調査タイプですか？",
+        "options": [
+            "A. 競合分析レポート（経営企画・中計用）",
+            "B. BDD（ビジネスデューデリジェンス・M&A向け）",
+            "C. 新規参入調査",
+            "D. 投資検討レポート（VC・PE・事業会社）",
+            "E. M&Aターゲット評価"
+        ],
+        "type": "single_select"
+    },
+    {
+        "question": "どのデッキ深度にしますか？",
+        "options": [
+            "A. 基本版（7-8枚） - 短時間で要点のみ",
+            "B. 標準版（13-15枚） - 実務で使われる定番（推奨）",
+            "C. 拡張版（20-25枚） - 完全な俯瞰分析（中扉あり）",
+            "D. カスタム - 含めるスライドを個別に選ぶ"
+        ],
+        "type": "single_select"
+    },
+    {
+        "question": "データアベイラビリティスライドの配置は？",
+        "options": [
+            "A. デッキ末尾（Appendix）- 推奨",
+            "B. エグゼクティブサマリー直後（前提を最初に示す）",
+            "C. 配置しない"
+        ],
+        "type": "single_select"
+    }
+]
+```
+
+### カスタムモードの場合（multi-select）
+
+```python
+questions = [{
+    "question": "含めるスライドを選んでください（エグサマ・目次・対象会社プロファイル・検証論点は必須）",
+    "options": [
+        "事業ポートフォリオ",
+        "ビジネスモデル",
+        "マクロ環境 PEST分析",
+        "業界構造 Five Forces",
+        "業界バリューチェーン・利益プール",
+        "市場規模推移",
+        "市場シェア分析",
+        "ポジショニングマップ",
+        "競合比較サマリー",
+        "財務ベンチマーク",
+        "各競合プロファイル",
+        "対象会社 SWOT",
+        "バリューチェーン・ポジショニング・マトリクス",
+        "成長ドライバー分析",
+        "中扉スライド（セクション区切り）",
+        "データアベイラビリティ"
+    ],
+    "type": "multi_select"
+}]
+```
+
+---
+
+## Step 1: Web検索で情報収集
+
+各社・各分析項目について以下を収集:
+
+| 項目 | 用途スキル | セクション | 情報源の優先度 |
+|---|---|---|---|
+| 事業内容・財務基本情報 | customer-profile / company-overview-v2 | S1 | 公式HP > IR > 業界レポート |
+| セグメント別売上 | business-portfolio | S1 | 有報・決算短信 |
+| **取引構造（サプライヤー・顧客）** | **business-model** ⭐ | **S1** | **公式HP・有報・IR資料・業界レポート** |
+| マクロ要因 | pest-analysis | S2 | 政府統計・シンクタンク |
+| 業界5競争要因 | five-forces | S2 | 業界レポート・有報のリスク情報 |
+| **バリューチェーン・利益プール** | **value-chain** | **S2** | **業界レポート・有報の原価率内訳** |
+| 市場規模・シェア | market-environment / market-share | S2 | 矢野経済・富士経済・業界統計 |
+| 2軸ポジショニング属性 | positioning-map | S2 | 各社HP・業界レポート |
+| 財務指標 | financial-benchmark | S2 | 有報・決算短信・SPEEDA |
+| 強み・弱み・機会・脅威 | swot | S3 | HP・IR・業界レポート・ニュース |
+| **対象会社のバリューチェーン上の工程・提携・競合関係** | **value-chain-matrix** ⭐ | **S3** | **公式HP・IR・業界レポート・ニュース** |
+| 売上/利益要因分解 | growth-driver | S3 | 決算説明会資料・IR Q&A |
+| **公開情報で見えない・仮説レベルに留まる事項** | **issue-risk-list** ⭐ | **S4** | **データアベイラビリティの裏返しとして整理** |
+
+---
+
+## Step 2: データアベイラビリティを整理
+
+カテゴリ×項目×ステータス（✓取得済/△一部取得/✗未取得）×データソースで整理。
+`data-availability-pptx` のJSON形式に整理しておく。
+
+**重要**: データアベイラビリティの ✗/△ 項目は、そのまま Step 6 の**検証論点の種**になる。
+
+---
+
+## Step 3: Markdownでユーザーに確認
+
+調査結果と推奨スライド構成を提示し、承認を得る。
+
+---
+
+## Step 4: 競合の詳細形式確認（必要時のみ）
+
+財務データ欠損のある競合のみ:
+- A. customer-profile（業績チャート付き、欠損年度N/A）
+- B. company-overview-v2（HP画像付き、チャートなし）
+
+---
+
+## Step 5: エグゼクティブサマリーのKey Findings整理
+
+**v5.0のトーン**: 「〜すべき」ではなく、**事実記述ベース**で Key Findings を書く。
+
+5 Findings パターン推奨:
+1. **対象会社の概要**: 事業規模・収益構造・顧客構造（例: 「売上XXX億円、B2Bが8割、上位顧客3社で売上の60%を占める」）
+2. **外部環境**: マクロ/業界/市場の構造的特徴（例: 「業界はFive Forcesで買い手交渉力が強く、利益プールは川下に偏る」）
+3. **競合ポジション**: 相対ポジション（例: 「国内シェア3位、上位2社とは規模で2倍差」）
+4. **対象会社の戦い方**: 工程ポジション・強み（例: 「川中工程に特化し、設計・製造を内製化。上流R&Dは大学提携」）
+5. **検証論点**: 公開情報で確認できなかった主要論点（例: 「収益構造の持続性は顧客依存度の高さが論点として残る」）
+
+---
+
+## Step 6: 検証論点整理（v5.0新規・旧「推奨アクション」を置換）
+
+`issue-risk-list-pptx`（**組織スキル**: `/mnt/skills/organization/issue-risk-list-pptx`）用に、3-7個の検証論点を整理する。
+
+### 論点の組み立て方（重要）
+
+**データアベイラビリティで ✗/△ の項目を論点の起点にする。**
+
+| 列 | 内容 | 例 |
+|---|---|---|
+| # | 通し番号 | 1 |
+| カテゴリ | 論点の領域 | 収益構造 / 顧客基盤 / オペレーション / 組織・人材 / 競争優位 / M&A関連 |
+| 論点 | Web情報で見えなかった問い | 上位顧客3社への依存度は持続可能か |
+| 仮説 | Web情報から見えた兆候 | 過去5年間顧客上位は固定。長期契約の可能性あり |
+| 確認方法 | IM・マネジメントインタビューで聞くこと | 顧客別売上推移、契約更新条件、代替可能性 |
+| 優先度 | 高/中/低 | 高 |
+
+### トーン
+
+- 「〜を確認する必要がある」「〜は論点として残る」「〜の実態把握が必要」
+- 「〜すべき」は絶対に使わない（公開情報では断定できない）
+
+### v5.0で `recommendation-action-pptx` を使わない理由
+
+- Web情報のみで「推奨アクション」を書くと一般論に陥る
+- 戦略コンサルのBDDフェーズ1でも、公開情報だけで提言はしない（マネジメントインタビューが前提）
+- 代わりに「検証論点」で着地させることで、知的誠実性を保つ
+
+---
+
+## Step 7〜N: スライド生成
+
+選択されたモード・スライドに応じて、以下のスキルを順次呼び出す。
+
+### ⚠️ 最重要：ファイル名の番号は「最終並び順」と一致させること
+
+**過去の失敗パターン（絶対に繰り返さない）:**
+
+ファイル名の番号（例 `slide_22_*.pptx`）を「生成した順番のID」として扱い、マージ時に数字順でソートしてそのまま並べた結果、**中扉がセクションの末尾寄りに配置される**というデッキ全体が破綻するミスが発生した。
+
+**徹底すべきルール:**
+
+1. **ファイル名の番号 = デッキ上の最終的な通し番号** として最初から割り振る
+2. **生成する順序とファイル名の番号は同じである必要はない**（生成は任意の順でOK、ただし番号は最終順序）
+3. スライドを生成する前に、**デッキ全体の通し番号→ファイル名の対応表**を作成し、それに従ってファイル名を決める
+4. 途中でスライドを追加・削除する場合、影響を受けるファイルを**全てリネーム**して番号を詰めること（歯抜けや逆転を絶対に残さない）
+
+**番号割当表の作成例（生成前に必須）:**
+
+```
+01 → slide_01_exec_summary.pptx
+02 → slide_02_toc.pptx
+03 → slide_03_section1_target.pptx    [中扉: Section 1冒頭]
+04 → slide_04_target_profile.pptx
+05 → slide_05_target_portfolio.pptx
+06 → slide_06_target_business_model.pptx    [ビジネスモデル ⭐v5.0]
+07 → slide_07_section2_external.pptx   [中扉: Section 2冒頭]
+...
+NN → slide_NN_section3_strategy.pptx   [中扉: Section 3冒頭]
+NN → slide_NN_target_swot.pptx
+NN → slide_NN_value_chain_matrix.pptx  [⭐v5.0]
+NN → slide_NN_growth_driver.pptx
+NN → slide_NN_section4_issues.pptx     [中扉: Section 4冒頭]
+NN → slide_NN_issue_risk_list.pptx     [⭐v5.0]
+```
+
+### 中扉（section-divider）配置の絶対ルール
+
+**中扉は、そのセクションが指すコンテンツ群の「最初」に配置する。末尾ではない。**
+
+正しい例:
+```
+[中扉: Section 2 外部環境] ← セクション冒頭
+  PEST分析
+  Five Forces
+  業界バリューチェーン・利益プール
+  市場規模
+  市場シェア
+  ポジショニングマップ
+  競合比較サマリー
+  財務ベンチマーク
+  各競合プロファイル
+[中扉: Section 3 対象会社の戦い方] ← 次セクション冒頭
+  ...
+```
+
+誤った例（過去に発生したバグ）:
+```
+PEST分析
+Five Forces
+...
+競合比較サマリー
+[中扉: Section 2] ← 末尾にあるのは論理的に誤り
+  ...
+```
+
+中扉を生成するタイミングは任意だが、**ファイル名の番号は必ずセクションの最初のコンテンツスライドの直前の番号にすること**。
+
+### 共通パターン
+
+```bash
+pip install python-pptx -q --break-system-packages
+
+cat > /home/claude/[skill]_data.json <<'EOF'
+{ ... }
+EOF
+
+python <SKILL_DIR>/scripts/fill_[skill].py \
+  --data /home/claude/[skill]_data.json \
+  --template <SKILL_DIR>/assets/[skill]-template.pptx \
+  --output /home/claude/slide_NN_[name].pptx
+```
+
+### 推奨スライド順序（拡張版・最大25枚想定）
+
+| # | 出力ファイル | スキル |
+|---|---|---|
+| 01 | `slide_01_exec_summary.pptx` | executive-summary-pptx |
+| 02 | `slide_02_toc.pptx` | table-of-contents-pptx |
+| 03 | `slide_03_section1_target.pptx` | section-divider-pptx (Section 01: 対象会社の概要理解) |
+| 04 | `slide_04_target_profile.pptx` | customer-profile-pptx |
+| 05 | `slide_05_target_portfolio.pptx` | business-portfolio-pptx |
+| 06 | `slide_06_target_business_model.pptx` | **business-model-pptx** ⭐ (組織スキル) |
+| 07 | `slide_07_section2_external.pptx` | section-divider-pptx (Section 02: 外部環境) |
+| 08 | `slide_08_pest.pptx` | pest-analysis-pptx |
+| 09 | `slide_09_five_forces.pptx` | **five-forces-pptx** (組織スキル) |
+| 10 | `slide_10_value_chain.pptx` | **value-chain-pptx** (業界の利益プール分析) |
+| 11 | `slide_11_market_size.pptx` | market-environment-pptx |
+| 12 | `slide_12_market_share.pptx` | market-share-pptx |
+| 13 | `slide_13_positioning.pptx` | positioning-map-pptx |
+| 14 | `slide_14_competitor_summary.pptx` | competitor-summary-pptx |
+| 15 | `slide_15_fin_benchmark.pptx` | financial-benchmark-pptx |
+| 16+ | `slide_NN_competitor_X.pptx` | customer-profile or overview-v2 |
+| ## | `slide_NN_section3_strategy.pptx` | section-divider-pptx (Section 03: 対象会社の戦い方) |
+| ## | `slide_NN_target_swot.pptx` | swot-pptx |
+| ## | `slide_NN_value_chain_matrix.pptx` | **value-chain-matrix-pptx** ⭐ |
+| ## | `slide_NN_growth_driver.pptx` | growth-driver-pptx |
+| ## | `slide_NN_section4_issues.pptx` | section-divider-pptx (Section 04: 今後検証すべき論点) |
+| ## | `slide_NN_issue_risk_list.pptx` | **issue-risk-list-pptx** ⭐ (組織スキル) |
+| 最終 | `slide_ZZ_data_avail.pptx` | data-availability-pptx |
+
+### JSON生成の共通原則
+
+- **対象会社名の一貫性**: 全スキルで同じ表記
+- **年度の一貫性**: 全スライドで同じ基準年（実行年の前年）
+- **色の一貫性**:
+  - 対象会社の強調色: #E15759（赤系）に統一
+  - 中扉と目次のセクション色: 同じセクション番号で同じ色
+- **メインメッセージ**: 各スライド固有の示唆を**事実記述ベース**で書く
+  - ✗ 「対象会社は海外展開を加速すべき」（公開情報では断定不可）
+  - ✓ 「対象会社は国内売上比率が90%と高く、海外展開の実績は限定的である」（事実記述）
+  - ✓ 「対象会社の海外展開方針は、Web情報では限定的であり、マネジメントインタビューで確認する必要がある」（検証論点）
+- **エグゼクティブサマリー**: 他の全スライドの事実を統合した概観
+- **検証論点**: データアベイラビリティと連動。見えなかった点を率直に列挙
+
+---
+
+## Step 最終-1: マージ順序の照合チェック（必須）
+
+**マージコマンドを組み立てる前に、必ず以下の照合を行うこと。** 過去、このステップを飛ばしてファイル名の数字順にそのままマージした結果、中扉が末尾に流れるミスが発生した。
+
+### チェック手順
+
+1. **ファイル一覧を取得**: `ls /home/claude/*.pptx | sort` で全スライドをリストアップ
+2. **目次（TOC）スライドの章構成を再確認**: `table-of-contents-pptx`で定義した `sections` 配列と、中扉の `section_number` が一致しているか
+3. **中扉配置ルールの検証**: 各中扉ファイル（`slide_NN_sectionX_*.pptx`）が、その配下コンテンツ（同じセクション番号のスライド群）の**最小番号の直前**に位置しているか
+4. **ファイル番号の歯抜け・逆転を確認**: 01, 02, 03... と連続しているか
+
+### 照合表のフォーマット（マージ前にMarkdownで明示）
+
+マージコマンドを打つ前に、以下の形式で照合表を出力し、**自己チェックしてから**実行すること。
+
+```markdown
+## マージ順序照合表
+
+| 通し番号 | ファイル名 | 種別 | 所属セクション | 備考 |
+|---|---|---|---|---|
+| 01 | slide_01_exec_summary.pptx | エグサマ | 冒頭 | - |
+| 02 | slide_02_toc.pptx | 目次 | 冒頭 | TOCの section[0] = "対象会社の概要理解" |
+| 03 | slide_03_section1_target.pptx | **中扉** | Section 1冒頭 ✓ | section_number=1 |
+| 04 | slide_04_target_profile.pptx | コンテンツ | Section 1 | - |
+| 05 | slide_05_target_portfolio.pptx | コンテンツ | Section 1 | - |
+| 06 | slide_06_target_business_model.pptx | コンテンツ | Section 1 | ⭐v5.0 |
+| 07 | slide_07_section2_external.pptx | **中扉** | Section 2冒頭 ✓ | section_number=2 |
+| ... | ... | ... | ... | ... |
+| NN | slide_NN_section3_strategy.pptx | **中扉** | Section 3冒頭 ✓ | section_number=3 |
+| NN | slide_NN_target_swot.pptx | コンテンツ | Section 3 | - |
+| NN | slide_NN_value_chain_matrix.pptx | コンテンツ | Section 3 | ⭐v5.0 |
+| NN | slide_NN_growth_driver.pptx | コンテンツ | Section 3 | - |
+| NN | slide_NN_section4_issues.pptx | **中扉** | Section 4冒頭 ✓ | section_number=4 |
+| NN | slide_NN_issue_risk_list.pptx | コンテンツ | Section 4 | ⭐v5.0 |
+```
+
+### セルフチェック項目（マージ実行前にすべてYESを確認）
+
+- [ ] 全ての中扉が「そのセクションのコンテンツより前」に位置しているか
+- [ ] TOCの `sections[i].title` と、対応する中扉の `title` が一致しているか
+- [ ] TOCの `sections[i].page` と、対応する中扉の通し番号が一致しているか
+- [ ] ファイル番号に歯抜け・重複・逆転がないか
+- [ ] エグゼクティブサマリーが通し番号1番に配置されているか
+- [ ] **検証論点（issue-risk-list）がデッキ末尾（データアベイラビリティの直前）に配置されているか** ⭐v5.0
+
+**一つでもNOがあれば、マージ実行前にファイルをリネームして修正すること。**
+
+---
+
+## Step 最終: 結合（merge-pptxv2）
+
+全スライドを1ファイルに結合する。
+
+### ⚠️ マージコマンド組み立ての原則
+
+- **`ls *.pptx | sort` の結果をそのまま引数に流すのは絶対にNG**（ファイル名の番号が最終順序と一致していれば結果的に同じになるが、それを暗黙の前提にしない）
+- **必ず Step 最終-1 で作成した「マージ順序照合表」の通し番号順にファイル名を並べる**
+- マージコマンドを組み立てたら、**実行前にもう一度「通し番号 ↔ 引数の位置」が一致しているかを目視確認**する
+
+```bash
+pip install lxml --break-system-packages -q
+
+python <merge-pptxv2_DIR>/scripts/merge_pptx_v2.py \
+  /mnt/user-data/outputs/StrategyReport_[対象会社名].pptx \
+  /home/claude/slide_01_exec_summary.pptx \
+  /home/claude/slide_02_toc.pptx \
+  /home/claude/slide_03_section1_target.pptx \
+  ... \
+  /home/claude/slide_ZZ_data_avail.pptx
+```
+
+出力ファイル名: `StrategyReport_[対象会社名].pptx`
+
+### マージ後の最終検証
+
+`merge_pptx_v2.py` の出力で各スライド番号の Main Message とshape数が表示される。以下を確認:
+
+- 1枚目のMain Messageがエグゼクティブサマリーの内容になっているか
+- 中扉（shape数が少ない=8前後、タイトル＋サブタイトル＋トピックリストのみ）が**そのセクションのコンテンツの直前**に出現しているか
+  - shape数の推移が「コンテンツ（多）→ 中扉（少=8前後）→ コンテンツ（多）」の谷になっているのが正常
+  - 「コンテンツ（多）→ コンテンツ（多）→ 中扉（少）」は**中扉が末尾に流れている誤りのサイン**
+- 最後のスライドが検証論点またはデータアベイラビリティになっているか
+
+**不整合があれば、ファイルをリネームして必ずもう一度マージし直す。**
+
+---
+
+## 依存スキル一覧
+
+### コアスキル（全モードで必須）
+
+| スキル名 | 配置 | 役割 |
+|---|---|---|
+| `executive-summary-pptx` | user | デッキ冒頭のサマリースライド |
+| `table-of-contents-pptx` | user | デッキ目次 |
+| `customer-profile-pptx` | user | 対象会社・競合の詳細プロファイル |
+| `business-portfolio-pptx` | user | 事業セグメント別売上構成 |
+| `business-model-pptx` ⭐ | **organization** | **取引構造図（サプライヤー・自社・顧客）** |
+| `market-environment-pptx` | user | マーケット規模推移 |
+| `competitor-summary-pptx` | user | 競合比較サマリー |
+| `issue-risk-list-pptx` ⭐ | **organization** | **今後検証すべき論点一覧** |
+| `company-overview-pptx-v2` | user | 非上場競合等のプロファイル |
+| `merge-pptxv2` | user | 全スライドの結合 |
+
+### 拡張スキル（標準・拡張モードで選択的に使用）
+
+| スキル名 | 配置 | モード | 役割 |
+|---|---|---|---|
+| `pest-analysis-pptx` | user | 標準・拡張 | マクロ環境分析 |
+| `five-forces-pptx` | **organization** | 標準・拡張 | 業界5競争要因分析 |
+| `value-chain-pptx` | user | 拡張 | 業界バリューチェーン・利益プール分析 |
+| `market-share-pptx` | user | 標準・拡張 | 市場シェア分析 |
+| `positioning-map-pptx` | user | 拡張 | 2軸ポジショニングマップ |
+| `financial-benchmark-pptx` | user | 標準・拡張 | 複数財務指標の競合比較 |
+| `swot-pptx` | user | 標準・拡張 | SWOT分析 |
+| `value-chain-matrix-pptx` ⭐ | user | 標準・拡張 | **バリューチェーン・ポジショニング・マトリクス（自社工程／他社工程／プレーヤー／競合・協力）** |
+| `growth-driver-pptx` | user | 標準・拡張 | 売上/利益要因分解 |
+| `section-divider-pptx` | user | 拡張 | 中扉（セクション区切り） |
+| `data-availability-pptx` | user | 全モード（オプション） | 調査の網羅度・制約事項 |
+
+⭐ = v5.0で新規組み込み / 役割変更
+**organization** = 組織スキル（`/mnt/skills/organization/` 配下）。依存するため事前にインストール済みである必要がある。
+
+### v5.0で削除されたスキル依存
+
+| スキル名 | v4.x | v5.0 | 理由 |
+|---|---|---|---|
+| `recommendation-action-pptx` | 必須 | **削除** | 公開情報のみでは一般論に陥るため。代わりに `issue-risk-list-pptx` で検証論点として着地 |
+
+---
+
+## 中扉と目次の連動ロジック
+
+`table-of-contents-pptx` と `section-divider-pptx` をペアで使う場合:
+
+| セクション # | 目次の `sections[]` | 中扉の `section_number` | 共通の色 |
+|---|---|---|---|
+| 1 | 対象会社の概要理解 | 1 | 紺 |
+| 2 | 外部環境（業界・市場・競合） | 2 | 青 |
+| 3 | 対象会社の戦い方 | 3 | 緑 |
+| 4 | 今後検証すべき論点 | 4 | オレンジ |
+
+---
+
+## 品質チェックリスト
+
+### デッキ全体
+- [ ] エグゼクティブサマリーが冒頭に配置されているか
+- [ ] 目次がエグサマ直後に配置されているか
+- [ ] 拡張版で中扉が各セクション開始時に配置されているか（4セクション分）
+- [ ] 検証論点（issue-risk-list）がレポート結論として末尾近くに配置されているか
+- [ ] データアベイラビリティが配置されているか（オプションで冒頭 or 末尾）
+- [ ] 全スライドが結合済みで1ファイルになっているか
+
+### 中扉配置の厳格チェック（過去バグ再発防止）
+- [ ] **全ての中扉が、そのセクションのコンテンツスライド「より前」に位置しているか**（末尾寄りになっていないか）
+- [ ] **ファイル名の番号とデッキ最終順序が一致しているか**（`slide_20_section4_*.pptx` は通し番号20番目にあるべき）
+- [ ] マージ後のshape数推移で「コンテンツ（多）→ 中扉（少=8前後）→ コンテンツ（多）」の谷が、各セクション境界で正しく出現しているか
+- [ ] 目次の `sections[i].page` が、対応する中扉の通し番号と一致しているか
+
+### 内容の一貫性（v5.0の思想準拠）
+- [ ] **メインメッセージが「〜すべき」で締められていないか**（事実記述ベースになっているか）
+- [ ] エグゼクティブサマリーのKey Findingsが事実記述ベースで、他スライドの内容と整合しているか
+- [ ] 検証論点（issue-risk-list）がデータアベイラビリティの ✗/△ 項目と連動しているか
+- [ ] 目次の各セクションと、中扉の section_number / 色が一致しているか
+- [ ] **business-model（S1）と value-chain-matrix（S3）の間で対象会社の事業構造が一貫しているか**
+
+### v5.0モード別追加チェック
+
+**基本版（7-8枚）:**
+- [ ] ビジネスモデル（business-model）が表示されているか
+- [ ] 検証論点（issue-risk-list）が表示されているか
+
+**標準版（13-15枚）:**
+- [ ] Section 1の3スライド（プロファイル/ポートフォリオ/ビジネスモデル）が揃っているか
+- [ ] バリューチェーン・ポジショニング・マトリクス（value-chain-matrix）が表示されているか
+- [ ] 成長ドライバー分析が表示されているか
+- [ ] 検証論点（issue-risk-list）が表示されているか
+
+**拡張版（20-25枚）:**
+- [ ] 中扉が4セクション分（S1対象会社概要・S2外部環境・S3戦い方・S4検証論点）配置されているか
+- [ ] 業界バリューチェーン・利益プール（value-chain）がS2に配置されているか
+- [ ] Section 2の並び順が「マクロ→業界→市場→競合」のズームインになっているか
+- [ ] SWOT・value-chain-matrix・成長ドライバーがSection 3（対象会社の戦い方）に集約されているか
+
+---
+
+## 注意事項
+
+- **v5.0の最大の特徴は「知的誠実性」**
+  - 公開情報で書けないことは書かない
+  - 「〜すべき」と断定せず、「〜という構造である」「〜を確認する必要がある」で記述
+  - 検証論点で率直に未解明点を示す
+- **事業環境の理解 → 対象会社の戦い方の理解 の論理展開**
+  - Section 1（対象会社概要）→ Section 2（外部環境）→ Section 3（対象会社の戦い方）→ Section 4（検証論点）
+  - S3 は S2（業界の構造）を踏まえた上で「その環境で対象会社がどう戦っているか」を記述する
+- **Section 2 の並び順はマクロ→業界→市場→競合のズームイン**
+  - 中扉で細分化せず、並び順で論理グループを表現
+- **拡張モードの制約**:
+  - `business-portfolio-pptx`: 上場企業でセグメント開示がある場合
+  - `business-model-pptx`: 公式HP・有報の事業の内容セクションから取引構造が特定できる場合（組織スキル）
+  - `pest-analysis-pptx`: マクロレベルで書く（特定企業固有の話は避ける）
+  - `five-forces-pptx`: 業界の構造分析、対象会社視点ではなく業界視点（組織スキル）
+  - `value-chain-pptx`: 業界全体のバリューチェーンを5-7段階に分解できる場合（業界の利益構造）
+  - `value-chain-matrix-pptx`: 対象会社が各工程で何をやっているか、誰と競合・協業しているかが特定できる場合
+  - `growth-driver-pptx`: 決算説明会資料で要因分解が開示されている場合
+  - `issue-risk-list-pptx`: 常に必須（組織スキル）
+- **エグゼクティブサマリーは最後に書く**: 全スライド生成後、各スライドの事実を統合してFindings作成
+- **検証論点も最後に**: 全分析が出揃ってから、公開情報で見えなかった点を論点として列挙
+
+---
+
+## 使用例
+
+### 例1: BDDフェーズ1レポート（標準版）
+
+```
+User: トヨタ自動車のBDDレポートを作って
+Assistant:
+1. [Step 0] 調査タイプ=B (BDD), デッキ深度=B (標準版), データアベイラビリティ=A (末尾)
+2. [Step 1-4] Web検索・データ整理・確認・競合形式確認
+3. [Step 5] Key Findings 5個を事実記述ベースで整理
+4. [Step 6] 検証論点 5-7個を整理（マネジメントインタビューで聞くべきこと）
+5. [Step 7-N] 標準版15枚 + データアベイラビリティ1枚 = 16枚を生成
+6. [Step 最終] merge-pptxv2 で結合
+7. ファイル出力: StrategyReport_トヨタ自動車.pptx
+```
+
+### 例2: 新規参入調査（拡張版）
+
+```
+User: EV市場への新規参入を検討している。拡張版で調査レポート作って。
+Assistant:
+1. [Step 0] 調査タイプ=C (新規参入), デッキ深度=C (拡張版), データアベイラビリティ=B (冒頭配置)
+2. [Step 1-6] 情報収集・整理・Findings/検証論点作成
+3. [Step 7-最終] 拡張版22-25枚 (エグサマ + 目次 + 4中扉 + 各セクション + データアベイラビリティ) を生成・結合
+```
+
+### 例3: M&Aターゲット評価（カスタム）
+
+```
+User: B社の買収検討。ビジネスモデルとバリューチェーン・マトリクス、検証論点中心で。
+Assistant:
+1. [Step 0] 調査タイプ=E (M&A), デッキ深度=D (カスタム)
+   Custom選択内容: 事業ポートフォリオ・ビジネスモデル・財務ベンチマーク・
+                バリューチェーン・マトリクス・成長ドライバー・検証論点・データアベイラビリティ
+2. [Step 1-6] 情報収集・整理
+3. [Step 7-最終] カスタムデッキ10-12枚を生成・結合
+```
+
+---
+
+## 参考
+
+| ファイル名 | 内容 |
+|---|---|
+| `references/CHANGELOG.md` | バージョン履歴 |
+
+---
+
+## バージョン履歴（抜粋、詳細は CHANGELOG 参照）
+
+- **v5.0** (2026年4月): **思想転換＋4セクション構成再編**
+  - **思想転換**: 「事実→示唆→アクション」から「事業環境の理解→対象会社の戦い方の理解」へ
+  - `recommendation-action-pptx` を依存から削除（公開情報では一般論に陥るため）
+  - `issue-risk-list-pptx`（組織スキル）を「今後検証すべき論点」として新規組み込み
+  - `business-model-pptx`（組織スキル）を Section 1 に新規組み込み
+  - `value-chain-matrix-pptx` を Section 3（対象会社の戦い方）に新規組み込み
+  - `value-chain-pptx` を Section 4（戦略示唆）→ Section 2（外部環境：業界の利益プール）に移動
+  - SWOT を Section 1 → Section 3（対象会社の戦い方）に移動
+  - セクション構成: 4セクション（対象会社概要 / 外部環境 / 対象会社の戦い方 / 検証論点）
+  - メインメッセージのトーンを「〜すべき」から「〜という構造である」「〜を確認する必要がある」へ
+- **v4.1** (2026年4月): 中扉配置バグ防止の強化
+- **v4.0** (2026年4月): 戦略示唆セクション追加（v5.0で思想転換のため廃止）
+- **v3.0** (2026年4月): リブランド `competitor-analyst-agent` → `strategy-report-agent`
+- **v2.0**: 6つのスキル追加
+- **v1.0**: 基本4枚構成

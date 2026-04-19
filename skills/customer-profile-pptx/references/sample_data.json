@@ -1,0 +1,42 @@
+{
+  "source": "出典：対象会社HP、東京商工リサーチ、日経バリューサーチ",
+  "main_message": "ジップ社はBDD対象会社の最大顧客であり、安定成長する取引基盤を評価すべき",
+  "chart_title": "主要顧客プロファイル：株式会社ジップ",
+  "company_overview": {
+    "section_title": "企業の概要",
+    "items": [
+      {"label": "商号", "value": "株式会社 ジップ ZIP"},
+      {"label": "事業内容", "value": "営業支援業（DMの梱包、コールセンター業等）"},
+      {"label": "本社所在地", "value": "岡山県瀬戸内市長船町長船301-11"},
+      {"label": "拠点", "value": "支社店：岡山市、新宿区、福岡市"},
+      {"label": "設立年", "value": "1991年10月"},
+      {"label": "資本金", "value": "3,000万円"},
+      {"label": "売上高", "value": "192億円（23/7期）"},
+      {"label": "代表者", "value": "代表取締役 三鍋 英治"},
+      {"label": "上場", "value": "未上場"},
+      {"label": "従業員数", "value": "452名"},
+      {"label": "仕入先", "value": "佐川急便、グロップ、ヤマト運輸、ベネッセ、富士尾産業、協同精版印刷、山善、旭包装"},
+      {"label": "販売先", "value": "ベネッセHD、新日本製薬、味の素G、凸版印刷G"},
+      {"label": "大株主", "value": "日宝綜合製本(66.6%)、ベネッセHD(33.3%)"}
+    ]
+  },
+  "performance": {
+    "section_title": "業績",
+    "unit_label": "（単位：十億円、%）",
+    "bar_label": "売上高",
+    "line_label": "営業利益率",
+    "data": [
+      {"year": "2013", "revenue": 10.9, "op_margin": 4.6},
+      {"year": "2014", "revenue": 11.9, "op_margin": 4.6},
+      {"year": "2015", "revenue": 10.9, "op_margin": 2.8},
+      {"year": "2016", "revenue": 11.2, "op_margin": 4.0},
+      {"year": "2017", "revenue": 12.5, "op_margin": 3.6},
+      {"year": "2018", "revenue": 14.0, "op_margin": 4.1},
+      {"year": "2019", "revenue": 15.7, "op_margin": 3.0},
+      {"year": "2020", "revenue": 16.1, "op_margin": 2.3},
+      {"year": "2021", "revenue": 18.2, "op_margin": 3.9},
+      {"year": "2022", "revenue": 19.9, "op_margin": 4.7},
+      {"year": "2023", "revenue": 19.2, "op_margin": 3.2}
+    ]
+  }
+}

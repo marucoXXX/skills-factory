@@ -1,0 +1,13 @@
+{
+  "name": "claude_code",
+  "vars": {
+    "FACTORY_ROOT": "/Users/nakamaru/Developer/projects/skills_factory",
+    "INPUT_DIR": "{{FACTORY_ROOT}}/inputs",
+    "OUTPUT_DIR": "{{FACTORY_ROOT}}/outputs",
+    "WORK_DIR": "{{FACTORY_ROOT}}/work/{{SKILL_NAME}}",
+    "SKILL_DIR": "~/.claude/skills/{{SKILL_NAME}}",
+    "PIP_FLAGS": "",
+    "PYTHON_BIN": "python3",
+    "OPEN_CMD": "open"
+  }
+}
