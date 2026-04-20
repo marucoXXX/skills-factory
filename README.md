@@ -129,6 +129,14 @@ import markitdown
 
 任意のタイミングでビルドしたい場合は、Actions タブから `Release skill zips` ワークフローを手動実行（`workflow_dispatch`）する。`tag` を空にすると `snapshot-<短SHA>` 名でReleaseが作られる。
 
+## ドキュメント
+
+工場で積み上げたノウハウ・トラブルシューティング・設計判断は `docs/` 配下に記録する。新しい知見を得たら該当ファイルに追記するか、必要なら新規ファイルを足す。
+
+| ファイル | 内容 |
+|---|---|
+| [`docs/troubleshooting-pptx-repair.md`](docs/troubleshooting-pptx-repair.md) | PPTX「修復が必要」エラーの原因・診断手順・恒久対策（テンプレ rels クリーンアップ + LibreOffice ラウンドトリップ統合）。新スキル追加時のチェックリスト付き。 |
+
 ## 現状の移行状況
 
 | スキル | 出身 | 取り込み | 備考 |
