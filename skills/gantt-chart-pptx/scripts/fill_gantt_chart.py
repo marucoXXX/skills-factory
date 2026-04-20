@@ -18,6 +18,40 @@ from pptx.util import Emu, Inches
 from pptx.oxml.ns import qn
 from lxml import etree
 
+def _finalize_pptx(path):
+    """LibreOffice roundtrip to normalize OOXML so PowerPoint stops asking for repair.
+
+    No-op if soffice is unavailable or the conversion fails; the original file
+    is preserved. Added by tools/add_finalize_hook.py.
+    """
+    import os, shutil, subprocess, tempfile, glob
+    candidates = [
+        os.environ.get("SOFFICE_BIN"),
+        "/Applications/LibreOffice.app/Contents/MacOS/soffice",
+        "/opt/homebrew/bin/soffice",
+        "/usr/local/bin/soffice",
+        "/usr/bin/soffice",
+        shutil.which("soffice"),
+        shutil.which("libreoffice"),
+    ]
+    soffice = next((c for c in candidates if c and os.path.exists(c)), None)
+    if not soffice:
+        return
+    try:
+        with tempfile.TemporaryDirectory(prefix="pptx_rt_") as tmp:
+            subprocess.run(
+                [soffice, f"-env:UserInstallation=file://{tmp}/prof",
+                 "--headless", "--convert-to", "pptx",
+                 "--outdir", tmp, str(path)],
+                timeout=120, capture_output=True, check=True,
+            )
+            found = glob.glob(os.path.join(tmp, "*.pptx"))
+            if found:
+                shutil.move(found[0], str(path))
+    except Exception:
+        pass
+
+
 SHAPE_MAIN_MESSAGE = "Title 1"
 SHAPE_CHART_TITLE  = "Text Placeholder 2"
 
@@ -359,6 +393,9 @@ def main():
         s = ssi[pi+1]; pop_slide(es, mm, ct, s[0], pi+2, tp, s[1], s[2])
 
     prs.save(args.output)
+
+    _finalize_pptx(args.output)
+
     print(f"\n  Saved: {args.output} ({tp} slide(s))")
     for sp, _, _ in ssi:
         if os.path.exists(sp): os.unlink(sp)

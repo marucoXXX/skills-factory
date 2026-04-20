@@ -14,6 +14,40 @@ from pptx import Presentation
 from pptx.util import Pt
 import re
 
+def _finalize_pptx(path):
+    """LibreOffice roundtrip to normalize OOXML so PowerPoint stops asking for repair.
+
+    No-op if soffice is unavailable or the conversion fails; the original file
+    is preserved. Added by tools/add_finalize_hook.py.
+    """
+    import os, shutil, subprocess, tempfile, glob
+    candidates = [
+        os.environ.get("SOFFICE_BIN"),
+        "/Applications/LibreOffice.app/Contents/MacOS/soffice",
+        "/opt/homebrew/bin/soffice",
+        "/usr/local/bin/soffice",
+        "/usr/bin/soffice",
+        shutil.which("soffice"),
+        shutil.which("libreoffice"),
+    ]
+    soffice = next((c for c in candidates if c and os.path.exists(c)), None)
+    if not soffice:
+        return
+    try:
+        with tempfile.TemporaryDirectory(prefix="pptx_rt_") as tmp:
+            subprocess.run(
+                [soffice, f"-env:UserInstallation=file://{tmp}/prof",
+                 "--headless", "--convert-to", "pptx",
+                 "--outdir", tmp, str(path)],
+                timeout=120, capture_output=True, check=True,
+            )
+            found = glob.glob(os.path.join(tmp, "*.pptx"))
+            if found:
+                shutil.move(found[0], str(path))
+    except Exception:
+        pass
+
+
 
 # Shape name mapping (verified against template)
 SHAPE_MAP = {
@@ -178,6 +212,9 @@ def fill_comparison(data, template_path, output_path):
         set_implications(shape.text_frame, data.get("implications", []))
 
     prs.save(output_path)
+
+    _finalize_pptx(output_path)
+
     print(f"Saved: {output_path}")
 
 
