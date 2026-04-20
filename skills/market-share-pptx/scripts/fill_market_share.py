@@ -23,7 +23,7 @@ import sys
 from pptx import Presentation
 from pptx.chart.data import CategoryChartData
 from pptx.dml.color import RGBColor
-from pptx.enum.chart import XL_CHART_TYPE, XL_LABEL_POSITION, XL_LEGEND_POSITION
+from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.oxml.ns import qn
@@ -210,26 +210,57 @@ def build_doughnut_chart(slide, section_title, players, year_idx, year_label,
     # 系列に色を適用 + データラベル
     series = chart.series[0]
 
-    # データラベル: パーセント + カテゴリ名
+    # データラベル: etreeで全構築（python-pptxのsetterは使わない）
+    # python-pptxのsetterを使うと <c:dLblPos val="ctr"/> や <c:showLeaderLines>
+    # が自動追加され、PowerPoint for Mac で致命的修復エラーになるため。
+    # OOXMLスキーマ順（CT_DLbls）で子要素を構築する。
     dLbls_xml = series.data_labels._element
-    # 既存のdLbls設定をクリア
     for child in list(dLbls_xml):
         dLbls_xml.remove(child)
-    # showPercent, showVal, showCatName
-    etree.SubElement(dLbls_xml, qn("c:showLegendKey")).set("val", "0")
-    etree.SubElement(dLbls_xml, qn("c:showVal")).set("val", "1")
-    etree.SubElement(dLbls_xml, qn("c:showCatName")).set("val", "0")
-    etree.SubElement(dLbls_xml, qn("c:showSerName")).set("val", "0")
-    etree.SubElement(dLbls_xml, qn("c:showPercent")).set("val", "0")
-    etree.SubElement(dLbls_xml, qn("c:showBubbleSize")).set("val", "0")
 
-    series.data_labels.font.size = Pt(10)
-    series.data_labels.font.bold = True
-    series.data_labels.font.name = FONT_NAME_JP
-    series.data_labels.font.color.rgb = COLOR_WHITE
-    series.data_labels.number_format = '0.0"%"'
-    series.data_labels.number_format_is_linked = False
-    series.data_labels.position = XL_LABEL_POSITION.CENTER
+    # 1. numFmt
+    numFmt = etree.SubElement(dLbls_xml, qn("c:numFmt"))
+    numFmt.set("formatCode", '0.0"%"')
+    numFmt.set("sourceLinked", "0")
+
+    # 2. txPr（font size/bold/name/color）
+    txPr = etree.SubElement(dLbls_xml, qn("c:txPr"))
+    bodyPr = etree.SubElement(txPr, qn("a:bodyPr"))
+    bodyPr.set("wrap", "square")
+    bodyPr.set("anchor", "ctr")
+    bodyPr.set("anchorCtr", "1")
+    etree.SubElement(txPr, qn("a:lstStyle"))
+    p_el = etree.SubElement(txPr, qn("a:p"))
+    pPr = etree.SubElement(p_el, qn("a:pPr"))
+    defRPr = etree.SubElement(pPr, qn("a:defRPr"))
+    defRPr.set("sz", "1000")  # 10pt (1/100 pt単位)
+    defRPr.set("b", "1")
+    solidFill = etree.SubElement(defRPr, qn("a:solidFill"))
+    srgb = etree.SubElement(solidFill, qn("a:srgbClr"))
+    srgb.set("val", "FFFFFF")
+    for tag in ("a:latin", "a:ea", "a:cs"):
+        font_el = etree.SubElement(defRPr, qn(tag))
+        font_el.set("typeface", FONT_NAME_JP)
+    endParaRPr = etree.SubElement(p_el, qn("a:endParaRPr"))
+    endParaRPr.set("lang", "ja-JP")
+
+    # 3. dLblPos は意図的に省略（PowerPoint for Mac の修復エラーの真犯人）
+
+    # 4-9. showLegendKey 〜 showBubbleSize（OOXMLスキーマ順）
+    for tag, val in (
+        ("c:showLegendKey", "0"),
+        ("c:showVal", "1"),
+        ("c:showCatName", "0"),
+        ("c:showSerName", "0"),
+        ("c:showPercent", "0"),
+        ("c:showBubbleSize", "0"),
+    ):
+        etree.SubElement(dLbls_xml, qn(tag)).set("val", val)
+
+    # 念のため、他経路で追加されうる showLeaderLines / leaderLines を除去
+    for extra in ("c:showLeaderLines", "c:leaderLines"):
+        for e in dLbls_xml.findall(qn(extra)):
+            dLbls_xml.remove(e)
 
     # 各カテゴリごとに色を設定 (data point level)
     # python-pptxではdata points経由で色を個別設定
