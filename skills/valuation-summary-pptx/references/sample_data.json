@@ -1,0 +1,37 @@
+{
+  "main_message": "〜すべき",
+  "chart_title": "バリュエーション・レンジ分析",
+  "chart_type": "football_field",
+  "football_field": {
+    "unit": "億円",
+    "methods": [
+      {
+        "name": "DCF法（WACC 8-10%）",
+        "low": 85,
+        "high": 120,
+        "mid": 102
+      },
+      {
+        "name": "類似企業比較法（EV/EBITDA）",
+        "low": 88,
+        "high": 115
+      },
+      {
+        "name": "先例取引比較法",
+        "low": 95,
+        "high": 130
+      },
+      {
+        "name": "修正純資産法",
+        "low": 60,
+        "high": 75
+      }
+    ],
+    "recommended_range": {
+      "low": 90,
+      "high": 110
+    },
+    "axis_min": 50,
+    "axis_max": 140
+  }
+}

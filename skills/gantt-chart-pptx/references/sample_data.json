@@ -1,0 +1,27 @@
+{
+  "main_message": "〜すべき（最大70文字）",
+  "chart_title": "〜スケジュール（10〜20文字）",
+  "schedule_start": "2025-04-01",
+  "schedule_end": "2025-12-31",
+  "phases": [
+    {
+      "name": "Phase 1: 要件定義",
+      "color": "#1565C0",
+      "tasks": [
+        {
+          "name": "タスク名",
+          "start": "2025-04-01",
+          "end": "2025-04-30",
+          "owner": "担当者",
+          "progress": 100
+        }
+      ]
+    }
+  ],
+  "milestones": [
+    {
+      "name": "要件FIX",
+      "date": "2025-05-15"
+    }
+  ]
+}

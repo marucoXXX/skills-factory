@@ -1,0 +1,65 @@
+{
+  "title": "対象会社概要：会社概要",
+  "main_message": "〇〇は△△を中核とした□□型の企業であり、〜である（最大65文字）",
+  "source": "インフォメーション・メモランダム、株式会社〇〇HP",
+  "items": [
+    {
+      "label": "商号",
+      "value": "株式会社〇〇"
+    },
+    {
+      "label": "本社所在地",
+      "value": "〇〇県〇〇市〇〇番地"
+    },
+    {
+      "label": "設立",
+      "value": "平成XX年XX月XX日"
+    },
+    {
+      "label": "資本金",
+      "value": "XX,XXX千円"
+    },
+    {
+      "label": "代表者",
+      "value": "〇〇 太郎（XX歳）"
+    },
+    {
+      "label": "事業内容",
+      "value": "〇〇の設計・施工\n△△の製造・販売"
+    },
+    {
+      "label": "主要販売先",
+      "value": "A社（40%）、B社（30%）、C社（30%）"
+    },
+    {
+      "label": "主要仕入先",
+      "value": "D社、E社、F社"
+    },
+    {
+      "label": "主要外注先",
+      "value": "G社、H社"
+    },
+    {
+      "label": "直近売上高",
+      "value": "XXX百万円（20XX年X月期）"
+    },
+    {
+      "label": "主要取引銀行",
+      "value": "〇〇銀行 〇〇支店"
+    },
+    {
+      "label": "社員数",
+      "value": "XX名（うち有資格者X名）"
+    }
+  ],
+  "photos": {
+    "headquarters": {
+      "url": "{{WORK_DIR}}/hq_photo.jpg",
+      "caption": "本社家屋"
+    },
+    "product": {
+      "url": "{{WORK_DIR}}/product_photo.jpg",
+      "caption": "主要製品/サービス"
+    }
+  }
+}

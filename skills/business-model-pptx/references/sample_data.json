@@ -1,0 +1,38 @@
+{
+  "main_message": "〜すべき（最大70文字）",
+  "chart_title": "〜のテーマ（10〜20文字）",
+  "company": {
+    "name": "自社サービス名",
+    "description": "サービスの簡潔な説明"
+  },
+  "suppliers": [
+    {
+      "name": "サプライヤー名",
+      "description": "簡潔な説明",
+      "flow_to_company": "自社へ提供するもの（例：原材料の供給）",
+      "flow_from_company": "自社から受け取るもの（例：仕入代金）"
+    }
+  ],
+  "customers": [
+    {
+      "name": "顧客名",
+      "description": "簡潔な説明",
+      "flow_from_company": "自社から提供するもの（例：SaaSサービス）",
+      "flow_to_company": "自社が受け取るもの（例：月額利用料）"
+    }
+  ],
+  "implications": [
+    {
+      "label": "ラベルA",
+      "detail": "詳細の文章"
+    },
+    {
+      "label": "ラベルB",
+      "detail": "詳細の文章"
+    },
+    {
+      "label": "ラベルC",
+      "detail": "詳細の文章"
+    }
+  ]
+}
