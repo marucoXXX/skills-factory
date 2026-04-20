@@ -22,10 +22,22 @@ description: >
   - 戦略コンサルティング品質の企業調査PPTXを求められた場合
 ---
 
-# 戦略コンサル向け企業調査レポート オーケストレーター v5.0
+# 戦略コンサル向け企業調査レポート オーケストレーター v5.1
 
 戦略コンサルティングファーム（BCG / McKinsey / ベイン / 日系コンサル 等）が作成する
 **企業調査PowerPointレポート**を自動生成するオーケストレータースキル。
+
+## v5.1 の追加要素（v5.0 からの差分）
+
+情報信頼性とビジュアル品質を**人手レビューに依存せず**担保するため、2段のレビュアーを組み込んだ:
+
+1. **ファクトチェック（Step 2.5）**: JSON組成後・スライド生成前に、`fact-check-reviewer` で
+   Web取得情報を再検索で裏取り。疑わしい主張（数値・シェア・日付・固有名詞）をフラグ
+2. **ビジュアル品質レビュー（Step 最終+1）**: マージ後、`visual-quality-reviewer` で
+   デッキ全ページをLibreOffice経由で画像化 → 文字溢れ・重なり・密度過多等を Claude 自身が
+   multimodal で目視判定 → `high` 重大度は自動で該当スライドを再生成し再マージ（最大2ラウンド）
+
+v5.0 の思想（事業環境の理解→対象会社の戦い方）はそのまま維持。上記は**品質担保の付加レイヤー**。
 
 ## 対応する調査タイプ
 
@@ -297,6 +309,35 @@ questions = [{
 
 ---
 
+## Step 2.5: ファクトチェック（v5.1新規）
+
+スライド生成前に、Web取得情報の真偽を `fact-check-reviewer` スキルで裏取りする。
+
+### Step 2.5-a: スコープをユーザーに選ばせる
+
+`AskUserQuestion` で以下から選択させる:
+
+| 選択肢 | 内容 |
+|---|---|
+| **high_risk**（推奨） | 数値・シェア・市場規模・日付・固有名詞のみを検証。時間とAPIコストを抑える |
+| **all** | 上記＋テキスト主張も全件検証。網羅性最大だが時間がかかる |
+| **skip** | ファクトチェックを省略して Step 3 へ進む |
+
+### Step 2.5-b: fact-check-reviewer を起動（skip 以外の場合）
+
+Step 1 で整理した情報を一旦 `{{WORK_DIR}}/data_*.json` として書き出してから起動する。
+本スキルの SKILL.md に従って裏取りを実行し、`{{WORK_DIR}}/fact_check_report.json` を得る。
+
+### Step 2.5-c: フラグ項目を Step 3 の Markdown に統合
+
+`fact_check_report.json` の `flags[]` のうち `severity=high` と `medium` を、次の Step 3 で
+ユーザーに提示する Markdown に**「要確認項目」セクション**として差し込む。ユーザーは
+調査結果の確認と併せて、ファクトフラグの扱い（JSON修正 / ソース追加 / スキップ）を決める。
+
+`overall_verdict=pass` の場合はフラグ提示を省略し、Step 3 の末尾に「ファクトチェック結果: 問題なし」の一文のみ添える。
+
+---
+
 ## Step 3: Markdownでユーザーに確認
 
 調査結果と推奨スライド構成を提示し、承認を得る。
@@ -528,6 +569,27 @@ python <SKILL_DIR>/scripts/fill_[skill].py \
 
 **一つでもNOがあれば、マージ実行前にファイルをリネームして修正すること。**
 
+### merge_order.json の併記出力（v5.1 新規）
+
+Step 最終+1 のビジュアルレビュアーが参照するため、照合表を**機械可読な JSON 形式でも出力**する:
+
+```json
+{
+  "entries": [
+    {"slide_number": 1, "file_name": "slide_01_exec_summary.pptx",
+     "skill_name": "executive-summary-pptx", "data_file": "data_01_exec.json"},
+    {"slide_number": 2, "file_name": "slide_02_toc.pptx",
+     "skill_name": "table-of-contents-pptx", "data_file": "data_02_toc.json"},
+    ...
+  ]
+}
+```
+
+保存先: `{{WORK_DIR}}/merge_order.json`
+
+`data_file` は、そのスライドの生成に使った JSON ファイル名（`{{WORK_DIR}}/data_NN_*.json`）。
+中扉や TOC など data_file を持たないスライドは `null` にする。
+
 ---
 
 ## Step 最終: 結合（merge-pptxv2）
@@ -568,6 +630,51 @@ python <merge-pptxv2_DIR>/scripts/merge_pptx_v2.py \
 
 ---
 
+## Step 最終+1: ビジュアル品質レビュー（v5.1新規）
+
+マージ完了後、`visual-quality-reviewer` を起動してデッキ全体をページ画像化 → 目視レビューする。
+
+### 起動
+
+本スキルの SKILL.md に従い、以下を入力として渡す:
+
+- `merged_pptx`: `{{OUTPUT_DIR}}/StrategyReport_[対象会社名].pptx`
+- `merge_order`: `{{WORK_DIR}}/merge_order.json`
+- `data_dir`: `{{WORK_DIR}}`
+
+結果は `{{FACTORY_ROOT}}/work/visual-quality-reviewer/visual_review_report.json` に出力される。
+
+### レビュー結果の分岐（オーケストレーターの自動処理）
+
+| `overall_verdict` | 処理 |
+|---|---|
+| `pass` | 終了。完成デッキをユーザーに提示 |
+| `needs_fixes` かつ **`severity=high` が1件以上** | **自動修正ループへ**（下記） |
+| `needs_fixes` かつ `severity=high` が0件 | ユーザーに差分レポートを Markdown で提示し、手動修正 or 許容を選ばせる |
+| `reject` | LibreOffice レンダリング失敗を疑いユーザーに報告して停止 |
+
+### 自動修正ループ（最大2ラウンド）
+
+`severity=high` の各 issue について:
+
+1. `issues[i].skill_name` と `issues[i].data_file` から、該当スライド生成に使った JSON ファイルを特定
+2. `issues[i].regeneration_hint` に従って **`data_NN_*.json` を修正**（例: bullets を短縮、項目数を減らす）
+3. 該当スキル（例: `pest-analysis-pptx`）の `fill_*.py` を**同じ `slide_NN_*.pptx` ファイル名で再実行** → 既存スライドを上書き
+4. 全修正完了後、**`merge-pptxv2` を再実行**して最新デッキを再生成
+5. 再度 `visual-quality-reviewer` を起動
+
+**2ラウンド終了時点で `high` が残存する場合**:
+- ユーザーに残存 issue を提示し、手動修正か許容の判断を仰ぐ
+- 無限ループには絶対に入らない（カウンタを必ず持つ）
+
+### ユーザーへの最終出力
+
+- `overall_verdict=pass` 時: 「ビジュアル品質レビュー: 問題なし」のみ
+- 自動修正でpassに到達した時: 「自動修正 N 件を適用しました（詳細: `visual_review_report.json`）」
+- 手動対応が必要な時: レポートと共に次アクションを明示
+
+---
+
 ## 依存スキル一覧
 
 ### コアスキル（全モードで必須）
@@ -603,6 +710,13 @@ python <merge-pptxv2_DIR>/scripts/merge_pptx_v2.py \
 
 ⭐ = v5.0で新規組み込み / 役割変更
 **organization** = 組織スキル（`/mnt/skills/organization/` 配下）。依存するため事前にインストール済みである必要がある。
+
+### 品質レビュー系スキル（v5.1新規・全モードで必須）
+
+| スキル名 | 配置 | 呼び出し位置 | 役割 |
+|---|---|---|---|
+| `fact-check-reviewer` ⭐ | user | Step 2.5 | Web取得情報を再検索で裏取りし、疑わしい主張をフラグ |
+| `visual-quality-reviewer` ⭐ | user | Step 最終+1 | マージ後デッキをページ画像化し、文字溢れ・重なり・密度過多等を目視判定 |
 
 ### v5.0で削除されたスキル依存
 
@@ -743,6 +857,11 @@ Assistant:
 
 ## バージョン履歴（抜粋、詳細は CHANGELOG 参照）
 
+- **v5.1** (2026年4月): **品質レビュー2段組み込み**
+  - `fact-check-reviewer` を Step 2.5 に追加（情報の真偽を裏取り、疑わしい主張をフラグ）
+  - `visual-quality-reviewer` を Step 最終+1 に追加（マージ後デッキを画像化し目視レビュー）
+  - `high` 重大度のビジュアル不備は**自動再生成＋再マージ**（最大2ラウンド）
+  - Step 最終-1 で `merge_order.json` を併記出力（ビジュアルレビュアーが参照）
 - **v5.0** (2026年4月): **思想転換＋4セクション構成再編**
   - **思想転換**: 「事実→示唆→アクション」から「事業環境の理解→対象会社の戦い方の理解」へ
   - `recommendation-action-pptx` を依存から削除（公開情報では一般論に陥るため）
