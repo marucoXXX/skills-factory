@@ -264,7 +264,41 @@ def fix_content_types(base):
 # Main merge logic
 # ---------------------------------------------------------------------------
 
-def merge_presentations(input_files, output_path):
+def _finalize_pptx(path):
+    """LibreOffice headless roundtrip to normalize OOXML and clear PowerPoint
+    "修復が必要" ダイアログ triggers. No-op if soffice is unavailable or times out;
+    the original file is kept on any failure."""
+    import glob
+    import subprocess
+    import tempfile
+    candidates = [
+        os.environ.get("SOFFICE_BIN"),
+        "/Applications/LibreOffice.app/Contents/MacOS/soffice",
+        "/opt/homebrew/bin/soffice",
+        "/usr/local/bin/soffice",
+        "/usr/bin/soffice",
+        shutil.which("soffice"),
+        shutil.which("libreoffice"),
+    ]
+    soffice = next((c for c in candidates if c and os.path.exists(c)), None)
+    if not soffice:
+        return
+    try:
+        with tempfile.TemporaryDirectory(prefix="pptx_rt_") as tmp:
+            subprocess.run(
+                [soffice, f"-env:UserInstallation=file://{tmp}/prof",
+                 "--headless", "--convert-to", "pptx",
+                 "--outdir", tmp, str(path)],
+                timeout=180, capture_output=True, check=True,
+            )
+            found = glob.glob(os.path.join(tmp, "*.pptx"))
+            if found:
+                shutil.move(found[0], str(path))
+    except Exception:
+        pass
+
+
+def merge_presentations(input_files, output_path, *, roundtrip=True):
     """Merge multiple PPTX files into one output file."""
 
     if not input_files:
@@ -273,6 +307,8 @@ def merge_presentations(input_files, output_path):
 
     if len(input_files) == 1:
         shutil.copy2(input_files[0], output_path)
+        if roundtrip:
+            _finalize_pptx(output_path)
         print(f"Only one file provided. Copied to {output_path}")
         return
 
@@ -428,6 +464,10 @@ def merge_presentations(input_files, output_path):
             else:
                 print(f"  WARNING: No rels for {chart}")
 
+    # OOXML normalization via LibreOffice (clears "修復が必要" on most outputs).
+    if roundtrip:
+        _finalize_pptx(output_path)
+
     print(f"\nMerged {len(input_files)} files -> {output_path}")
 
 
@@ -436,16 +476,22 @@ def merge_presentations(input_files, output_path):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python merge_pptx_v2.py <output.pptx> <input1.pptx> <input2.pptx> [...]")
+    args = sys.argv[1:]
+    roundtrip = True
+    if "--no-roundtrip" in args:
+        roundtrip = False
+        args = [a for a in args if a != "--no-roundtrip"]
+
+    if len(args) < 2:
+        print("Usage: python merge_pptx_v2.py [--no-roundtrip] <output.pptx> <input1.pptx> <input2.pptx> [...]")
         sys.exit(1)
 
-    output = sys.argv[1]
-    inputs = sys.argv[2:]
+    output = args[0]
+    inputs = args[1:]
 
     for f in inputs:
         if not os.path.exists(f):
             print(f"Error: File not found: {f}")
             sys.exit(1)
 
-    merge_presentations(inputs, output)
+    merge_presentations(inputs, output, roundtrip=roundtrip)
