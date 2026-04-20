@@ -1,0 +1,23 @@
+{
+  "main_message": "〜すべき（最大70文字）",
+  "chart_title": "〜のテーマ（10〜20文字）",
+  "label1": "目的",
+  "label2": "主要施策",
+  "arrows": [
+    {
+      "name": "ステップA",
+      "label1_detail": "Label1に対応する詳細",
+      "label2_detail": "Label2に対応する詳細"
+    },
+    {
+      "name": "ステップB",
+      "label1_detail": "Label1に対応する詳細",
+      "label2_detail": "Label2に対応する詳細"
+    },
+    {
+      "name": "ステップC",
+      "label1_detail": "Label1に対応する詳細",
+      "label2_detail": "Label2に対応する詳細"
+    }
+  ]
+}

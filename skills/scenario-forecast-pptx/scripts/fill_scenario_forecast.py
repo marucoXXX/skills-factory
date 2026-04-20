@@ -32,6 +32,40 @@ from pptx.dml.color import RGBColor
 from pptx.oxml.ns import qn
 from lxml import etree
 
+def _finalize_pptx(path):
+    """LibreOffice roundtrip to normalize OOXML so PowerPoint stops asking for repair.
+
+    No-op if soffice is unavailable or the conversion fails; the original file
+    is preserved. Added by tools/add_finalize_hook.py.
+    """
+    import os, shutil, subprocess, tempfile, glob
+    candidates = [
+        os.environ.get("SOFFICE_BIN"),
+        "/Applications/LibreOffice.app/Contents/MacOS/soffice",
+        "/opt/homebrew/bin/soffice",
+        "/usr/local/bin/soffice",
+        "/usr/bin/soffice",
+        shutil.which("soffice"),
+        shutil.which("libreoffice"),
+    ]
+    soffice = next((c for c in candidates if c and os.path.exists(c)), None)
+    if not soffice:
+        return
+    try:
+        with tempfile.TemporaryDirectory(prefix="pptx_rt_") as tmp:
+            subprocess.run(
+                [soffice, f"-env:UserInstallation=file://{tmp}/prof",
+                 "--headless", "--convert-to", "pptx",
+                 "--outdir", tmp, str(path)],
+                timeout=120, capture_output=True, check=True,
+            )
+            found = glob.glob(os.path.join(tmp, "*.pptx"))
+            if found:
+                shutil.move(found[0], str(path))
+    except Exception:
+        pass
+
+
 
 # ── Layout Constants ──
 SLIDE_W = Inches(13.33)
@@ -598,6 +632,7 @@ def main():
     # 8. Save
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
     prs.save(args.output)
+    _finalize_pptx(args.output)
     print(f"\n  Done: {args.output}")
 
 

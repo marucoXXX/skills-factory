@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 .DS_Store
 
+# Template backups created by tools/fix_template_rels.py
+*.bak
+
 # factory workspaces
 inputs/*
 !inputs/.gitkeep

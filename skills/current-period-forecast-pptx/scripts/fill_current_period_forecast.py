@@ -30,6 +30,40 @@ from pptx.util import Emu, Pt
 from pptx.oxml.ns import qn
 from lxml import etree
 
+def _finalize_pptx(path):
+    """LibreOffice roundtrip to normalize OOXML so PowerPoint stops asking for repair.
+
+    No-op if soffice is unavailable or the conversion fails; the original file
+    is preserved. Added by tools/add_finalize_hook.py.
+    """
+    import os, shutil, subprocess, tempfile, glob
+    candidates = [
+        os.environ.get("SOFFICE_BIN"),
+        "/Applications/LibreOffice.app/Contents/MacOS/soffice",
+        "/opt/homebrew/bin/soffice",
+        "/usr/local/bin/soffice",
+        "/usr/bin/soffice",
+        shutil.which("soffice"),
+        shutil.which("libreoffice"),
+    ]
+    soffice = next((c for c in candidates if c and os.path.exists(c)), None)
+    if not soffice:
+        return
+    try:
+        with tempfile.TemporaryDirectory(prefix="pptx_rt_") as tmp:
+            subprocess.run(
+                [soffice, f"-env:UserInstallation=file://{tmp}/prof",
+                 "--headless", "--convert-to", "pptx",
+                 "--outdir", tmp, str(path)],
+                timeout=120, capture_output=True, check=True,
+            )
+            found = glob.glob(os.path.join(tmp, "*.pptx"))
+            if found:
+                shutil.move(found[0], str(path))
+    except Exception:
+        pass
+
+
 
 # ── Shape名マッピング ──────────────────────────────────────
 SHAPE_MAIN_MESSAGE = "Title 1"
@@ -324,6 +358,7 @@ def insert_screenshot_into_pptx(template_path, data, screenshot_path, output_pat
     # 保存
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     prs.save(output_path)
+    _finalize_pptx(output_path)
     print(f"  PPTX saved: {output_path}")
 
 

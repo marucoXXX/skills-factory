@@ -1,0 +1,26 @@
+{
+  "main_message": "〜すべき（最大70文字）",
+  "chart_title": "〜のテーマ（10〜20文字）",
+  "filters": [
+    {
+      "name": "フィルター1の名前",
+      "feature1": "Feature 1の説明",
+      "feature2": "Feature 2の説明"
+    },
+    {
+      "name": "フィルター2の名前",
+      "feature1": "Feature 1の説明",
+      "feature2": "Feature 2の説明"
+    },
+    {
+      "name": "フィルター3の名前",
+      "feature1": "Feature 1の説明",
+      "feature2": "Feature 2の説明"
+    }
+  ],
+  "implications": [
+    "意味合い1",
+    "意味合い2",
+    "意味合い3"
+  ]
+}

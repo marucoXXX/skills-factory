@@ -1,0 +1,36 @@
+{
+  "main_message": "マネジメント計画をベースに、売上原価のリスクを織り込んだDownside caseと実績ベースのUpside caseを設定すべき",
+  "chart_title": "今後の見立て：当期着地見込み",
+  "period_label": "進行期（24/6期）見込み",
+  "unit_label": "単位：百万円/(%)",
+  "management_plan_label": "マネジメント\n計画\n(Base)",
+  "our_plan_label": "弊社計画",
+  "downside_label": "Downside case",
+  "upside_label": "Upside case",
+  "item_header": "項目（調整後）",
+  "source": "受領資料、Q＆A、マネジメントインタビューより当社作成",
+  "rows": [
+    {
+      "item": "売上",
+      "management_value": "543",
+      "management_pct": "100%",
+      "downside_value": "543",
+      "downside_pct": "100%",
+      "downside_assumption": "マネジメント案を使用",
+      "upside_value": "554",
+      "upside_pct": "100%",
+      "upside_assumption": "22/6実績を参考に設定（22/6期4月⇒期末にかけての売上伸長率を使用）"
+    },
+    {
+      "item": "売上原価",
+      "management_value": "385",
+      "management_pct": "70.9%",
+      "downside_value": "389",
+      "downside_pct": "71.6%",
+      "downside_assumption": "マネジメント案原価率を22/6期実績まで上昇するリスクを織り込んで設定（残期間原価率：67%→70%）",
+      "upside_value": "391",
+      "upside_pct": "70.5%",
+      "upside_assumption": "22/6期実績を参考に設定（22/6期4月⇒期末にかけての売上原価伸長率を使用）"
+    }
+  ]
+}
