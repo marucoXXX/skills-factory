@@ -100,7 +100,7 @@ description: >
 
 ## JSONデータ仕様
 
-`/home/claude/data_availability_data.json` に以下の形式で保存する：
+`{{WORK_DIR}}/data_availability_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -178,9 +178,9 @@ description: >
 pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_data_availability.py \
-  --data /home/claude/data_availability_data.json \
+  --data {{WORK_DIR}}/data_availability_data.json \
   --template <SKILL_DIR>/assets/data-availability-template.pptx \
-  --output /mnt/user-data/outputs/DataAvailability_output.pptx
+  --output {{OUTPUT_DIR}}/DataAvailability_output.pptx
 ```
 
 ---

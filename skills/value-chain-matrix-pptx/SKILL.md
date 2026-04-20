@@ -101,7 +101,7 @@ description: >
 
 ## JSONデータ仕様
 
-`/home/claude/value_chain_matrix_data.json` に以下の形式で保存する：
+`{{WORK_DIR}}/value_chain_matrix_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -184,9 +184,9 @@ description: >
 pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_value_chain_matrix.py \
-  --data /home/claude/value_chain_matrix_data.json \
+  --data {{WORK_DIR}}/value_chain_matrix_data.json \
   --template <SKILL_DIR>/assets/value-chain-matrix-template.pptx \
-  --output /mnt/user-data/outputs/ValueChainMatrix_output.pptx
+  --output {{OUTPUT_DIR}}/ValueChainMatrix_output.pptx
 ```
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
@@ -194,7 +194,7 @@ python <SKILL_DIR>/scripts/fill_value_chain_matrix.py \
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/ValueChainMatrix_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/ValueChainMatrix_output.pptx
 ```
 
 ---

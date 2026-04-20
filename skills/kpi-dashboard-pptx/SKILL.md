@@ -133,7 +133,7 @@ TEMPLATE="<SKILL_DIR>/assets/kpi-dashboard-template.pptx"
 
 ### KPIデータのJSON化
 
-内容を `/home/claude/kpi_data.json` に以下の形式で保存する：
+内容を `{{WORK_DIR}}/kpi_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -170,15 +170,15 @@ TEMPLATE="<SKILL_DIR>/assets/kpi-dashboard-template.pptx"
 ```bash
 pip install python-pptx -q --break-system-packages
 python <SKILL_DIR>/scripts/fill_kpi_dashboard.py \
-  --data /home/claude/kpi_data.json \
+  --data {{WORK_DIR}}/kpi_data.json \
   --template <SKILL_DIR>/assets/kpi-dashboard-template.pptx \
-  --output /mnt/user-data/outputs/KPIDashboard_output.pptx
+  --output {{OUTPUT_DIR}}/KPIDashboard_output.pptx
 ```
 
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/KPIDashboard_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/KPIDashboard_output.pptx
 ```
 
 内容が正しく反映されているか確認し、ユーザーに提示する。

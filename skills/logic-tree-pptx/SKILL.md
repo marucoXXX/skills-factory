@@ -192,7 +192,7 @@ python -m markitdown <SKILL_DIR>/assets/logic-tree-template.pptx
 
 ### ロジックツリーデータのJSON化
 
-ロジックツリーの内容を `/home/claude/logic_tree_data.json` に以下の形式で保存する：
+ロジックツリーの内容を `{{WORK_DIR}}/logic_tree_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -244,15 +244,15 @@ python -m markitdown <SKILL_DIR>/assets/logic-tree-template.pptx
 
 ```bash
 python <SKILL_DIR>/scripts/fill_logic_tree.py \
-  --data /home/claude/logic_tree_data.json \
+  --data {{WORK_DIR}}/logic_tree_data.json \
   --template <SKILL_DIR>/assets/logic-tree-template.pptx \
-  --output /mnt/user-data/outputs/LogicTree_output.pptx
+  --output {{OUTPUT_DIR}}/LogicTree_output.pptx
 ```
 
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/LogicTree_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/LogicTree_output.pptx
 ```
 
 内容が正しく反映されているか確認し、ユーザーに提示する。

@@ -132,7 +132,7 @@ Excelファイルを `parse_sga_excel.py` で読み取る。
 
 ## JSONデータ仕様
 
-`/home/claude/sga_breakdown_data.json` に以下の形式で保存する：
+`{{WORK_DIR}}/sga_breakdown_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -194,18 +194,18 @@ Excelファイルを `parse_sga_excel.py` で読み取る。
 pip install python-pptx openpyxl -q --break-system-packages
 
 python <SKILL_DIR>/scripts/parse_sga_excel.py \
-  --excel /mnt/user-data/uploads/sga_data.xlsx \
+  --excel {{INPUT_DIR}}/sga_data.xlsx \
   --sales '{"21/6期": 370, "22/6期": 424, "23/6期": 661}' \
-  --output /home/claude/sga_breakdown_data.json
+  --output {{WORK_DIR}}/sga_breakdown_data.json
 ```
 
 ### JSON → PPTX生成
 
 ```bash
 python <SKILL_DIR>/scripts/fill_sga_breakdown.py \
-  --data /home/claude/sga_breakdown_data.json \
+  --data {{WORK_DIR}}/sga_breakdown_data.json \
   --template <SKILL_DIR>/assets/sga-breakdown-template.pptx \
-  --output /mnt/user-data/outputs/SGA_Breakdown_output.pptx
+  --output {{OUTPUT_DIR}}/SGA_Breakdown_output.pptx
 ```
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
@@ -213,7 +213,7 @@ python <SKILL_DIR>/scripts/fill_sga_breakdown.py \
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/SGA_Breakdown_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/SGA_Breakdown_output.pptx
 ```
 
 ---

@@ -171,7 +171,7 @@ TEMPLATE="<SKILL_DIR>/assets/forecast-template.pptx"
 
 ### 当期着地見込みデータのJSON化
 
-データを `/home/claude/forecast_data.json` に以下の形式で保存する：
+データを `{{WORK_DIR}}/forecast_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -250,9 +250,9 @@ pip install python-pptx playwright Pillow -q --break-system-packages
 playwright install chromium 2>/dev/null
 
 python <SKILL_DIR>/scripts/fill_current_period_forecast.py \
-  --data /home/claude/forecast_data.json \
+  --data {{WORK_DIR}}/forecast_data.json \
   --template <SKILL_DIR>/assets/forecast-template.pptx \
-  --output /mnt/user-data/outputs/CurrentPeriodForecast_output.pptx
+  --output {{OUTPUT_DIR}}/CurrentPeriodForecast_output.pptx
 ```
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
@@ -260,7 +260,7 @@ python <SKILL_DIR>/scripts/fill_current_period_forecast.py \
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/CurrentPeriodForecast_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/CurrentPeriodForecast_output.pptx
 ```
 
 内容が正しく反映されているか確認し、ユーザーに提示する。

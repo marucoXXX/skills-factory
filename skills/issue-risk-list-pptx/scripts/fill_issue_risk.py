@@ -2,9 +2,10 @@
 fill_issue_risk.py — 課題・リスク一覧データをPPTXテンプレートに流し込むスクリプト
 
 複数ページ対応:
-  - 1スライドあたり最大6行（MAX_ROWS_PER_SLIDE）
-  - 7行以上の場合は自動的にスライドを追加して分割
+  - 1スライドあたり最大4行（MAX_ROWS_PER_SLIDE、16pt前提）
+  - 5行以上の場合は自動的にスライドを追加してバランス分割
   - 複数ページ時のChart Titleに「（1/3）」等のページ番号を付与
+  - フォントサイズはデフォルト16pt（JSON側で font_size_header / font_size_data を指定可能）
 
 使い方:
   python fill_issue_risk.py \
@@ -27,13 +28,17 @@ from lxml import etree
 MARGIN_LEFT    = 370800
 CONTENT_WIDTH  = 11616153
 HEADER_TOP     = 1425630
-HEADER_HEIGHT  = 369332
-HEADER_SEP_TOP = 1796644
-FIRST_ROW_TOP  = 1956367
-ROW_HEIGHT     = 430887
-ROW_SPACING    = 750333
+HEADER_HEIGHT  = 500000
+HEADER_SEP_TOP = 1930000
+FIRST_ROW_TOP  = 2050000
+ROW_HEIGHT     = 900000
+ROW_SPACING    = 1100000
 
-MAX_ROWS_PER_SLIDE = 6
+MAX_ROWS_PER_SLIDE = 4
+
+# ── フォントサイズデフォルト（16pt = 1600） ──
+DEFAULT_HEADER_FONT_SIZE = 1600
+DEFAULT_DATA_FONT_SIZE   = 1600
 
 SHAPE_MAIN_MESSAGE = "Title 1"
 SHAPE_CHART_TITLE  = "Text Placeholder 2"
@@ -161,15 +166,16 @@ def compute_column_positions(columns, total_width, margin_left):
     return positions
 
 
-def build_headers(slide, columns, col_positions):
+def build_headers(slide, columns, col_positions, font_size=DEFAULT_HEADER_FONT_SIZE):
     for i, col in enumerate(columns):
         pos = col_positions[i]
         add_textbox(slide, left=pos["left"], top=HEADER_TOP,
                     width=pos["width"], height=HEADER_HEIGHT,
-                    text=col["name"], font_size=1100, bold=True)
+                    text=col["name"], font_size=font_size, bold=True)
 
 
-def build_data_rows(slide, columns, col_positions, rows, start_row_num=0):
+def build_data_rows(slide, columns, col_positions, rows, start_row_num=0,
+                    font_size=DEFAULT_DATA_FONT_SIZE):
     for r_idx, row in enumerate(rows):
         row_top = FIRST_ROW_TOP + r_idx * ROW_SPACING
 
@@ -178,7 +184,7 @@ def build_data_rows(slide, columns, col_positions, rows, start_row_num=0):
             cell_value = row[c_idx] if c_idx < len(row) else ""
             add_textbox(slide, left=pos["left"], top=row_top,
                         width=pos["width"], height=ROW_HEIGHT,
-                        text=str(cell_value), font_size=1050, bold=False)
+                        text=str(cell_value), font_size=font_size, bold=False)
 
         global_idx = start_row_num + r_idx + 1
         print(f"  [Row {global_idx}] {' | '.join(str(v) for v in row)}")
@@ -208,7 +214,9 @@ def duplicate_slide_from_template(prs, template_slide):
 
 
 def populate_slide(slide, main_msg, chart_title, columns, col_positions, rows,
-                   page_num, total_pages, start_row_num):
+                   page_num, total_pages, start_row_num,
+                   header_font_size=DEFAULT_HEADER_FONT_SIZE,
+                   data_font_size=DEFAULT_DATA_FONT_SIZE):
     """1枚のスライドにコンテンツを配置する"""
 
     shape = find_shape(slide, SHAPE_MAIN_MESSAGE)
@@ -227,15 +235,37 @@ def populate_slide(slide, main_msg, chart_title, columns, col_positions, rows,
     print(f"  [Chart Title]  {display_title}")
     print(f"  Removed {removed} template shapes")
 
-    build_headers(slide, columns, col_positions)
+    build_headers(slide, columns, col_positions, font_size=header_font_size)
     print(f"  [Headers] {' | '.join(c['name'] for c in columns)}")
 
     add_line(slide, left=MARGIN_LEFT, top=HEADER_SEP_TOP,
              width=CONTENT_WIDTH, line_width=15875, dash="solid")
 
     if rows:
-        build_data_rows(slide, columns, col_positions, rows, start_row_num)
+        build_data_rows(slide, columns, col_positions, rows, start_row_num,
+                        font_size=data_font_size)
         print(f"  [Subtotal] {len(rows)} rows on this page")
+
+
+def split_rows_balanced(all_rows, max_per_page):
+    """行を複数ページにバランスよく分割する。
+
+    末尾ページに1行だけ残るような不均衡な分割を避け、
+    ceil(total / pages) 行を各ページに均等配分する。
+    例: 7行・max=4 → [4, 3]（6/1ではなく）
+        10行・max=4 → [4, 3, 3]（4/4/2ではなく）
+    """
+    total = len(all_rows)
+    if total == 0:
+        return [[]]
+    total_pages = max(1, math.ceil(total / max_per_page))
+    per_page    = math.ceil(total / total_pages)
+    chunks = []
+    idx = 0
+    for _ in range(total_pages):
+        chunks.append(all_rows[idx:idx + per_page])
+        idx += per_page
+    return [c for c in chunks if c] or [[]]
 
 
 def main():
@@ -247,6 +277,14 @@ def main():
 
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
+
+    _main_msg = data.get("main_message", "")
+    if len(_main_msg) > 70:
+        print(
+            f"  ⚠ WARNING: main_message is {len(_main_msg)} chars (max 70). "
+            f"Text will overflow the textbox. Preview: '{_main_msg[:40]}...'",
+            file=sys.stderr,
+        )
 
     prs = Presentation(args.template)
 
@@ -263,17 +301,20 @@ def main():
     if not chart_title:
         print("  WARNING: chart_title is empty", file=sys.stderr)
 
+    # フォントサイズはJSON側で上書き可能（単位: 百分の一pt、16pt = 1600）
+    header_font_size = int(data.get("font_size_header", DEFAULT_HEADER_FONT_SIZE))
+    data_font_size   = int(data.get("font_size_data",   DEFAULT_DATA_FONT_SIZE))
+
     col_positions = compute_column_positions(columns, CONTENT_WIDTH, MARGIN_LEFT)
 
-    # ── 行をページごとに分割 ──
-    total_pages = max(1, math.ceil(len(all_rows) / MAX_ROWS_PER_SLIDE))
-    row_chunks = []
-    for i in range(total_pages):
-        start = i * MAX_ROWS_PER_SLIDE
-        end   = start + MAX_ROWS_PER_SLIDE
-        row_chunks.append(all_rows[start:end])
+    # ── 行をページごとにバランス分割 ──
+    # 末尾ページに1行だけ残るような不均衡な分割を避ける
+    row_chunks  = split_rows_balanced(all_rows, MAX_ROWS_PER_SLIDE)
+    total_pages = len(row_chunks)
 
     print(f"  Total: {len(all_rows)} rows -> {total_pages} page(s)")
+    print(f"  Split: {[len(c) for c in row_chunks]} rows per page")
+    print(f"  Font:  header={header_font_size/100:.1f}pt / data={data_font_size/100:.1f}pt")
 
     # ── テンプレートスライドのクリーンなXMLを保存 ──
     template_slide = prs.slides[0]
@@ -290,17 +331,21 @@ def main():
         template_slide, main_msg, chart_title, columns, col_positions,
         row_chunks[0] if row_chunks else [],
         page_num=1, total_pages=total_pages, start_row_num=0,
+        header_font_size=header_font_size, data_font_size=data_font_size,
     )
 
     # ── ページ2以降を処理 ──
+    cumulative = len(row_chunks[0]) if row_chunks else 0
     for page_idx, extra_slide in enumerate(extra_slides):
         populate_slide(
             extra_slide, main_msg, chart_title, columns, col_positions,
             row_chunks[page_idx + 1],
             page_num=page_idx + 2,
             total_pages=total_pages,
-            start_row_num=(page_idx + 1) * MAX_ROWS_PER_SLIDE,
+            start_row_num=cumulative,
+            header_font_size=header_font_size, data_font_size=data_font_size,
         )
+        cumulative += len(row_chunks[page_idx + 1])
 
     prs.save(args.output)
     print(f"\n  Saved: {args.output} ({total_pages} slide(s))")

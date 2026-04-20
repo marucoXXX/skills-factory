@@ -140,7 +140,7 @@ Shape名の対応は `references/template-mapping.md` を参照。
 
 ### データのJSON化
 
-コンテンツを `/home/claude/comparison_data.json` に保存：
+コンテンツを `{{WORK_DIR}}/comparison_data.json` に保存：
 
 ```json
 {
@@ -194,21 +194,21 @@ Shape名の対応は `references/template-mapping.md` を参照。
 
 ```bash
 python /mnt/skills/organization/comparison-pptx/scripts/fill_comparison.py \
-  --data /home/claude/comparison_data.json \
+  --data {{WORK_DIR}}/comparison_data.json \
   --template /mnt/skills/organization/comparison-pptx/assets/comparison-template.pptx \
-  --output /mnt/user-data/outputs/Comparison_output.pptx
+  --output {{OUTPUT_DIR}}/Comparison_output.pptx
 ```
 
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/Comparison_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/Comparison_output.pptx
 ```
 
 プレースホルダーが残っていないか確認する：
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/Comparison_output.pptx | grep -iE "Label[0-9]-[A-C]-(Mark|Comment)|Aパターン$|Bパターン$|Cパターン$"
+python -m markitdown {{OUTPUT_DIR}}/Comparison_output.pptx | grep -iE "Label[0-9]-[A-C]-(Mark|Comment)|Aパターン$|Bパターン$|Cパターン$"
 ```
 
 ---

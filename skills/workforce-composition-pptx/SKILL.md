@@ -153,7 +153,7 @@ TEMPLATE="<SKILL_DIR>/assets/workforce-composition-template.pptx"
 
 ### JSONデータ仕様
 
-`/home/claude/workforce_composition_data.json` に以下の形式で保存する：
+`{{WORK_DIR}}/workforce_composition_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -225,9 +225,9 @@ TEMPLATE="<SKILL_DIR>/assets/workforce-composition-template.pptx"
 pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_workforce_composition.py \
-  --data /home/claude/workforce_composition_data.json \
+  --data {{WORK_DIR}}/workforce_composition_data.json \
   --template <SKILL_DIR>/assets/workforce-composition-template.pptx \
-  --output /mnt/user-data/outputs/WorkforceComposition_output.pptx
+  --output {{OUTPUT_DIR}}/WorkforceComposition_output.pptx
 ```
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
@@ -235,7 +235,7 @@ python <SKILL_DIR>/scripts/fill_workforce_composition.py \
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/WorkforceComposition_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/WorkforceComposition_output.pptx
 ```
 
 ---

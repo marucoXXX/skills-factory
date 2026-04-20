@@ -106,9 +106,9 @@ description: >
 pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_table_of_contents.py \
-  --data /home/claude/toc_data.json \
+  --data {{WORK_DIR}}/toc_data.json \
   --template <SKILL_DIR>/assets/table-of-contents-pptx-template.pptx \
-  --output /mnt/user-data/outputs/TableOfContents_output.pptx
+  --output {{OUTPUT_DIR}}/TableOfContents_output.pptx
 ```
 
 ---

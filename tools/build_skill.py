@@ -6,11 +6,12 @@ optional ``@if:<profile>`` blocks. Profiles are loaded from ``profiles/*.json``.
 
 Commands:
   list
-  check    <skill> [--profile <p>] [--strict]
-  build    <skill> --profile <p> --out <dir>
-  install  <skill> [--profile claude_code]
-  package  <skill> [--profile claude_ai]
+  check        <skill> [--profile <p>] [--strict]
+  build        <skill> --profile <p> --out <dir>
+  install      <skill> [--profile claude_code]
+  package      <skill> [--profile claude_ai]
   install-all
+  package-all  [--profile claude_ai] [--strict]
 """
 from __future__ import annotations
 
@@ -196,6 +197,15 @@ def cmd_install_all(args: argparse.Namespace) -> None:
             cmd_install(ns)
 
 
+def cmd_package_all(args: argparse.Namespace) -> None:
+    for p in sorted(SKILLS_DIR.iterdir()):
+        if p.is_dir() and (p / "SKILL.md").exists():
+            ns = argparse.Namespace(
+                skill=p.name, profile=args.profile, strict=args.strict
+            )
+            cmd_package(ns)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="build_skill.py")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -231,6 +241,11 @@ def main(argv: list[str] | None = None) -> None:
     p_all.add_argument("--profile", default="claude_code")
     p_all.add_argument("--strict", action="store_true")
     p_all.set_defaults(func=cmd_install_all)
+
+    p_pkg_all = sub.add_parser("package-all")
+    p_pkg_all.add_argument("--profile", default="claude_ai")
+    p_pkg_all.add_argument("--strict", action="store_true")
+    p_pkg_all.set_defaults(func=cmd_package_all)
 
     args = parser.parse_args(argv)
     args.func(args)

@@ -189,7 +189,7 @@ python -m markitdown <skill-dir>/assets/five-forces-template.pptx
 
 ### Five ForcesデータのJSON化
 
-分析内容を `/home/claude/five_forces_data.json` に以下の形式で保存する：
+分析内容を `{{WORK_DIR}}/five_forces_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -231,15 +231,15 @@ python -m markitdown <skill-dir>/assets/five-forces-template.pptx
 
 ```bash
 python <skill-dir>/scripts/fill_five_forces.py \
-  --data /home/claude/five_forces_data.json \
+  --data {{WORK_DIR}}/five_forces_data.json \
   --template <skill-dir>/assets/five-forces-template.pptx \
-  --output /mnt/user-data/outputs/FiveForces_output.pptx
+  --output {{OUTPUT_DIR}}/FiveForces_output.pptx
 ```
 
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/FiveForces_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/FiveForces_output.pptx
 ```
 
 内容が正しく反映されているか確認し、ユーザーに提示する。

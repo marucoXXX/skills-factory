@@ -108,7 +108,7 @@ description: >
 
 ### JSONデータ仕様
 
-`/home/claude/competitor_summary_data.json` に以下の形式で保存する：
+`{{WORK_DIR}}/competitor_summary_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -184,9 +184,9 @@ description: >
 pip install python-pptx lxml -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_competitor_summary.py \
-  --data /home/claude/competitor_summary_data.json \
+  --data {{WORK_DIR}}/competitor_summary_data.json \
   --template <SKILL_DIR>/assets/competitor-summary-template.pptx \
-  --output /mnt/user-data/outputs/CompetitorSummary_output.pptx
+  --output {{OUTPUT_DIR}}/CompetitorSummary_output.pptx
 ```
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
@@ -194,7 +194,7 @@ python <SKILL_DIR>/scripts/fill_competitor_summary.py \
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/CompetitorSummary_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/CompetitorSummary_output.pptx
 ```
 
 ---

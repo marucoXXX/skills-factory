@@ -173,7 +173,7 @@ python -m markitdown <TEMPLATE_PATH>
 
 ### 体制データのJSON化
 
-体制内容を `/home/claude/team_data.json` に以下の形式で保存する：
+体制内容を `{{WORK_DIR}}/team_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -215,15 +215,15 @@ python -m markitdown <TEMPLATE_PATH>
 
 ```bash
 python /mnt/skills/organization/project-team-structure-pptx/scripts/fill_team.py \
-  --data /home/claude/team_data.json \
+  --data {{WORK_DIR}}/team_data.json \
   --template <TEMPLATE_PATH> \
-  --output /mnt/user-data/outputs/ProjectTeamStructure_output.pptx
+  --output {{OUTPUT_DIR}}/ProjectTeamStructure_output.pptx
 ```
 
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/ProjectTeamStructure_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/ProjectTeamStructure_output.pptx
 ```
 
 内容が正しく反映されているか確認し、ユーザーに提示する。

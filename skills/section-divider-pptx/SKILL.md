@@ -99,9 +99,9 @@ description: >
 pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_section_divider.py \
-  --data /home/claude/section_divider_data.json \
+  --data {{WORK_DIR}}/section_divider_data.json \
   --template <SKILL_DIR>/assets/section-divider-pptx-template.pptx \
-  --output /mnt/user-data/outputs/SectionDivider_output.pptx
+  --output {{OUTPUT_DIR}}/SectionDivider_output.pptx
 ```
 
 ---

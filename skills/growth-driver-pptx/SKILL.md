@@ -97,7 +97,7 @@ description: >
 
 ## JSONデータ仕様
 
-`/home/claude/growth_driver_data.json` に以下の形式で保存する：
+`{{WORK_DIR}}/growth_driver_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -161,9 +161,9 @@ description: >
 pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_growth_driver.py \
-  --data /home/claude/growth_driver_data.json \
+  --data {{WORK_DIR}}/growth_driver_data.json \
   --template <SKILL_DIR>/assets/growth-driver-pptx-template.pptx \
-  --output /mnt/user-data/outputs/GrowthDriver_output.pptx
+  --output {{OUTPUT_DIR}}/GrowthDriver_output.pptx
 ```
 
 ---

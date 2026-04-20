@@ -170,7 +170,7 @@ TEMPLATE="assets/pyramid-template-universal.pptx"
 
 ### ピラミッドデータのJSON化
 
-ピラミッド内容を `/home/claude/pyramid_data.json` に以下の形式で保存する：
+ピラミッド内容を `{{WORK_DIR}}/pyramid_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -206,15 +206,15 @@ TEMPLATE="assets/pyramid-template-universal.pptx"
 
 ```bash
 python <スキルフォルダ>/scripts/fill_pyramid.py \
-  --data /home/claude/pyramid_data.json \
+  --data {{WORK_DIR}}/pyramid_data.json \
   --template <スキルフォルダ>/assets/pyramid-template-universal.pptx \
-  --output /mnt/user-data/outputs/PyramidStructure_output.pptx
+  --output {{OUTPUT_DIR}}/PyramidStructure_output.pptx
 ```
 
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/PyramidStructure_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/PyramidStructure_output.pptx
 ```
 
 内容が正しく反映されているか確認し、ユーザーに提示する。

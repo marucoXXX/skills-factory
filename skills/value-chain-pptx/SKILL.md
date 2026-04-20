@@ -87,7 +87,7 @@ description: >
 
 ## JSONデータ仕様
 
-`/home/claude/value_chain_data.json` に以下の形式で保存する：
+`{{WORK_DIR}}/value_chain_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -158,9 +158,9 @@ description: >
 pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_value_chain.py \
-  --data /home/claude/value_chain_data.json \
+  --data {{WORK_DIR}}/value_chain_data.json \
   --template <SKILL_DIR>/assets/value-chain-pptx-template.pptx \
-  --output /mnt/user-data/outputs/ValueChain_output.pptx
+  --output {{OUTPUT_DIR}}/ValueChain_output.pptx
 ```
 
 ---

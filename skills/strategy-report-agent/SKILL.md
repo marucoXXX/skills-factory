@@ -427,14 +427,14 @@ Five Forces
 ```bash
 pip install python-pptx -q --break-system-packages
 
-cat > /home/claude/[skill]_data.json <<'EOF'
+cat > {{WORK_DIR}}/[skill]_data.json <<'EOF'
 { ... }
 EOF
 
 python <SKILL_DIR>/scripts/fill_[skill].py \
-  --data /home/claude/[skill]_data.json \
+  --data {{WORK_DIR}}/[skill]_data.json \
   --template <SKILL_DIR>/assets/[skill]-template.pptx \
-  --output /home/claude/slide_NN_[name].pptx
+  --output {{WORK_DIR}}/slide_NN_[name].pptx
 ```
 
 ### 推奨スライド順序（拡張版・最大25枚想定）
@@ -487,7 +487,7 @@ python <SKILL_DIR>/scripts/fill_[skill].py \
 
 ### チェック手順
 
-1. **ファイル一覧を取得**: `ls /home/claude/*.pptx | sort` で全スライドをリストアップ
+1. **ファイル一覧を取得**: `ls {{WORK_DIR}}/*.pptx | sort` で全スライドをリストアップ
 2. **目次（TOC）スライドの章構成を再確認**: `table-of-contents-pptx`で定義した `sections` 配列と、中扉の `section_number` が一致しているか
 3. **中扉配置ルールの検証**: 各中扉ファイル（`slide_NN_sectionX_*.pptx`）が、その配下コンテンツ（同じセクション番号のスライド群）の**最小番号の直前**に位置しているか
 4. **ファイル番号の歯抜け・逆転を確認**: 01, 02, 03... と連続しているか
@@ -544,12 +544,12 @@ python <SKILL_DIR>/scripts/fill_[skill].py \
 pip install lxml --break-system-packages -q
 
 python <merge-pptxv2_DIR>/scripts/merge_pptx_v2.py \
-  /mnt/user-data/outputs/StrategyReport_[対象会社名].pptx \
-  /home/claude/slide_01_exec_summary.pptx \
-  /home/claude/slide_02_toc.pptx \
-  /home/claude/slide_03_section1_target.pptx \
+  {{OUTPUT_DIR}}/StrategyReport_[対象会社名].pptx \
+  {{WORK_DIR}}/slide_01_exec_summary.pptx \
+  {{WORK_DIR}}/slide_02_toc.pptx \
+  {{WORK_DIR}}/slide_03_section1_target.pptx \
   ... \
-  /home/claude/slide_ZZ_data_avail.pptx
+  {{WORK_DIR}}/slide_ZZ_data_avail.pptx
 ```
 
 出力ファイル名: `StrategyReport_[対象会社名].pptx`

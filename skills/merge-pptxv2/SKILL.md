@@ -42,8 +42,8 @@ v1のmerge-pptxの重大なバグ（チャートrels・Excelデータ・Content-
 ### Step 1: 結合対象のファイルを特定する
 
 ```bash
-echo "=== Outputs ===" && ls -lt /mnt/user-data/outputs/*.pptx 2>/dev/null
-echo "=== Working ===" && ls -lt /home/claude/*.pptx 2>/dev/null
+echo "=== Outputs ===" && ls -lt {{OUTPUT_DIR}}/*.pptx 2>/dev/null
+echo "=== Working ===" && ls -lt {{WORK_DIR}}/*.pptx 2>/dev/null
 ```
 
 ### Step 2: ユーザーに順番を確認する
@@ -62,7 +62,7 @@ echo "=== Working ===" && ls -lt /home/claude/*.pptx 2>/dev/null
 pip install lxml --break-system-packages -q
 
 python <SKILL_DIR>/scripts/merge_pptx_v2.py \
-  /mnt/user-data/outputs/[output_filename].pptx \
+  {{OUTPUT_DIR}}/[output_filename].pptx \
   [input1.pptx] [input2.pptx] [input3.pptx] ...
 ```
 

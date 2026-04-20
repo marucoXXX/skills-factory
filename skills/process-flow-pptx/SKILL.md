@@ -177,7 +177,7 @@ python -m markitdown /mnt/skills/organization/process-flow-pptx/assets/ProcessFl
 
 ### プロセスフローデータのJSON化
 
-内容を `/home/claude/process_flow_data.json` に以下の形式で保存する：
+内容を `{{WORK_DIR}}/process_flow_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -214,14 +214,14 @@ python -m markitdown /mnt/skills/organization/process-flow-pptx/assets/ProcessFl
 
 ```bash
 python /mnt/skills/organization/process-flow-pptx/scripts/fill_process_flow.py \
-  --data /home/claude/process_flow_data.json \
-  --output /mnt/user-data/outputs/ProcessFlow_output.pptx
+  --data {{WORK_DIR}}/process_flow_data.json \
+  --output {{OUTPUT_DIR}}/ProcessFlow_output.pptx
 ```
 
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/ProcessFlow_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/ProcessFlow_output.pptx
 ```
 
 内容が正しく反映されているか確認し、ユーザーに提示する。

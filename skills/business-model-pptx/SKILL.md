@@ -178,7 +178,7 @@ TEMPLATE="<SKILL_DIR>/assets/business-model-template.pptx"
 
 ### 事業モデルデータのJSON化
 
-事業モデル情報を `/home/claude/business_model_data.json` に以下の形式で保存する：
+事業モデル情報を `{{WORK_DIR}}/business_model_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -274,9 +274,9 @@ pip install python-pptx playwright -q --break-system-packages
 playwright install chromium 2>/dev/null
 
 python <SKILL_DIR>/scripts/fill_business_model.py \
-  --data /home/claude/business_model_data.json \
+  --data {{WORK_DIR}}/business_model_data.json \
   --template <SKILL_DIR>/assets/business-model-template.pptx \
-  --output /mnt/user-data/outputs/BusinessModel_output.pptx
+  --output {{OUTPUT_DIR}}/BusinessModel_output.pptx
 ```
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
@@ -284,7 +284,7 @@ python <SKILL_DIR>/scripts/fill_business_model.py \
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/BusinessModel_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/BusinessModel_output.pptx
 ```
 
 内容が正しく反映されているか確認し、ユーザーに提示する。

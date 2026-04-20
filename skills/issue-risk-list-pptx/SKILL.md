@@ -43,7 +43,8 @@ description: >
   - 詳細（width_ratio: 3.5）
   - 担当（width_ratio: 1.0）
   - 対応期日（width_ratio: 1.5）
-- **データ行**: 行数に制限なし。1スライドあたり最大6行で、7行以上は自動的に複数スライドに分割される。複数ページ時はChart Titleに「（1/3）」等のページ番号が自動付与される。
+- **データ行**: 行数に制限なし。1スライドあたり最大4行（16ptフォント前提）で、5行以上は自動的に複数スライドに**バランス分割**される（例: 7行 → 4+3 / 10行 → 4+3+3）。末尾ページに1行だけ残るような不均衡を避ける。複数ページ時はChart Titleに「（1/3）」等のページ番号が自動付与される。
+- **フォントサイズ**: デフォルトは**16pt（ヘッダー・データ共通）**。JSON側で `font_size_header` / `font_size_data` にて個別に上書き可能（単位: 百分の一pt、16pt = 1600）。
 
 ### 列のカスタマイズ例
 
@@ -157,7 +158,7 @@ python -m markitdown <SKILL_DIR>/assets/issue-risk-template.pptx
 
 ### 課題・リスクデータのJSON化
 
-内容を `/home/claude/issue_risk_data.json` に以下の形式で保存する：
+内容を `{{WORK_DIR}}/issue_risk_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -191,15 +192,15 @@ python -m markitdown <SKILL_DIR>/assets/issue-risk-template.pptx
 
 ```bash
 python <SKILL_DIR>/scripts/fill_issue_risk.py \
-  --data /home/claude/issue_risk_data.json \
+  --data {{WORK_DIR}}/issue_risk_data.json \
   --template <SKILL_DIR>/assets/issue-risk-template.pptx \
-  --output /mnt/user-data/outputs/IssueRisk_output.pptx
+  --output {{OUTPUT_DIR}}/IssueRisk_output.pptx
 ```
 
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/IssueRisk_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/IssueRisk_output.pptx
 ```
 
 内容が正しく反映されているか確認し、ユーザーに提示する。

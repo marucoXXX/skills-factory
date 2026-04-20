@@ -52,19 +52,33 @@ def find_shape(slide, name):
     return None
 
 
-def set_textbox_text(shape, text):
-    """TextBox/PlaceholderのテキストをSet（既存スタイルを保持）"""
+def set_textbox_text(shape, text, font_size=None, bold=None):
+    """TextBox/Placeholderのテキストを設定。font_size(pt)/boldを指定するとrPrに明示的に書き込む。"""
     if shape is None:
         return
     tf = shape.text_frame
     para = tf.paragraphs[0]
     if para.runs:
-        para.runs[0].text = text
-        for run in para.runs[1:]:
-            run.text = ""
+        run = para.runs[0]
+        run.text = text
+        rPr = run._r.find(qn("a:rPr"))
+        if rPr is None:
+            rPr = etree.SubElement(run._r, qn("a:rPr"))
+            run._r.insert(0, rPr)
+        if font_size is not None:
+            rPr.set("sz", str(int(font_size * 100)))
+        if bold is not None:
+            rPr.set("b", "1" if bold else "0")
+        for r in para.runs[1:]:
+            r.text = ""
     else:
         r_elem = etree.SubElement(para._p, qn("a:r"))
-        etree.SubElement(r_elem, qn("a:rPr"), attrib={"lang": "ja-JP"})
+        attrs = {"lang": "ja-JP"}
+        if font_size is not None:
+            attrs["sz"] = str(int(font_size * 100))
+        if bold is not None:
+            attrs["b"] = "1" if bold else "0"
+        etree.SubElement(r_elem, qn("a:rPr"), attrib=attrs)
         t_elem = etree.SubElement(r_elem, qn("a:t"))
         t_elem.text = text
 
@@ -250,14 +264,14 @@ def main():
     main_msg = data.get("main_message", "")
     if len(main_msg) > 65:
         print(f"  ⚠ WARNING: Main Message が{len(main_msg)}文字です（上限65文字）。スライドに収まらない可能性があります。", file=sys.stderr)
-    set_textbox_text(find_shape(slide, SHAPE_MAIN_MESSAGE), main_msg)
+    set_textbox_text(find_shape(slide, SHAPE_MAIN_MESSAGE), main_msg, font_size=26, bold=True)
     print(f"  [Main Message] ({len(main_msg)}文字) {main_msg}")
 
     # 2. Chart Title（Text Placeholder 2 = 下段、10〜20文字）
     title_text = data.get("title", "対象会社概要：会社概要")
     if len(title_text) > 20:
         print(f"  ⚠ WARNING: Chart Title が{len(title_text)}文字です（推奨10〜20文字）。", file=sys.stderr)
-    set_textbox_text(find_shape(slide, SHAPE_CHART_TITLE), title_text)
+    set_textbox_text(find_shape(slide, SHAPE_CHART_TITLE), title_text, font_size=18, bold=True)
     print(f"  [Chart Title]  ({len(title_text)}文字) {title_text}")
 
     # 3. 出典

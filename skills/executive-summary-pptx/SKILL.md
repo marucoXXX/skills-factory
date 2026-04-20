@@ -104,7 +104,7 @@ description: >
 
 ## JSONデータ仕様
 
-`/home/claude/executive_summary_data.json` に以下の形式で保存する：
+`{{WORK_DIR}}/executive_summary_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -162,9 +162,9 @@ description: >
 pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_executive_summary.py \
-  --data /home/claude/executive_summary_data.json \
+  --data {{WORK_DIR}}/executive_summary_data.json \
   --template <SKILL_DIR>/assets/executive-summary-template.pptx \
-  --output /mnt/user-data/outputs/ExecutiveSummary_output.pptx
+  --output {{OUTPUT_DIR}}/ExecutiveSummary_output.pptx
 ```
 
 ---

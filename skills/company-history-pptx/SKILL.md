@@ -140,7 +140,7 @@ TEMPLATE="<SKILL_DIR>/assets/company-history-template.pptx"
 
 ### 沿革データのJSON化
 
-沿革情報を `/home/claude/company_history_data.json` に以下の形式で保存する：
+沿革情報を `{{WORK_DIR}}/company_history_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -185,9 +185,9 @@ TEMPLATE="<SKILL_DIR>/assets/company-history-template.pptx"
 pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_company_history.py \
-  --data /home/claude/company_history_data.json \
+  --data {{WORK_DIR}}/company_history_data.json \
   --template <SKILL_DIR>/assets/company-history-template.pptx \
-  --output /mnt/user-data/outputs/CompanyHistory_output.pptx
+  --output {{OUTPUT_DIR}}/CompanyHistory_output.pptx
 ```
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
@@ -195,7 +195,7 @@ python <SKILL_DIR>/scripts/fill_company_history.py \
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/CompanyHistory_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/CompanyHistory_output.pptx
 ```
 
 内容が正しく反映されているか確認し、ユーザーに提示する。

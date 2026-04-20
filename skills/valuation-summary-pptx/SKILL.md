@@ -145,9 +145,9 @@ M&A DDで使用するバリュエーション・財務分析のスライドを�
 pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_valuation.py \
-  --data /home/claude/valuation_data.json \
+  --data {{WORK_DIR}}/valuation_data.json \
   --template <SKILL_DIR>/assets/valuation-template.pptx \
-  --output /mnt/user-data/outputs/Valuation_output.pptx
+  --output {{OUTPUT_DIR}}/Valuation_output.pptx
 ```
 
 ---

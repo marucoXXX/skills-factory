@@ -91,7 +91,7 @@ Excelから読み取った年度を `yy/mm期` 形式に変換する：
 
 ## JSONデータ仕様
 
-`/home/claude/revenue_analysis_data.json` に以下の形式で保存する：
+`{{WORK_DIR}}/revenue_analysis_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -135,9 +135,9 @@ EBITDA率は `ebitda / revenue * 100` で自動計算される。
 pip install python-pptx openpyxl -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_revenue_analysis.py \
-  --data /home/claude/revenue_analysis_data.json \
+  --data {{WORK_DIR}}/revenue_analysis_data.json \
   --template <SKILL_DIR>/assets/revenue-analysis-template.pptx \
-  --output /mnt/user-data/outputs/RevenueAnalysis_output.pptx
+  --output {{OUTPUT_DIR}}/RevenueAnalysis_output.pptx
 ```
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。

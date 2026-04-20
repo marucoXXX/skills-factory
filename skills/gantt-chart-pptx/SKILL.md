@@ -130,7 +130,7 @@ TEMPLATE="<SKILL_DIR>/assets/gantt-chart-template.pptx"
 
 ### スケジュールデータのJSON化
 
-内容を `/home/claude/gantt_data.json` に以下の形式で保存する：
+内容を `{{WORK_DIR}}/gantt_data.json` に以下の形式で保存する：
 
 ```json
 {
@@ -186,15 +186,15 @@ pip install python-pptx playwright -q --break-system-packages
 playwright install chromium 2>/dev/null
 
 python <SKILL_DIR>/scripts/fill_gantt_chart.py \
-  --data /home/claude/gantt_data.json \
+  --data {{WORK_DIR}}/gantt_data.json \
   --template <SKILL_DIR>/assets/gantt-chart-template.pptx \
-  --output /mnt/user-data/outputs/GanttChart_output.pptx
+  --output {{OUTPUT_DIR}}/GanttChart_output.pptx
 ```
 
 ### 出力確認
 
 ```bash
-python -m markitdown /mnt/user-data/outputs/GanttChart_output.pptx
+python -m markitdown {{OUTPUT_DIR}}/GanttChart_output.pptx
 ```
 
 ---

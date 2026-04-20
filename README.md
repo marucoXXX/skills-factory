@@ -48,6 +48,9 @@ python3 tools/build_skill.py package <skill> [--strict]
 
 # 全スキルを Claude Code にインストール
 python3 tools/build_skill.py install-all
+
+# 全スキルを Claude.ai 用 zip にパッケージ (dist/*.zip)
+python3 tools/build_skill.py package-all [--strict]
 ```
 
 `--strict` は未解決 `{{VAR}}` をエラーにする。CI やリリース前チェックで使う。
@@ -111,6 +114,20 @@ import markitdown
 3. 入力は `{{INPUT_DIR}}`、出力は `{{OUTPUT_DIR}}`、中間は `{{WORK_DIR}}` を参照するように書く
 4. `check <new_name> --strict` が通ることを確認
 5. `install <new_name>` / `package <new_name>` で配布
+
+## Claude.ai への配布ワークフロー
+
+全スキルのzipをGitHub Releaseにまとめて置き、必要なものを手動アップロードする運用。
+
+1. スキルを `skills/<name>/` で編集 → `check --strict` と `install` で動作確認
+2. リリース用タグを push：
+   ```bash
+   git tag v0.1.0 && git push origin v0.1.0
+   ```
+3. `.github/workflows/release.yml` が発火して `package-all` を実行、全zipを Release `v0.1.0` に添付する
+4. GitHubのReleases画面から必要なスキルzipをダウンロード → claude.ai のスキル管理画面にアップロード
+
+任意のタイミングでビルドしたい場合は、Actions タブから `Release skill zips` ワークフローを手動実行（`workflow_dispatch`）する。`tag` を空にすると `snapshot-<短SHA>` 名でReleaseが作られる。
 
 ## 現状の移行状況
 
