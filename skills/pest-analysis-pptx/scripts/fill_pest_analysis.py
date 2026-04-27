@@ -411,6 +411,32 @@ def add_impact_legend(slide):
 
 
 # ──────────────────────────────────────────────
+# Validation
+# ──────────────────────────────────────────────
+MAIN_MESSAGE_MAX = 65
+PEST_ITEM_MAX = 50
+
+
+def _validate_input(data):
+    """main_message ≤65字、各 quadrant の item.text ≤50字。"""
+    main_message = data.get("main_message", "")
+    if len(main_message) > MAIN_MESSAGE_MAX:
+        raise ValueError(
+            f"main_message は {MAIN_MESSAGE_MAX} 字以内（受領: {len(main_message)}）: {main_message[:80]}..."
+        )
+    pest = data.get("pest", {})
+    for axis in ("political", "economic", "social", "technological"):
+        items = pest.get(axis, {}).get("items", [])
+        for j, it in enumerate(items):
+            text = it.get("text", "")
+            if len(text) > PEST_ITEM_MAX:
+                raise ValueError(
+                    f"pest.{axis}.items[{j}].text は {PEST_ITEM_MAX} 字以内"
+                    f"（受領: {len(text)}）: {text}"
+                )
+
+
+# ──────────────────────────────────────────────
 # Main
 # ──────────────────────────────────────────────
 def main():
@@ -423,6 +449,7 @@ def main():
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    _validate_input(data)
     prs = Presentation(args.template)
     slide = prs.slides[0]
 

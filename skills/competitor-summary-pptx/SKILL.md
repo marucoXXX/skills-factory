@@ -30,7 +30,7 @@ description: >
 
 | セクション | 位置 | 内容 |
 |---|---|---|
-| **メインメッセージ** | 最上部 | 最大70文字。「〜すべき」で締める |
+| **メインメッセージ** | 最上部 | 最大65文字（hard-fail）。「〜すべき」で締める |
 | **チャートタイトル** | メインメッセージ直下 | 「対象会社 対 主要競合N社：競合比較サマリー」等 |
 | **比較テーブル** | コンテンツエリア | 横型テーブル（行=比較項目、列=企業） |
 | **出典** | 左下 | 情報ソースの一括記載 |
@@ -80,7 +80,7 @@ description: >
 ```markdown
 ## 競合比較サマリー 整理結果
 
-**Main Message（※ドラフト、最大70文字）**
+**Main Message（※ドラフト、最大65文字（hard-fail））**
 対象会社は業界3位のポジションにあり、上位2社との規模ギャップ・差別化戦略を多面的に評価すべき
 
 **Chart Title**
@@ -153,7 +153,7 @@ description: >
 
 | フィールド | 型 | 必須 | 説明 |
 |---|---|---|---|
-| `main_message` | string | 必須 | メインメッセージ。最大70文字、「〜すべき」で締める |
+| `main_message` | string | 必須 | メインメッセージ。最大65文字（hard-fail）、「〜すべき」で締める |
 | `chart_title` | string | 任意 | チャートタイトル。デフォルト「競合比較」 |
 | `source` | string | 任意 | 出典（左下に一括表示） |
 | `target_company` | object | 必須 | 対象会社の情報。`name` + 各 comparison_item の key と対応する値を持つ |
@@ -273,3 +273,25 @@ python -m markitdown {{OUTPUT_DIR}}/CompetitorSummary_output.pptx
 |---|---|
 | `references/sample_data.json` | サンプルJSONデータ（対象会社＋3競合） |
 | `references/template-mapping.md` | テンプレートShape構造と処理の対応表 |
+
+---
+
+## オーケストレーター連携
+
+`market-overview-agent` から呼び出される場合の規約：
+
+| 項目 | 値 |
+|---|---|
+| 入力JSONファイル名 | `data_08_competitor_summary.json` |
+| 出力PPTXファイル名 | `slide_08_competitor_summary.pptx` |
+| 入力ディレクトリ | `{{WORK_DIR}}/<run_id>/`（オーケストレーター作業領域） |
+| 出力ディレクトリ | 同上 |
+| 競合5社上限 | デッキ全体で同じ5社（market-overview-agent が一貫性を担保）|
+| 比較項目の調整 | market-overview-agent では「事業内容 / 主力製品 / 主要顧客 / 売上高 / 戦略の重点 / グローバル展開度 / 強み」等の市場分析特化7項目への置換も可 |
+
+オーケストレーターは `merge_order.json` の `entries[]` に
+`{ "slide_number": 8, "skill_name": "competitor-summary-pptx", "data_file": "data_08_competitor_summary.json", "file_name": "slide_08_competitor_summary.pptx" }`
+を登録する。
+
+`strategy-report-agent` から呼び出される場合は、上記とは別の番号付け規約を持つ。混同を避けるため、
+オーケストレーター側で `data_file` / `file_name` を明示的に指定して呼び出すこと。

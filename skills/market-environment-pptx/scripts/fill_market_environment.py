@@ -433,6 +433,12 @@ def main():
     args = ap.parse_args()
     with open(args.data, "r", encoding="utf-8") as f: data = json.load(f)
 
+    _mm = data.get("main_message", "")
+    if len(_mm) > 65:
+        raise ValueError(
+            f"main_message は 65 字以内（受領: {len(_mm)}）: {_mm[:80]}..."
+        )
+
     print("=== 市場環境分析スライド生成（ネイティブPPTX）===")
     prs = Presentation(args.template); slide = prs.slides[0]
 

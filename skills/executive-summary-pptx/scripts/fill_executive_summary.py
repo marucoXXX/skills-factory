@@ -109,11 +109,11 @@ CATEGORY_COLORS = {
 DEFAULT_COLOR = RGBColor(0x4E, 0x79, 0xA7)  # デフォルト: 紺系
 
 FONT_NAME_JP = "Meiryo UI"
-FONT_SIZE_BADGE = Pt(20)
-FONT_SIZE_CATEGORY = Pt(10)
-FONT_SIZE_HEADING = Pt(14)
-FONT_SIZE_DETAIL = Pt(11)
-FONT_SIZE_SOURCE = Pt(10)
+FONT_SIZE_BADGE = Pt(20)   # 互換のため残置（draw_number_badgeは未使用）
+FONT_SIZE_CATEGORY = Pt(12)
+FONT_SIZE_HEADING = Pt(16)
+FONT_SIZE_DETAIL = Pt(13)
+FONT_SIZE_SOURCE = Pt(11)
 
 
 # ──────────────────────────────────────────────
@@ -232,16 +232,11 @@ def draw_number_badge(slide, number, color, left, top, diameter):
 # ──────────────────────────────────────────────
 def draw_finding(slide, idx, finding, left, top, width, height):
     """
-    1つのFindingを描画する
+    1つのFindingを描画する（番号バッジは廃止）
     レイアウト:
-      [01] [カテゴリラベル] [見出し (Bold)]
-           [詳細テキスト                ]
+      [▎] [カテゴリラベル] [見出し (Bold)]
+          [詳細テキスト                ]
     """
-    # 番号バッジ
-    badge_size = Inches(0.55)
-    badge_left = left
-    badge_top = top + Inches(0.05)
-
     category = finding.get("category", "")
     color = None
     color_hex = finding.get("color")
@@ -250,12 +245,10 @@ def draw_finding(slide, idx, finding, left, top, width, height):
     else:
         color = get_category_color(category)
 
-    draw_number_badge(slide, idx, color, badge_left, badge_top, badge_size)
-
-    # 左側の縦バー（カテゴリ色）
-    bar_left = left + badge_size + Inches(0.10)
+    # 左側の縦バー（カテゴリ色）— 番号バッジを廃止し、左端から開始
+    bar_left = left
     bar_top = top
-    bar_w = Inches(0.05)
+    bar_w = Inches(0.08)
     bar_h = height - Inches(0.10)
     bar = slide.shapes.add_shape(
         MSO_SHAPE.RECTANGLE, bar_left, bar_top, bar_w, bar_h,
@@ -272,12 +265,12 @@ def draw_finding(slide, idx, finding, left, top, width, height):
 
     # 上段: カテゴリラベル + 見出し
     top_row_top = top + Inches(0.02)
-    top_row_h = Inches(0.35)
+    top_row_h = Inches(0.42)
 
     # カテゴリラベル（小さな色付きタグ風）
     if category:
-        # タグ幅を動的に決定（固定幅でOK）
-        cat_label_w = Inches(1.30)
+        # タグ幅を動的に決定（フォント12ptに合わせて広めに）
+        cat_label_w = Inches(1.80)
         cat_tb = slide.shapes.add_textbox(
             content_left, top_row_top, cat_label_w, top_row_h,
         )
@@ -340,6 +333,44 @@ def draw_finding(slide, idx, finding, left, top, width, height):
 # ──────────────────────────────────────────────
 # Main
 # ──────────────────────────────────────────────
+# Validation
+# ──────────────────────────────────────────────
+MAIN_MESSAGE_MAX = 65
+CATEGORY_MAX = 8
+DETAIL_MAX = 100
+
+
+def _validate_input(data):
+    """main_message ≤65字、category ≤8字＆ユニーク、detail ≤100字。"""
+    main_message = data.get("main_message", "")
+    if len(main_message) > MAIN_MESSAGE_MAX:
+        raise ValueError(
+            f"main_message は {MAIN_MESSAGE_MAX} 字以内（受領: {len(main_message)}）: {main_message[:80]}..."
+        )
+    findings = data.get("findings", [])
+    categories = []
+    for i, f in enumerate(findings):
+        cat = f.get("category", "")
+        if cat and len(cat) > CATEGORY_MAX:
+            raise ValueError(
+                f"findings[{i}].category は {CATEGORY_MAX} 字以内（受領: {len(cat)}）: {cat}"
+            )
+        categories.append(cat)
+        detail = f.get("detail", "")
+        if len(detail) > DETAIL_MAX:
+            raise ValueError(
+                f"findings[{i}].detail は {DETAIL_MAX} 字以内"
+                f"（受領: {len(detail)}）: {detail[:80]}..."
+            )
+    nonempty = [c for c in categories if c]
+    if len(set(nonempty)) != len(nonempty):
+        dupes = sorted({c for c in nonempty if nonempty.count(c) > 1})
+        raise ValueError(
+            f"findings の category は全てユニークである必要があります。重複: {dupes} "
+            f"（例：「市場」が複数 finding に出る場合は「市場規模」「市場成長」のように区別すること）"
+        )
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
@@ -350,6 +381,7 @@ def main():
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    _validate_input(data)
     prs = Presentation(args.template)
     slide = prs.slides[0]
 

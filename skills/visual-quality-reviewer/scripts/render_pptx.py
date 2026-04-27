@@ -2,7 +2,7 @@
 """Render a PPTX file to per-slide PNG images via LibreOffice + pdftoppm.
 
 Usage:
-  render_pptx.py --pptx <path> --out-dir <dir> [--dpi 150]
+  render_pptx.py --pptx <path> --out-dir <dir> [--dpi 200]
 
 Output:
   <out-dir>/page_01.png, page_02.png, ...
@@ -77,7 +77,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--pptx", required=True)
     ap.add_argument("--out-dir", required=True)
-    ap.add_argument("--dpi", type=int, default=150)
+    ap.add_argument("--dpi", type=int, default=200)
     args = ap.parse_args()
 
     pptx = Path(args.pptx).expanduser().resolve()
