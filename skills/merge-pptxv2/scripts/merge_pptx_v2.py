@@ -19,6 +19,7 @@ Architecture:
   - Content-Types are rebuilt to cover all file extensions
 """
 
+import json
 import zipfile
 import os
 import re
@@ -261,6 +262,73 @@ def fix_content_types(base):
 
 
 # ---------------------------------------------------------------------------
+# merge_order.json validation
+# ---------------------------------------------------------------------------
+
+# Valid category values in merge_order.json entries.
+# Source of truth: skills/market-overview-agent/references/deck_skeleton_standard.json
+VALID_CATEGORIES = {"header", "content", "section_divider", "footer"}
+
+
+def load_merge_order(path):
+    """Load merge_order.json and return its parsed dict."""
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def validate_section_divider_positions(merge_order):
+    """Ensure every section_divider entry is immediately followed by a content entry.
+
+    Returns a list of warning dicts (empty if all OK):
+        [{"slide_index": int, "type": "section_divider_position", "message": str}, ...]
+    """
+    warnings = []
+    entries = merge_order.get("entries", []) or []
+    n = len(entries)
+
+    for i, entry in enumerate(entries):
+        if entry.get("category") != "section_divider":
+            continue
+        slide_idx = entry.get("slide_number", i + 1)
+
+        if i + 1 >= n:
+            warnings.append({
+                "slide_index": slide_idx,
+                "type": "section_divider_position",
+                "message": (
+                    f"slide {slide_idx} (section_divider) is the last entry; "
+                    f"expected a content slide immediately after."
+                ),
+            })
+            continue
+
+        nxt = entries[i + 1]
+        nxt_cat = nxt.get("category")
+        if nxt_cat != "content":
+            nxt_idx = nxt.get("slide_number", i + 2)
+            warnings.append({
+                "slide_index": slide_idx,
+                "type": "section_divider_position",
+                "message": (
+                    f"slide {slide_idx} (section_divider) is followed by "
+                    f"slide {nxt_idx} (category={nxt_cat!r}); expected category='content'."
+                ),
+            })
+
+    return warnings
+
+
+def write_merge_warnings(warnings, output_path):
+    """Write merge_warnings.json next to the merged PPTX. Always writes (empty array if no warnings)."""
+    out_dir = os.path.dirname(os.path.abspath(output_path)) or "."
+    warnings_path = os.path.join(out_dir, "merge_warnings.json")
+    with open(warnings_path, "w", encoding="utf-8") as f:
+        json.dump(warnings, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+    return warnings_path
+
+
+# ---------------------------------------------------------------------------
 # Main merge logic
 # ---------------------------------------------------------------------------
 
@@ -482,8 +550,17 @@ if __name__ == "__main__":
         roundtrip = False
         args = [a for a in args if a != "--no-roundtrip"]
 
+    merge_order_path = None
+    if "--merge-order" in args:
+        idx = args.index("--merge-order")
+        if idx + 1 >= len(args):
+            print("Error: --merge-order requires a path argument")
+            sys.exit(1)
+        merge_order_path = args[idx + 1]
+        args = args[:idx] + args[idx + 2:]
+
     if len(args) < 2:
-        print("Usage: python merge_pptx_v2.py [--no-roundtrip] <output.pptx> <input1.pptx> <input2.pptx> [...]")
+        print("Usage: python merge_pptx_v2.py [--no-roundtrip] [--merge-order <path>] <output.pptx> <input1.pptx> <input2.pptx> [...]")
         sys.exit(1)
 
     output = args[0]
@@ -493,5 +570,20 @@ if __name__ == "__main__":
         if not os.path.exists(f):
             print(f"Error: File not found: {f}")
             sys.exit(1)
+
+    if merge_order_path:
+        if not os.path.exists(merge_order_path):
+            print(f"Error: --merge-order file not found: {merge_order_path}")
+            sys.exit(1)
+        merge_order = load_merge_order(merge_order_path)
+        validation_warnings = validate_section_divider_positions(merge_order)
+        warnings_path = write_merge_warnings(validation_warnings, output)
+        if validation_warnings:
+            print(f"\n[validate] {len(validation_warnings)} section_divider position warning(s) -> {warnings_path}")
+            for w in validation_warnings:
+                print(f"  - slide {w['slide_index']}: {w['message']}")
+            print("[validate] merge will continue regardless of warnings.")
+        else:
+            print(f"[validate] section_divider positions OK -> {warnings_path}")
 
     merge_presentations(inputs, output, roundtrip=roundtrip)

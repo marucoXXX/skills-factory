@@ -123,6 +123,9 @@ description: >
 
 ### Step 0: ユーザーからの受領
 
+<!-- source: skills/_common/prompts/step0_scope_clarification.md (manual sync until D2) -->
+<!-- 注: Phase 別マルチエージェント構成のため、market-overview-agent ほど詳細な scope.json は持たない。本ステップで対象会社名・調査目的・業界・深度を確定し、Step 3 で <run_id> ディレクトリに保存する。 -->
+
 ユーザー入力から以下を抽出:
 - **対象会社名**（必須）
 - **調査目的**（BDD / 競合分析 / M&Aターゲット評価 / 投資検討 / 新規参入）
@@ -465,6 +468,12 @@ python3 ~/.claude/skills/issue-risk-list-pptx/scripts/fill_issue_risk.py \
 **注意**: where_to_play / how_to_win は **1つのPPTXファイルに3スライド出力**するため、merge 時にそのまま渡すと 3 ページ分が連続挿入される。
 
 #### Step 6.5.3: merge-pptxv2 で結合
+
+<!-- source: skills/_common/references/orchestrator_contract.md (manual sync until D2) -->
+<!-- merge_order.json の正規スキーマと category 値域は上記参照。
+     Phase 3.4-b 時点では本オーケストレーターはまだ merge_order.json を生成していないため、
+     `--merge-order` フラグなしで起動している。今後 merge_order.json 出力を追加する際は
+     orchestrator_contract.md のチェックリストに従うこと。 -->
 
 ```bash
 pip install lxml --break-system-packages -q 2>&1 | tail -1

@@ -166,6 +166,8 @@ Step 10: ユーザーへ提示（PPTX + MDの2ファイル）
 
 ## Step 0: 市場スコープ確認
 
+<!-- source: skills/_common/prompts/step0_scope_clarification.md (manual sync until D2) -->
+
 `AskUserQuestion` で以下を確定する。すべて単一選択（必要なら「Other」で自由記述）。
 
 | 質問 | 選択肢例 | 既定値 |
@@ -268,6 +270,8 @@ Step 10: ユーザーへ提示（PPTX + MDの2ファイル）
 ---
 
 ## Step 2.5: ファクトチェック
+
+<!-- source: skills/_common/prompts/step2_5_factcheck_invocation.md (manual sync until D2) -->
 
 `fact-check-reviewer` スキルを呼び出して、Web 取得情報の真偽を裏取り。
 
@@ -392,6 +396,10 @@ python {{SKILL_DIR}}/<dependency_skill>/scripts/fill_<name>.py \
 
 ## Step 6: マージ順序照合表 + merge_order.json
 
+<!-- source: skills/_common/references/orchestrator_contract.md (manual sync until D2) -->
+<!-- merge_order.json / merge_warnings.json / regeneration_hint の正規スキーマは上記参照 -->
+
+
 ### Step 6-a: 照合表（Markdown）の出力＆セルフチェック
 
 ```markdown
@@ -422,7 +430,7 @@ python {{SKILL_DIR}}/<dependency_skill>/scripts/fill_<name>.py \
 - [ ] エグゼクティブサマリーが通し番号01に配置
 - [ ] データアベイラビリティが末尾に配置
 
-### Step 6-b: merge_order.json 出力（visual-quality-reviewer 用）
+### Step 6-b: merge_order.json 出力（merge-pptxv2 / visual-quality-reviewer 用）
 
 `{{WORK_DIR}}/<run_id>/merge_order.json` に保存：
 
@@ -430,32 +438,57 @@ python {{SKILL_DIR}}/<dependency_skill>/scripts/fill_<name>.py \
 {
   "entries": [
     {"slide_number": 1, "file_name": "slide_01_exec_summary.pptx",
-     "skill_name": "executive-summary-pptx", "data_file": "data_01_exec_summary.json"},
+     "skill_name": "executive-summary-pptx", "data_file": "data_01_exec_summary.json",
+     "category": "header"},
     {"slide_number": 2, "file_name": "slide_02_toc.pptx",
-     "skill_name": "table-of-contents-pptx", "data_file": "data_02_toc.json"},
+     "skill_name": "table-of-contents-pptx", "data_file": "data_02_toc.json",
+     "category": "header"},
     {"slide_number": 3, "file_name": "slide_03_section1_market_size.pptx",
-     "skill_name": "section-divider-pptx", "data_file": "data_03_section1.json"},
+     "skill_name": "section-divider-pptx", "data_file": "data_03_section1.json",
+     "category": "section_divider"},
     {"slide_number": 4, "file_name": "slide_04_market_environment.pptx",
-     "skill_name": "market-environment-pptx", "data_file": "data_04_market_environment.json"},
+     "skill_name": "market-environment-pptx", "data_file": "data_04_market_environment.json",
+     "category": "content"},
     {"slide_number": 5, "file_name": "slide_05_section2_competition.pptx",
-     "skill_name": "section-divider-pptx", "data_file": "data_05_section2.json"},
+     "skill_name": "section-divider-pptx", "data_file": "data_05_section2.json",
+     "category": "section_divider"},
     {"slide_number": 6, "file_name": "slide_06_market_share.pptx",
-     "skill_name": "market-share-pptx", "data_file": "data_06_market_share.json"},
+     "skill_name": "market-share-pptx", "data_file": "data_06_market_share.json",
+     "category": "content"},
     {"slide_number": 7, "file_name": "slide_07_positioning.pptx",
-     "skill_name": "positioning-map-pptx", "data_file": "data_07_positioning.json"},
+     "skill_name": "positioning-map-pptx", "data_file": "data_07_positioning.json",
+     "category": "content"},
     {"slide_number": 8, "file_name": "slide_08_competitor_summary.pptx",
-     "skill_name": "competitor-summary-pptx", "data_file": "data_08_competitor_summary.json"},
+     "skill_name": "competitor-summary-pptx", "data_file": "data_08_competitor_summary.json",
+     "category": "content"},
     {"slide_number": 9, "file_name": "slide_09_section3_success_factors.pptx",
-     "skill_name": "section-divider-pptx", "data_file": "data_09_section3.json"},
+     "skill_name": "section-divider-pptx", "data_file": "data_09_section3.json",
+     "category": "section_divider"},
     {"slide_number": 10, "file_name": "slide_10_market_kbf.pptx",
-     "skill_name": "market-kbf-pptx", "data_file": "data_10_market_kbf.json"},
+     "skill_name": "market-kbf-pptx", "data_file": "data_10_market_kbf.json",
+     "category": "content"},
     {"slide_number": 11, "file_name": "slide_11_pest.pptx",
-     "skill_name": "pest-analysis-pptx", "data_file": "data_11_pest.json"},
+     "skill_name": "pest-analysis-pptx", "data_file": "data_11_pest.json",
+     "category": "content"},
     {"slide_number": 12, "file_name": "slide_12_data_availability.pptx",
-     "skill_name": "data-availability-pptx", "data_file": "data_12_data_availability.json"}
+     "skill_name": "data-availability-pptx", "data_file": "data_12_data_availability.json",
+     "category": "footer"}
   ]
 }
 ```
+
+#### `category` フィールド規約
+
+| 値 | 用途 | Market Overview 標準デッキでの該当 |
+|---|---|---|
+| `header` | セクション開始前の冒頭スライド | slide_01 (exec summary), slide_02 (TOC) |
+| `content` | 通常のコンテンツスライド | slide_04, 06, 07, 08, 10, 11 |
+| `section_divider` | 中扉 | slide_03, 05, 09 |
+| `footer` | 末尾の付録的スライド | slide_12 (data availability) |
+
+正規スキーマは `references/deck_skeleton_standard.json`。`merge-pptxv2` の
+`--merge-order` 検証では `section_divider` の直後が必ず `content` であることを assert する
+（違反は `merge_warnings.json` に記録され、マージは継続）。
 
 ---
 
@@ -467,6 +500,7 @@ python {{SKILL_DIR}}/<dependency_skill>/scripts/fill_<name>.py \
 pip install lxml --break-system-packages -q
 
 python {{SKILL_DIR}}/merge-pptxv2/scripts/merge_pptx_v2.py \
+  --merge-order {{WORK_DIR}}/<run_id>/merge_order.json \
   {{OUTPUT_DIR}}/MarketOverview_<market_name>_<date>.pptx \
   {{WORK_DIR}}/<run_id>/slide_01_exec_summary.pptx \
   {{WORK_DIR}}/<run_id>/slide_02_toc.pptx \
@@ -483,6 +517,8 @@ python {{SKILL_DIR}}/merge-pptxv2/scripts/merge_pptx_v2.py \
 ```
 
 `<market_name>` はスネークケース化（例: `HRTech`）、`<date>` は実行日（YYYY-MM-DD）。
+`--merge-order` を指定すると `section_divider` 位置検証が走り、結果は出力 PPTX と同じ
+ディレクトリの `merge_warnings.json` に保存される（違反ゼロでも空配列で出力される）。
 
 ### マージ後の最終検証
 
@@ -491,9 +527,15 @@ merge-pptxv2 の出力ログで、各スライド番号の Main Message と shap
 **「コンテンツ（多）→ 中扉（少）→ コンテンツ（多）」の谷**が3箇所（slide_03/05/09）に
 出現するのが正常。
 
+加えて、`merge_warnings.json` を確認し、`section_divider_position` 違反が 0 件であることを
+チェック。違反があれば該当 `slide_index` の前後をデータで見直す（中扉の直後に header/footer/
+別の中扉が混入していないか、merge_order.json の `category` 設定ミスではないか）。
+
 ---
 
 ## Step 8: ビジュアル品質レビュー＋自動修正ループ
+
+<!-- source: skills/_common/prompts/step_final_visual_review_loop.md (manual sync until D2) -->
 
 ### Step 8-a: visual-quality-reviewer 起動
 
