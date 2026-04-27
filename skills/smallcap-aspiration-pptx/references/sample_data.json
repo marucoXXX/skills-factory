@@ -1,0 +1,70 @@
+{
+  "main": {
+    "main_message": "能作は2017年新工場・2022年HD化・2023年承継の3段階を経て、2025年以降の都市拡張＋海外BtoCスケーリングフェーズに突入している",
+    "chart_title": "Aspiration & Trajectory：時間軸ロードマップ（1/3）",
+    "implications": [
+      {"label": "過去の布石", "detail": "2017年16億円投資（新工場＋産業観光）と2022年HD設立で、海外スケール拡大の経営インフラを既に整備済み"},
+      {"label": "現在の動き", "detail": "2025年7月東京ミッドタウン NS by NOUSAKU・10月金沢ひがし茶屋街と都市型旗艦店を矢継ぎ早に展開、2026年ミラノ展で海外露出"},
+      {"label": "将来の論点", "detail": "海外BtoCスケーリングは仮説段階、定量中計非開示で『発信量』と実行ペースの整合は BDD ヒアリングで検証必要"}
+    ],
+    "visual_data": {
+      "milestones": [
+        {"year": "2017年", "label": "本社新工場・産業観光", "phase": "past", "note": "16億円投資"},
+        {"year": "2022年", "label": "能作HD設立", "phase": "past", "note": "持株会社化"},
+        {"year": "2023年", "label": "5代目承継", "phase": "past", "note": "千春社長就任"},
+        {"year": "2025年", "label": "東京・金沢都市展開", "phase": "current", "note": "都市旗艦店"},
+        {"year": "2026年", "label": "ミラノ展示", "phase": "current", "note": "海外露出"},
+        {"year": "2030年〜", "label": "海外BtoCスケール", "phase": "future", "note": "仮説・推定"}
+      ]
+    }
+  },
+  "detail": {
+    "main_message": "過去（2017〜2023）はインフラ整備、現在（2024〜2026）は都市・海外露出、将来（2027〜）は海外BtoCスケーリングと推定される",
+    "chart_title": "Aspiration & Trajectory：フェーズ別の戦略アクション（2/3）",
+    "implications": [
+      {"label": "過去の戦略軸", "detail": "Capability 構築フェーズ（製造設備・産業観光・ガバナンス）。実行と意思決定のスピードが特徴"},
+      {"label": "現在の戦略軸", "detail": "都市型旗艦店と海外露出を矢継ぎ早に展開、コレド室町閉店で集約も同時推進。『発信』が密"},
+      {"label": "将来の論点", "detail": "海外BtoC本格化（profit_pool 未確認）、定量中計非開示でペースは BDD ヒアリング必須"}
+    ],
+    "visual_data": {
+      "phases": [
+        {"label": "過去（〜2023）", "color": "#999999", "actions": [
+          "2002-03 OEM下請→錫100%自社ブランド転換",
+          "2007 経産省地域資源第1号認定",
+          "2014 医療機器製造業許可取得",
+          "2017 本社新工場・産業観光施設（16億円投資）",
+          "2022 能作HD設立（持株会社化）",
+          "2023/3 5代目千春社長就任、克治会長へ"
+        ]},
+        {"label": "現在（2024-2026）", "color": "#1565C0", "actions": [
+          "2025/7 東京ミッドタウン NS by NOUSAKU 開業",
+          "2025/10 金沢ひがし茶屋街出店",
+          "2026/1 ミラノ展示会出展",
+          "2026/3 コレド室町テラス店閉店（集約）",
+          "海外販路開拓職を独立採用カテゴリ化",
+          "千春社長『これからは世界を目指す』発信継続"
+        ]},
+        {"label": "将来（2027〜、推定）", "color": "#FFA940", "actions": [
+          "海外BtoCスケーリング本格化（推定）",
+          "海外常設店の追加検討（NY・バンコクの直営化など）",
+          "産業観光の海外横展開可能性",
+          "DX/データ基盤の内製化（外部委託からの移行）",
+          "同族統制下でのグループガバナンス更なる強化"
+        ]}
+      ]
+    }
+  },
+  "evidence": {
+    "main_message": "Aspiration 仮説は財務・戦略・登記・人材の4 source_type が一致しており triangulation rate は medium、将来側は仮説段階",
+    "chart_title": "Aspiration & Trajectory：根拠 finding 一覧（3/3）",
+    "findings": [
+      {"id": "F4", "agent": "financial_signals", "source": "ダイヤモンドオンライン / AXIS", "source_type": "web", "confidence": "medium", "excerpt": "2017年 約16億円投資で高岡本社新工場＋産業観光施設を建設。"},
+      {"id": "F9", "agent": "strategic_signals", "source": "能作公式 / 日経ビジネス", "source_type": "web", "confidence": "high", "excerpt": "2023/3創業家5代目への事業承継（克治→千春、父の急病が契機）。"},
+      {"id": "F10", "agent": "strategic_signals", "source": "能作公式 / PR TIMES", "source_type": "press", "confidence": "high", "excerpt": "2025/7東京ミッドタウン新業態、2025/10金沢、2026/1ミラノ展、2026/3コレド室町閉店。"},
+      {"id": "F14", "agent": "strategic_signals", "source": "文化創造都市高岡 / NN生命", "source_type": "web", "confidence": "medium", "excerpt": "千春社長『これからは世界を目指す』。海外多角化、ブライダル・体験。"},
+      {"id": "F19", "agent": "corporate_registry", "source": "国税庁 / Graffer", "source_type": "registry", "confidence": "high", "excerpt": "法人番号3230001011375（能作）／1230001019395（能作HD、2022年設立の持株会社）。"},
+      {"id": "F22", "agent": "corporate_registry", "source": "能作公式 / j-president", "source_type": "press", "confidence": "high", "excerpt": "2023/3/20 創業家内段階承継（千春：2011入社→16取締役→23社長）。外部プロ経営者・VC派遣痕跡なし。"},
+      {"id": "F30", "agent": "talent_organization", "source": "能作公式 works/overseas", "source_type": "web", "confidence": "high", "excerpt": "『海外販路開拓』職独立設置。日本語＋英語/中国語必須、台湾現法連携、MoMA含む海外100店舗超。"}
+    ]
+  }
+}

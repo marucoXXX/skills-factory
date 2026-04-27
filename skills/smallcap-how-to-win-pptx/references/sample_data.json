@@ -1,0 +1,53 @@
+{
+  "main": {
+    "main_message": "能作はOEM下請からの自社ブランド垂直統合と本社工場の観光施設化により、産地最上流に利益プールを集約する『製造業発の体験経済モデル』で勝つ",
+    "chart_title": "How to win：価値連鎖進化フロー（1/3）",
+    "implications": [
+      {"label": "二層の利益取り込み", "detail": "OEM下請からの自社ブランド垂直統合（2002-）と、産業観光化（2017-）の二層で利益プールを取り込む構造を確立"},
+      {"label": "産地内逆行成長", "detail": "産地全体が縮小する中、能作はプレミアム化で逆行的に拡大し、産地内10-15%シェアの単独トップ企業に"},
+      {"label": "業界4トレンド先行", "detail": "雑貨転換／産業観光／海外販路／体験経済の4トレンド全てで対象会社が先行ポジションを獲得"}
+    ],
+    "visual_data": {
+      "stages": [
+        {"label": "OEM下請", "year_range": "1916-2002", "profit_pool": 1, "color": "#999999", "note": "産地中間流通に利益分散"},
+        {"label": "自社ブランド転換", "year_range": "2002-2017", "profit_pool": 4, "color": "#5B8FF9", "note": "錫100%・曲がる器"},
+        {"label": "産業観光統合", "year_range": "2017-現在", "profit_pool": 8, "color": "#1565C0", "note": "16億円投資・年12-13万人"},
+        {"label": "海外BtoC", "year_range": "2025-", "profit_pool": null, "color": "#FFA940", "note": "拡大中・採算未確認"}
+      ]
+    }
+  },
+  "detail": {
+    "main_message": "各ステージで取り込んできた差別化要素は『素材・意匠の独自性』『ブランディング能力』『投資体力』の3点で支えられている",
+    "chart_title": "How to win：ステージ別の差別化要素（2/3）",
+    "implications": [
+      {"label": "素材・意匠の独自性", "detail": "錫100%・曲がる器という素材ブランドが、流通中間層の価格圧力から自社を解放し価格決定権を確立"},
+      {"label": "投資体力と意思決定", "detail": "2017年16億円投資（当時売上13億円超）の自己資金主導性と意思決定スピードがファミリー経営の強み"},
+      {"label": "海外レイヤーの仮説性", "detail": "海外BtoCレイヤーの利益プールは未確認、コレド室町閉店・常設プレゼンス薄など仮説段階に留まる"}
+    ],
+    "visual_data": {
+      "stages": [
+        {"label": "OEM下請", "year_range": "1916-2002", "profit_pool": 1, "color": "#999999", "note": "差別化なし、価格圧力大"},
+        {"label": "自社ブランド転換", "year_range": "2002-2017", "profit_pool": 4, "color": "#5B8FF9", "note": "錫100%・素材ブランド化、意匠登録"},
+        {"label": "産業観光統合", "year_range": "2017-現在", "profit_pool": 8, "color": "#1565C0", "note": "工場見学＋体験＋ブライダル、16億円投資"},
+        {"label": "海外BtoC", "year_range": "2025-", "profit_pool": null, "color": "#FFA940", "note": "MoMA含む100店超、台湾現法、独立採用カテゴリ"}
+      ]
+    }
+  },
+  "evidence": {
+    "main_message": "How to win 仮説は3 source_type が一致しており triangulation rate は medium、海外レイヤーは BDD ヒアリングで検証必要",
+    "chart_title": "How to win：根拠 finding 一覧（3/3）",
+    "implications": [
+      {"label": "三角測量メモ", "detail": "financial（capex/business_model）／strategic（business_description）／industry（trend stance）の3 source_type が一致"},
+      {"label": "海外レイヤーの不確実性", "detail": "海外BtoCの収益化は2025年以降の本格化フェーズで、現時点の利益プールは未確認"},
+      {"label": "残る Data Gaps", "detail": "2017年16億円投資の資金調達スキーム、産業観光単体採算、海外NY・バンコクの常設店採算"}
+    ],
+    "findings": [
+      {"id": "F4", "agent": "financial_signals", "metric": "capex_event", "source": "ダイヤモンドオンライン / AXIS Web 2017", "source_type": "web", "confidence": "medium", "excerpt": "2017年 約16億円投資で高岡本社新工場＋産業観光施設を建設。"},
+      {"id": "F8", "agent": "financial_signals", "metric": "business_model", "source": "日本M&Aセンター / 公式HP", "source_type": "web", "confidence": "medium", "excerpt": "2002-03にOEM下請→錫100%自社ブランドへ転換。伝統工芸＋産業観光＋海外。"},
+      {"id": "F11", "agent": "strategic_signals", "metric": "business_description", "source": "能作公式 / 中川政七商店", "source_type": "web", "confidence": "high", "excerpt": "錫100%/真鍮の伝統工芸＋2014年医療機器製造業許可＋2017年産業観光の3本柱体制。"},
+      {"id": "F38", "agent": "industry_context", "metric": "industry_size_position", "source": "Wikipedia / 振興組合 / 日本M&Aセンター", "source_type": "web", "confidence": "medium", "excerpt": "高岡銅器産地のトップブランド企業。売上22億超で産地内10-15%シェア推定。"},
+      {"id": "F39", "agent": "industry_context", "metric": "industry_trend_stance", "source": "日本M&Aセンター / AXIS / WWD", "source_type": "web", "confidence": "high", "excerpt": "業界4トレンド全てで『先行』：雑貨転換／産業観光／海外販路／体験経済。"},
+      {"id": "F41", "agent": "industry_context", "metric": "industry_structure_estimates", "source": "高岡銅器組合 / JBpress", "source_type": "web", "confidence": "medium", "excerpt": "利益プール：素材/下請<中間<自社ブランド＋産業観光。能作はプレミアム化で産地平均の逆行。"}
+    ]
+  }
+}

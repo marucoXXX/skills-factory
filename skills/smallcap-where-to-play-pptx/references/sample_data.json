@@ -1,0 +1,59 @@
+{
+  "main": {
+    "main_message": "能作は伝統工芸ブランドを基盤に、プレミアム雑貨／産業観光／海外BtoCの3領域に集中し、医療・BtoB下請は事業ポートフォリオから後退中である",
+    "chart_title": "Where to play：事業領域マップ（1/3）",
+    "implications": [
+      {"label": "3領域への集中", "detail": "国内BtoC雑貨／産業観光／海外BtoC（MoMA含む100店超）でプレミアム化路線を一貫推進"},
+      {"label": "医療事業の後退", "detail": "2023年の販売業務移管以降、新製品の公表が観測されず、戦略的後退フェーズに置かれている可能性"},
+      {"label": "海外シフトの行動", "detail": "海外販路開拓を独立採用カテゴリ化、台湾現法・東京・金沢・ミラノ展開で意図的な資源配分シグナル"}
+    ],
+    "visual_data": {
+      "x_axis_label": "顧客タイプ",
+      "x_axis_left": "BtoB",
+      "x_axis_right": "BtoC",
+      "y_axis_label": "地理",
+      "y_axis_bottom": "国内",
+      "y_axis_top": "海外",
+      "segments": [
+        {"name": "国内BtoC雑貨", "x": 0.85, "y": 0.25, "size": 12, "highlight": true, "note": "プレミアム生活雑貨"},
+        {"name": "産業観光", "x": 0.7, "y": 0.18, "size": 8, "highlight": true, "note": "年12-13万人来場"},
+        {"name": "海外BtoC", "x": 0.85, "y": 0.8, "size": 6, "highlight": true, "note": "MoMA含む100店超"},
+        {"name": "医療[縮退]", "x": 0.18, "y": 0.22, "size": 3, "highlight": false, "note": "2023販売移管"}
+      ]
+    }
+  },
+  "detail": {
+    "main_message": "産地内10-15%シェアのトップ企業として、都市型旗艦店による富裕層接点強化と海外セレクト拡大を同時推進している",
+    "chart_title": "Where to play：事業領域別の注力度（2/3）",
+    "implications": [
+      {"label": "産地ポジション", "detail": "高岡銅器産地内10-15%シェア、産地全体が縮小する中で唯一の主要拡大企業（F38, F41）"},
+      {"label": "都市型旗艦店", "detail": "東京ミッドタウン NS by NOUSAKU・金沢ひがし茶屋街・ミラノ展でロケーション選別型展開（F10, F25）"},
+      {"label": "海外の選別性", "detail": "海外100店超は文化拠点中心で、マスではなく『世界の文化拠点に並ぶ伝統工芸ブランド』のポジショニング（F30）"}
+    ],
+    "visual_data": {
+      "segments": [
+        {"name": "国内BtoC雑貨", "highlight": true, "note": "プレミアム生活雑貨／20直営店"},
+        {"name": "産業観光", "highlight": true, "note": "年12-13万人来場／2017年16億円投資"},
+        {"name": "海外BtoC", "highlight": true, "note": "MoMA含む100店超／海外販路開拓職独立"},
+        {"name": "医療事業", "highlight": false, "note": "2023年シグマックス移管以降、新製品非観測"}
+      ]
+    }
+  },
+  "evidence": {
+    "main_message": "Where to play 仮説は5つの source_type が一致しており、triangulation rate は高い（confidence: medium）",
+    "chart_title": "Where to play：根拠 finding 一覧（3/3）",
+    "implications": [
+      {"label": "三角測量メモ", "detail": "financial / strategic / corporate_registry / talent / industry の5 source_type が一致して構築"},
+      {"label": "確度の最低値", "detail": "各 finding の confidence は high〜medium、仮説 confidence は medium に落ち着く"},
+      {"label": "残る Data Gaps", "detail": "セグメント別売上構成・海外売上比率の実数・医療事業のR&Dパイプラインは非開示"}
+    ],
+    "findings": [
+      {"id": "F8", "agent": "financial_signals", "metric": "business_model", "source": "日本M&Aセンター / 公式HP", "source_type": "web", "confidence": "medium", "excerpt": "2002-03にOEM下請→錫100%自社ブランドへ転換。伝統工芸＋産業観光＋海外。"},
+      {"id": "F10", "agent": "strategic_signals", "metric": "product_launches", "source": "能作公式 / PR TIMES", "source_type": "press", "confidence": "high", "excerpt": "2025/7東京ミッドタウン新業態、2025/10金沢、2026/1ミラノ展、2026/3コレド室町閉店。"},
+      {"id": "F11", "agent": "strategic_signals", "metric": "business_description", "source": "能作公式 / 中川政七商店", "source_type": "web", "confidence": "high", "excerpt": "錫100%/真鍮の伝統工芸＋2014年医療機器製造業許可＋2017年産業観光の3本柱体制。"},
+      {"id": "F25", "agent": "corporate_registry", "metric": "branch_openings", "source": "PR TIMES / 能作公式", "source_type": "press", "confidence": "medium", "excerpt": "国内直営20店舗、海外3拠点（台湾・NY・バンコク）。2025/7 東京ミッドタウン新業態。"},
+      {"id": "F30", "agent": "talent_organization", "metric": "hiring_focus", "source": "能作公式 works/overseas", "source_type": "web", "confidence": "high", "excerpt": "『海外販路開拓』職独立設置。日本語＋英語/中国語必須、台湾現法連携、MoMA含む海外100店舗超。"},
+      {"id": "F39", "agent": "industry_context", "metric": "industry_trend_stance", "source": "日本M&Aセンター / AXIS / WWD", "source_type": "web", "confidence": "high", "excerpt": "業界4トレンド全てで『先行』：雑貨転換／産業観光／海外販路／体験経済。"}
+    ]
+  }
+}

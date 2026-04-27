@@ -1,0 +1,47 @@
+{
+  "main": {
+    "main_message": "能作のケイパビリティは『素材・意匠・ブランド』の3点で群を抜き、投資体力も中以上だが、海外販路とDXは相対的弱点として残る",
+    "chart_title": "Capability & Resource：ケイパビリティ・レーダー（1/3）",
+    "implications": [
+      {"label": "競争優位の核", "detail": "錫100%・曲がる器の素材使い、意匠登録、自社ブランド化の3点で産地内で他の追随を許さないポジション"},
+      {"label": "投資体力", "detail": "2017年16億円投資（売上比123%超）を自己資金主導で実行できる経営判断のスピード感が強み"},
+      {"label": "弱点と論点", "detail": "DX/データ専任求人ゼロ、海外販路は独立採用カテゴリ設置も常設プレゼンスは台湾現法のみで底上げ余地"}
+    ],
+    "visual_data": {
+      "axes": ["製造力", "意匠力", "ブランド力", "投資体力", "海外販路", "DX力"],
+      "scores": [9, 9, 9, 7, 6, 3],
+      "max_score": 10
+    }
+  },
+  "detail": {
+    "main_message": "強みは『素材＋意匠＋ブランド＋投資体力』の四点同時に高水準。弱点は DX 力で、データドリブン経営への転換は外部委託依存と推定される",
+    "chart_title": "Capability & Resource：能力別の評価と根拠（2/3）",
+    "implications": [
+      {"label": "プレミアム化の源泉", "detail": "素材・意匠・ブランドの三点が同時に高スコアであることがプレミアム価格決定権の根拠"},
+      {"label": "経営判断の体力", "detail": "投資体力スコア7は自己資金主導で大型投資（2017年16億円）を実行できる中規模非上場企業として例外的に高水準"},
+      {"label": "DX 内製化の遅れ", "detail": "DX力スコア3は致命的ではないが、海外販路の需給管理・CRM・EC基盤の今後拡大時に外部委託依存が制約となる可能性"}
+    ],
+    "visual_data": {
+      "capabilities": [
+        {"name": "製造力", "score": 9, "max": 10, "level": "高", "evidence": "錫100%・曲がる器の特殊技術、産地内 100年超のノウハウ蓄積（F11, F38）"},
+        {"name": "意匠力", "score": 9, "max": 10, "level": "高", "evidence": "AXIS掲載の連続した意匠開発、産業観光施設も建築意匠で評価（F4, F11）"},
+        {"name": "ブランド力", "score": 9, "max": 10, "level": "高", "evidence": "MoMA含む海外100店舗超への供給ブランドとして確立（F30, F39）"},
+        {"name": "投資体力", "score": 7, "max": 10, "level": "中〜高", "evidence": "2017年 売上比123%超の16億円投資を自己資金主導で実行（F4）"},
+        {"name": "海外販路", "score": 6, "max": 10, "level": "中", "evidence": "海外販路開拓職を独立設置、台湾現法＋NY・バンコク。常設プレゼンスは台湾中心（F25, F30)"},
+        {"name": "DX力", "score": 3, "max": 10, "level": "低", "evidence": "公式9職種・マイナビ求人ともDX/IT専任職ゼロ、外部委託依存の可能性（F32）"}
+      ]
+    }
+  },
+  "evidence": {
+    "main_message": "Capability 仮説は財務・戦略・人材の3 source_type が一致しており triangulation rate は medium、DX 評価は外部観測限界",
+    "chart_title": "Capability & Resource：根拠 finding 一覧（3/3）",
+    "findings": [
+      {"id": "F4", "agent": "financial_signals", "source": "ダイヤモンドオンライン / AXIS", "source_type": "web", "confidence": "medium", "excerpt": "2017年 約16億円投資で高岡本社新工場＋産業観光施設を建設。"},
+      {"id": "F11", "agent": "strategic_signals", "source": "能作公式 / 中川政七商店", "source_type": "web", "confidence": "high", "excerpt": "錫100%/真鍮の伝統工芸＋2014年医療機器製造業許可＋2017年産業観光の3本柱体制。"},
+      {"id": "F17", "agent": "strategic_signals", "source": "J-PlatPat（未到達）", "source_type": "patent_db", "confidence": "low", "excerpt": "J-PlatPat到達不能。特許より意匠・ブランド・製造ノウハウで競争優位を築くタイプと推定。"},
+      {"id": "F30", "agent": "talent_organization", "source": "能作公式 works/overseas", "source_type": "web", "confidence": "high", "excerpt": "『海外販路開拓』職独立設置。台湾現法連携、MoMA含む海外100店舗超。"},
+      {"id": "F32", "agent": "talent_organization", "source": "能作公式 / マイナビ転職", "source_type": "web", "confidence": "medium", "excerpt": "DX/データ/経営企画/IT系の専任求人は公式9カテゴリ・マイナビともに0件。"},
+      {"id": "F35", "agent": "talent_organization", "source": "NN生命 / 文化創造都市高岡", "source_type": "web", "confidence": "high", "excerpt": "克治：元新聞社カメラマン、千春：元アパレル通販誌編集。異業種出身ファミリー経営。"}
+    ]
+  }
+}

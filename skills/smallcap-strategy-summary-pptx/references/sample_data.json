@@ -1,0 +1,39 @@
+{
+  "main_message": "能作は高岡銅器ブランドの垂直統合と産業観光で差別化し、海外BtoCブランド化を志向する非上場企業である",
+  "chart_title": "戦略仮説サマリー：4次元の俯瞰",
+  "dimensions": [
+    {
+      "key": "where_to_play",
+      "label": "Where to play",
+      "summary": "プレミアム生活雑貨／産業観光／海外BtoC（MoMA含む100店超）の3領域に集中。医療・BtoB下請は事業ポートフォリオから後退中",
+      "confidence": "medium",
+      "detail_page": 9
+    },
+    {
+      "key": "how_to_win",
+      "label": "How to win",
+      "summary": "OEM下請→自社ブランド化の垂直統合と、本社工場の観光施設化による『製造業発の体験経済モデル』の二層で稼ぐ",
+      "confidence": "medium",
+      "detail_page": 12
+    },
+    {
+      "key": "capability_resource",
+      "label": "Capability & Resource",
+      "summary": "錫100%・曲がる器の意匠/素材使い、異業種出身ファミリー経営による非職人的マーケット目線、自己資金主導の投資体力",
+      "confidence": "medium",
+      "detail_page": null
+    },
+    {
+      "key": "aspiration_trajectory",
+      "label": "Aspiration & Trajectory",
+      "summary": "2023年承継後『これからは世界を目指す』海外志向、2022年HD設立で持株会社化、海外BtoCスケーリング志向",
+      "confidence": "medium",
+      "detail_page": null
+    }
+  ],
+  "implications": [
+    {"label": "戦い方の核", "detail": "産地最上流（自社ブランド＋産業観光）に利益プールを集約することで、産地縮小トレンドに逆行して17倍成長を実現"},
+    {"label": "重点と後退", "detail": "Where to play では医療事業の戦略的後退シグナルが観測される一方、海外BtoCには独立採用カテゴリ設置等の資源配分シグナル"},
+    {"label": "確度の留意", "detail": "4次元すべて confidence: medium、定量中計・株主構成・セグメント採算は非開示でBDDヒアリング必須"}
+  ]
+}
