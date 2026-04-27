@@ -84,3 +84,95 @@ v0.2 完了後、`skills/_common/` が整備された状態で Company Overview 
 ### 参考ファイル
 - `skills/strategy-report-agent/SKILL.md`
 - `/Users/nakamaru/.claude/plans/5-company-overview.md`(別途計画ファイル予定)
+
+---
+
+## ISSUE-005: 市場スコープの事業モデル境界確認（Phase F 主タスク）
+
+**Status**: 進行中（次セッション着手予定） / **Priority**: P1 / **Decided**: 2026-04-27
+
+### 背景
+v0.2 Phase E（国内タクシー市場 E2E）で、handoff の想定プレイヤー欄に従い「タクシー事業者（5社）」と「配車アプリ事業者（4社）」を混在させてレポート化したところ、ユーザーから「タクシー事業者の市場を見たかった、アプリは除外」との指摘を受けた。シェア表で第一交通産業 4.7% と GO 1.2% を同列に並べる構図は、収益構造（営業収入 vs 配車手数料）が異なるため誤解を招く。
+
+現状の `market-overview-agent` Step 0 は地理スコープ・セグメント粒度・分析年数・max_competitors・kbf_count のみを聞き、**同一業界内の異なる事業モデルを含めるかの確認質問が存在しない**。
+
+### 採用アプローチ（B+C ハイブリッド、ユーザー承認済 2026-04-27）
+
+**B**: Step 0.5（事前スコーピング Web 検索）追加
+- `market_name` 確定後 Step 1 の前に「市場構造ザックリ把握」用 Web 検索 1-2 件を走らせ、事業モデルの heterogeneity を検知したらユーザーに再確認
+
+**C**: `scope.json` schema 拡張
+- `included_business_models[]` / `excluded_segments[]` を必須フィールドとして追加
+- `step0_scope_clarification.md` に必須質問を追加し永続化
+- 後続スライドはこの境界を尊重する責務をオーケストレーターに置く
+
+### Phase F 実装タスク
+1. `step0_scope_clarification.md` に Step 0.5 節 + 新フィールド追加
+2. `market-overview-agent/SKILL.md` Step 0 を更新（共通プロンプトコピペ + 固有質問整理 + Step 0.5 挿入）
+3. `strategy-report-agent/SKILL.md` Step 0 を同様更新
+4. `smallcap-strategy-research/SKILL.md` には適用範囲注記のみ（Phase 別マルチエージェント構成のため事前 Step ではなく Synthesis Agent の triangulation で扱う旨明記）
+5. `orchestrator_contract.md` に「fill_*.py は scope.json の境界を尊重する責務はオーケストレーターにある」と明記
+6. E2E リラン（国内タクシー市場・事業者のみ 5 社）でシェア表が事業者ベースで構成されることを確認
+
+### 参考ファイル
+- `skills/_common/prompts/step0_scope_clarification.md`
+- `skills/market-overview-agent/SKILL.md` Step 0
+- `skills/_common/references/orchestrator_contract.md`
+- 関連 memory: `feedback_market_scope_business_model_boundary.md`
+
+---
+
+## ISSUE-006: render_pptx.py CLI と SKILL.md の引数不整合
+
+**Status**: 保留 / **Priority**: P2 / **Decided**: 2026-04-27
+
+### 背景
+v0.2 Phase E E2E で `visual-quality-reviewer/scripts/render_pptx.py` を起動した際、SKILL.md の説明（`--merge-order` / `--data-dir` を受ける）と実際の CLI（`--pptx --out-dir --dpi` のみ）が一致しないことが判明。
+
+### 検討事項
+- SKILL.md と実装のどちらを正とするか
+- 自動修正ループ（visual-quality-reviewer が下流で merge_order / data_dir を読む）の実現可否
+
+### 修正方針候補
+- (a) `render_pptx.py` に `--merge-order` / `--data-dir` を追加し、`context.json` を別途出力する
+- (b) SKILL.md を `--pptx --out-dir` のみ受ける仕様に修正し、merge_order/data_dir はオーケストレーターが LLM 経由で渡す運用とする
+
+### 参考ファイル
+- `skills/visual-quality-reviewer/scripts/render_pptx.py`
+- `skills/visual-quality-reviewer/SKILL.md`
+
+---
+
+## ISSUE-007: market-environment-pptx の bars/line Y軸スケール乖離
+
+**Status**: 保留 / **Priority**: P3 / **Decided**: 2026-04-27
+
+### 背景
+v0.2 Phase E E2E のスライド 4（市場規模推移）で、棒グラフ（営業収入 1.45-1.93兆円）と折れ線（2019年比回復率 75-99%）が同じ Y 軸を共有するため、棒の差分が視認しづらい。Y軸 0-120 で線は明瞭だが棒は底辺に張り付く。
+
+### 検討事項
+- データ単位を 兆円→千億円 に変換（推奨、データ側で対応可能）
+- テンプレート側で dual-axis（左軸=兆円、右軸=%）対応を入れるか
+- `unit_label` / `total_label` の自動推奨ロジックを fill_market_environment.py に入れるか
+
+### 参考ファイル
+- `skills/market-environment-pptx/scripts/fill_market_environment.py`
+- `skills/market-environment-pptx/assets/market-environment-template.pptx`
+
+---
+
+## ISSUE-008: competitor-summary 30字 cell 制限が 9 列構成で厳しい
+
+**Status**: 保留 / **Priority**: P3 / **Decided**: 2026-04-27
+
+### 背景
+v0.2 Phase A で `max_competitors` を 5→10 に拡張した結果、9 列構成（target+8）でフォントが 9pt まで自動縮小されるが、`事業内容` / `強み・差別化` の cell 30字制限が運用上厳しい。E2E で「タクシー配車アプリ（DiDi Global＋ソフトバンク合弁）」（31字）等が hard-fail で何度も書き直しが発生。
+
+### 検討事項
+- cell 制限を競合数に応じて動的化（5社=40字、8-10社=30字 等）
+- フォント自動縮小と cell 文字数の連動を見直し
+- 事業内容と強み・差別化を改行可とし 2 段表示にする
+
+### 参考ファイル
+- `skills/competitor-summary-pptx/scripts/fill_competitor_summary.py`
+- `skills/competitor-summary-pptx/SKILL.md`
