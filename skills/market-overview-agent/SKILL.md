@@ -168,6 +168,10 @@ Step 10: ユーザーへ提示（PPTX + MDの2ファイル）
 
 <!-- source: skills/_common/prompts/step0_scope_clarification.md (manual sync until D2) -->
 
+共通原則・Step 0.5（事前スコーピング Web 検索）・`included_business_models` / `excluded_segments` フィールドの定義は `skills/_common/prompts/step0_scope_clarification.md` を正本とする。本 SKILL.md には market-overview-agent 固有の質問項目と Step 0.5 の運用上の注意のみ記載する。
+
+### Step 0.0: 固有質問の確定
+
 `AskUserQuestion` で以下を確定する。すべて単一選択（必要なら「Other」で自由記述）。
 
 | 質問 | 選択肢例 | 既定値 |
@@ -180,24 +184,51 @@ Step 10: ユーザーへ提示（PPTX + MDの2ファイル）
 
 **v0.2 追加**: `max_competitors` と `kbf_count` は `references/deck_skeleton_standard.json` の `limits` セクションで `min/max/default` が定義されている。ユーザーが明示しない場合は default を採用。範囲外の値は AskUserQuestion で再確認すること。
 
-`prompts/step0_scope_clarification.md` を参考にプロンプトを組み立てる。
+### Step 0.5: 事前スコーピング Web 検索（必須）
+
+`market_name` が確定したら、上記の固有質問に進む前に **市場構造ザックリ把握用の Web 検索を 1〜2 件** 走らせる。
+目的は「同一業界内に収益構造の異なる事業モデルが併存していないか」を検知し、`included_business_models` / `excluded_segments` をユーザーに確認すること。
+
+検索クエリ例:
+- `<market_name> 業界構造 / バリューチェーン / プレイヤー類型`
+- `<market_name> 市場規模 定義 / 統計対象範囲`
+
+異種事業モデルが検知された場合は `AskUserQuestion` で境界確認:
+
+```
+「<market_name>」には収益構造の異なる事業モデルが併存しています。どの層を調査対象に含めますか？
+A. <事業モデル1>のみ（例: タクシー事業者 = 営業収入ベース）
+B. <事業モデル2>のみ（例: 配車アプリ事業者 = 配車手数料ベース）
+C. 両方含める（シェア表は別レイヤーで分けて表示）
+D. その他（自由記述）
+```
+
+異種併存の典型例（共通プロンプト参照）: タクシー / 半導体 / 教育 / 飲食 / 物流 / 金融。
+ユーザーが冒頭で `included_business_models` を明示している場合（例:「タクシー事業者の市場を調べて」）は Step 0.5 をスキップしてよいが、`scope.json` の該当フィールドは判明している値で埋めること。
+
+### scope.json の保存
 
 確定したスコープは `{{WORK_DIR}}/<run_id>/scope.json` に保存：
 
 ```json
 {
-  "market_name": "国内HR Tech市場",
+  "market_name": "国内タクシー市場",
   "geography": "国内",
   "segment": "業界全体",
   "analysis_years": { "past": 5, "future": 5 },
   "max_competitors": 5,
   "kbf_count": 3,
-  "run_id": "2026-04-26_hr_tech",
-  "started_at": "2026-04-26T22:30:00+09:00"
+  "included_business_models": ["タクシー事業者"],
+  "excluded_segments": ["配車アプリ事業者"],
+  "run_id": "2026-04-27_taxi_industry_operators",
+  "started_at": "2026-04-27T10:00:00+09:00"
 }
 ```
 
-**重要**: `scope.json` の `max_competitors` / `kbf_count` は後続 Step（Web 検索・データ生成・fill_*.py 入力）で参照される。market-share / positioning-map / competitor-summary / market-kbf-pptx の 4 スキル間で一貫した値を使うこと。
+**重要**:
+- `scope.json` の `max_competitors` / `kbf_count` は後続 Step（Web 検索・データ生成・fill_*.py 入力）で参照される。market-share / positioning-map / competitor-summary / market-kbf-pptx の 4 スキル間で一貫した値を使うこと。
+- `included_business_models` / `excluded_segments` の境界尊重責務はオーケストレーター（本スキル）にある。Step 1 の Web 検索クエリ・data_06_market_share.json の母集団・data_08_competitor_summary.json の比較対象は `included_business_models` の範囲内に限定する。fill_*.py は scope.json を読まない（単体起動互換性のため。`skills/_common/references/orchestrator_contract.md` 参照）。
+- `excluded_segments` が空配列でない場合は、Step 2 の data_12_data_availability.json と最終 FactCheck_Report.md の冒頭で「本レポートでは <excluded_segments> を対象外として除外している」旨を明記する。
 
 `{{WORK_DIR}}/<run_id>/` を以下「作業ディレクトリ」と呼ぶ。
 

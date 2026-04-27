@@ -133,7 +133,42 @@
 
 ---
 
-## 4. オーケストレーター実装時のチェックリスト
+## 4. scope.json — オーケストレーター内部で完結する真実源
+
+### 配置
+
+`{{WORK_DIR}}/<run_id>/scope.json`
+
+### 役割
+
+`scope.json` は Step 0 で確定した調査スコープ（地理・セグメント・年数・上限値・事業モデル境界等）を後続 Step に伝達するためのオーケストレーター内部のファイル。スキーマと共通フィールドは `skills/_common/prompts/step0_scope_clarification.md` を正本とする。
+
+### 重要な責務分担: scope.json は **オーケストレーターのみ** が読む
+
+| 読む | 読まない |
+|---|---|
+| オーケストレーター本体（Step 1 Web 検索クエリ・Step 5 スライド生成判断・Step 9 FactCheck_Report.md 注記） | 各 fill_*.py（market-environment / market-share / competitor-summary / market-kbf / positioning-map 等すべて） |
+
+理由:
+- `fill_*.py` を **単体起動**（オーケストレーター経由でなく開発者がデバッグで叩く）で動くようにする後方互換維持のため
+- 個別 PPTX スキルは「JSON で渡された情報を忠実にスライド化する」責務のみを持ち、母集団の絞り込み判断はオーケストレーターの責務とする
+
+### 具体的な責務（特に `included_business_models` / `excluded_segments`）
+
+- `data_06_market_share.json` の母集団 = `included_business_models` の範囲内のプレイヤーに絞り込む（オーケストレーターが Step 1 Web 検索段階で実施）
+- `data_08_competitor_summary.json` の比較対象 = 同上
+- `data_10_market_kbf.json` の player_examples = 同上
+- `data_12_data_availability.json` または最終 FactCheck_Report.md の冒頭注記 = `excluded_segments` が空配列でない場合に「本レポートでは <excluded_segments> を対象外として除外している」を明記
+- 各 fill_*.py の入力 JSON にはすでに絞り込み済みのデータを渡す（fill_*.py は渡された JSON を信じてスライド化する）
+
+### 後方互換
+
+- `included_business_models = []`（空配列）は「全モデル統合扱い」を意味し、v0.2 までと同じ挙動（境界なし全プレイヤー対象）
+- 既存の scope.json（`included_business_models` フィールドがない）は `[]` 同等として扱う
+
+---
+
+## 5. オーケストレーター実装時のチェックリスト
 
 新規オーケストレーターを書く際 / 既存オーケストレーターを改修する際は、以下を満たすこと:
 
@@ -144,3 +179,7 @@
 - [ ] マージ後 `merge_warnings.json` を確認している（`section_divider_position` 違反 0 件）
 - [ ] `visual-quality-reviewer` に `merge_order` パスを渡している
 - [ ] 自動修正ループのカウンタを持っている（無限ループ防止、最大 2 ラウンド）
+- [ ] `scope.json` を `{{WORK_DIR}}/<run_id>/` に書き出している（市場系オーケストレーター必須、smallcap 等は適用外）
+- [ ] Step 0.5 で異種事業モデル併存を検知し `included_business_models` / `excluded_segments` を確定している
+- [ ] Step 1 Web 検索クエリ・data_06/08/10 の母集団絞り込みを `included_business_models` の範囲で実施している
+- [ ] `excluded_segments` が空配列でない場合、data_12 または FactCheck_Report.md 冒頭で除外を明記している

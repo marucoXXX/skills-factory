@@ -133,6 +133,17 @@ description: >
 
 対象会社名が曖昧な場合（同名企業が複数ある等）は、ユーザーに確認する。
 
+#### Step 0.5（事業モデル境界）の適用範囲外について
+
+共通プロンプト `skills/_common/prompts/step0_scope_clarification.md` で定義された Step 0.5（事前スコーピング Web 検索）と `included_business_models` / `excluded_segments` フィールドは、**本スキルでは Step 0 では実施しない**。
+
+理由:
+- 本スキルは Phase 別マルチエージェント構成で、Step 0 では対象会社 1 社のみを確定する設計
+- 事業モデルの境界は「対象会社と競合の比較」を明示的に伴う調査でのみ問題となるが、本スキルの Synthesis Agent は対象会社単独の戦略仮説を組み立てる
+- 競合との比較は Phase 4（拡張モード）で初めて発生し、その段階で Synthesis Agent の triangulation により事業モデル境界を扱う
+
+Phase 4 実装時には Synthesis Agent のプロンプトに「比較対象の競合 N 社が対象会社と同一の事業モデルか確認し、異なる場合は finding に注記する」旨を追加する。Step 0 では本注記のみ残し、追加質問は行わない。
+
 ### Step 1: 深度選択（対話式）
 
 以下の質問をユーザーに投げる:
