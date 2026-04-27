@@ -112,13 +112,13 @@ DEFAULT_COLORS = [
 ]
 
 FONT_NAME_JP = "Meiryo UI"
-FONT_SIZE_SECTION = Pt(14)
-FONT_SIZE_AXIS_LABEL = Pt(12)
-FONT_SIZE_AXIS_END = Pt(10)
-FONT_SIZE_QUADRANT = Pt(10)
-FONT_SIZE_BUBBLE = Pt(11)
-FONT_SIZE_ITEM = Pt(12)
-FONT_SIZE_SOURCE = Pt(10)
+FONT_SIZE_SECTION = Pt(16)
+FONT_SIZE_AXIS_LABEL = Pt(14)
+FONT_SIZE_AXIS_END = Pt(11)
+FONT_SIZE_QUADRANT = Pt(12)
+FONT_SIZE_BUBBLE = Pt(12)
+FONT_SIZE_ITEM = Pt(13)
+FONT_SIZE_SOURCE = Pt(11)
 
 
 # ──────────────────────────────────────────────
@@ -303,13 +303,17 @@ def draw_positioning_map(slide, data, left, top, width, height):
         )
 
     # Y軸ラベル（左、中央、縦書き）
+    # NOTE: PowerPointの textbox.rotation は中心軸での回転。
+    # 回転後の見た目の中心X = left + width/2 を、マップ枠 map_x より外側に来るよう調整。
+    # 回転前 width=2.0 の場合、中心X = left + 1.0。
+    # マップ外（map_x - Inches(0.4)）に中心が来るには left = map_x - Inches(1.4)
     y_label = y_axis.get("label", "")
     if y_label:
-        # 回転テキストボックスで縦書き表示
+        # 回転テキストボックスで縦書き表示（回転後マップ外側に出るよう左にオフセット）
         add_rotated_text_box(
             slide, y_label,
-            map_x - Inches(0.72), map_y + map_h // 2 - Inches(1.0),
-            Inches(2.0), Inches(0.25),
+            map_x - Inches(1.4), map_y + map_h // 2 - Inches(1.0),
+            Inches(2.0), Inches(0.30),
             FONT_SIZE_AXIS_LABEL, bold=True, align=PP_ALIGN.CENTER,
             rotation=-90,
         )
@@ -606,6 +610,24 @@ def main():
 
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
+
+    _mm = data.get("main_message", "")
+    if len(_mm) > 65:
+        raise ValueError(
+            f"main_message は 65 字以内（受領: {len(_mm)}）: {_mm[:80]}..."
+        )
+
+    # v0.2: players 数のバリデーション（deck_skeleton_standard.json limits.max_competitors と同期）
+    PLAYERS_MIN = 2
+    PLAYERS_MAX = 10
+    _players = data.get("players", [])
+    if not isinstance(_players, list):
+        raise ValueError("players は配列である必要があります")
+    if not (PLAYERS_MIN <= len(_players) <= PLAYERS_MAX):
+        raise ValueError(
+            f"players の要素数は {PLAYERS_MIN}〜{PLAYERS_MAX} の範囲である必要があります"
+            f"（受領: {len(_players)}、target_company を含む）"
+        )
 
     prs = Presentation(args.template)
     slide = prs.slides[0]

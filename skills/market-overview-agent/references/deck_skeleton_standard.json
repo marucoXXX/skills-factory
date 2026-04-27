@@ -1,0 +1,167 @@
+{
+  "$schema_version": "v0.2",
+  "deck_name": "Market Overview Standard",
+  "total_slides": 12,
+  "sections": [
+    {
+      "section_number": 1,
+      "title": "市場規模・成長",
+      "color": "navy",
+      "slide_numbers": [3, 4]
+    },
+    {
+      "section_number": 2,
+      "title": "競争構造",
+      "color": "blue",
+      "slide_numbers": [5, 6, 7, 8]
+    },
+    {
+      "section_number": 3,
+      "title": "成功要因と外部環境",
+      "color": "green",
+      "slide_numbers": [9, 10, 11]
+    }
+  ],
+  "entries": [
+    {
+      "slide_number": 1,
+      "file_name": "slide_01_exec_summary.pptx",
+      "skill_name": "executive-summary-pptx",
+      "data_file": "data_01_exec_summary.json",
+      "category": "header",
+      "section_number": null,
+      "addresses_topic": "全体サマリー（Key Findings 5本）"
+    },
+    {
+      "slide_number": 2,
+      "file_name": "slide_02_toc.pptx",
+      "skill_name": "table-of-contents-pptx",
+      "data_file": "data_02_toc.json",
+      "category": "header",
+      "section_number": null,
+      "addresses_topic": "目次（3セクション）"
+    },
+    {
+      "slide_number": 3,
+      "file_name": "slide_03_section1_market_size.pptx",
+      "skill_name": "section-divider-pptx",
+      "data_file": "data_03_section1.json",
+      "category": "section_divider",
+      "section_number": 1,
+      "addresses_topic": "Section 1: 市場規模・成長"
+    },
+    {
+      "slide_number": 4,
+      "file_name": "slide_04_market_environment.pptx",
+      "skill_name": "market-environment-pptx",
+      "data_file": "data_04_market_environment.json",
+      "category": "content",
+      "section_number": 1,
+      "addresses_topic": "論点1: 市場規模推移＋CAGR"
+    },
+    {
+      "slide_number": 5,
+      "file_name": "slide_05_section2_competition.pptx",
+      "skill_name": "section-divider-pptx",
+      "data_file": "data_05_section2.json",
+      "category": "section_divider",
+      "section_number": 2,
+      "addresses_topic": "Section 2: 競争構造"
+    },
+    {
+      "slide_number": 6,
+      "file_name": "slide_06_market_share.pptx",
+      "skill_name": "market-share-pptx",
+      "data_file": "data_06_market_share.json",
+      "category": "content",
+      "section_number": 2,
+      "addresses_topic": "論点3: 市場シェア（上位5社）"
+    },
+    {
+      "slide_number": 7,
+      "file_name": "slide_07_positioning.pptx",
+      "skill_name": "positioning-map-pptx",
+      "data_file": "data_07_positioning.json",
+      "category": "content",
+      "section_number": 2,
+      "addresses_topic": "論点4: プレイヤー位置付け（2軸ポジショニングマップ）"
+    },
+    {
+      "slide_number": 8,
+      "file_name": "slide_08_competitor_summary.pptx",
+      "skill_name": "competitor-summary-pptx",
+      "data_file": "data_08_competitor_summary.json",
+      "category": "content",
+      "section_number": 2,
+      "addresses_topic": "論点5: 各社の戦略比較（一覧）"
+    },
+    {
+      "slide_number": 9,
+      "file_name": "slide_09_section3_success_factors.pptx",
+      "skill_name": "section-divider-pptx",
+      "data_file": "data_09_section3.json",
+      "category": "section_divider",
+      "section_number": 3,
+      "addresses_topic": "Section 3: 成功要因と外部環境"
+    },
+    {
+      "slide_number": 10,
+      "file_name": "slide_10_market_kbf.pptx",
+      "skill_name": "market-kbf-pptx",
+      "data_file": "data_10_market_kbf.json",
+      "category": "content",
+      "section_number": 3,
+      "addresses_topic": "論点2: KBF×3 と各社の抑え方"
+    },
+    {
+      "slide_number": 11,
+      "file_name": "slide_11_pest.pptx",
+      "skill_name": "pest-analysis-pptx",
+      "data_file": "data_11_pest.json",
+      "category": "content",
+      "section_number": 3,
+      "addresses_topic": "PEST 環境（Political / Economic / Social / Technological）"
+    },
+    {
+      "slide_number": 12,
+      "file_name": "slide_12_data_availability.pptx",
+      "skill_name": "data-availability-pptx",
+      "data_file": "data_12_data_availability.json",
+      "category": "footer",
+      "section_number": null,
+      "addresses_topic": "データ取得状況・調査制約・追加調査推奨領域"
+    }
+  ],
+  "topic_to_slide": {
+    "論点1_market_growth": 4,
+    "論点2_kbf": 10,
+    "論点3_market_share": 6,
+    "論点4_positioning": 7,
+    "論点5_competitor_strategy": 8,
+    "論点+_pest": 11
+  },
+  "limits": {
+    "max_competitors": { "default": 5, "min": 3, "max": 10 },
+    "kbf_count": { "default": 3, "min": 2, "max": 5 },
+    "main_message_max_chars": 65,
+    "_note": "v0.2 で導入された Step 0 可変化用の上限値。Step 0 の AskUserQuestion で min/max 範囲内の任意値をユーザーが選べる。default は明示しない場合に採用される。"
+  },
+  "shared_constraints": {
+    "competitors_consistency": "market-share / positioning-map / competitor-summary / market-kbf-pptx の4スキル間で limits.max_competitors と同数の競合を採用すること（上限は limits を参照）",
+    "section_color_mapping": {
+      "1": "navy",
+      "2": "blue",
+      "3": "green"
+    },
+    "main_message_tone": "事実記述ベース。「〜すべき」は禁止。不明な点は「〜は公開情報からは確定できず追加調査が必要」と明示",
+    "main_message_rule": "全スキル共通の絶対ルール。句読点・記号・スペースを含めて limits.main_message_max_chars（=65）以内。テンプレートのメッセージ枠の固定幅に対応するため厳守。",
+    "category_uniqueness": "executive-summary-pptx の findings[].category は5件のうち重複禁止。粒度を変えて分離する（例: 『市場規模・成長』と『競争構造』）",
+    "detail_max_chars": {
+      "executive_summary_findings_detail": 120,
+      "competitor_summary_cell": 30,
+      "market_kbf_description": 120,
+      "market_kbf_player_example": 80,
+      "pest_item_text": 40
+    }
+  }
+}

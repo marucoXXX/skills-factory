@@ -133,15 +133,30 @@ def set_textbox_text(shape, text):
 
 
 def get_font_sizes(num_competitors):
-    """競合社数に応じてフォントサイズを動的決定"""
+    """競合社数に応じてフォントサイズを動的決定（v0.2: 対象+10社まで対応）
+
+    v0.1 では対象+3〜5社（4〜6列）の3段階。
+    v0.2 では deck_skeleton_standard.json の limits.max_competitors=10 に合わせ、
+    対象+6〜10社（7〜11列）まで段階的に縮小する。
+    """
     # 対象会社を含めた総列数（比較項目列を除く）
     num_companies = num_competitors + 1
-    if num_companies <= 4:          # 対象＋3社
-        return {"header": 12, "body": 11, "item": 12}
+    if num_companies <= 4:           # 対象＋3社
+        return {"header": 14, "body": 13, "item": 14}
     elif num_companies == 5:         # 対象＋4社
+        return {"header": 13, "body": 12, "item": 13}
+    elif num_companies == 6:         # 対象＋5社（v0.1 上限）
+        return {"header": 12, "body": 11, "item": 12}
+    elif num_companies == 7:         # 対象＋6社
         return {"header": 11, "body": 10, "item": 11}
-    else:                            # 対象＋5社 = 6列
+    elif num_companies == 8:         # 対象＋7社
+        return {"header": 11, "body": 10, "item": 11}
+    elif num_companies == 9:         # 対象＋8社
         return {"header": 10, "body": 9, "item": 10}
+    elif num_companies == 10:        # 対象＋9社
+        return {"header": 10, "body": 9, "item": 10}
+    else:                            # 対象＋10社 = 11列（v0.2 上限）
+        return {"header": 9, "body": 9, "item": 9}
 
 
 def apply_cell_style(cell, text, *,
@@ -369,6 +384,44 @@ def build_table(slide, data):
     print(f"  ✓ テーブル生成完了")
 
 
+MAIN_MESSAGE_MAX = 65
+CELL_VALUE_MAX = 30
+COMPETITORS_MIN = 2
+COMPETITORS_MAX = 10  # v0.2: deck_skeleton_standard.json limits.max_competitors と同期
+
+
+def _validate_input(data):
+    """入力JSONのバリデーション。main_message ≤65字、competitors=2〜10、各セル値 ≤30字。"""
+    main_message = data.get("main_message", "")
+    if len(main_message) > MAIN_MESSAGE_MAX:
+        raise ValueError(
+            f"main_message は {MAIN_MESSAGE_MAX} 字以内（受領: {len(main_message)}）: {main_message[:80]}..."
+        )
+    target = data.get("target_company", {})
+    competitors = data.get("competitors", [])
+    if not (COMPETITORS_MIN <= len(competitors) <= COMPETITORS_MAX):
+        raise ValueError(
+            f"competitors の要素数は {COMPETITORS_MIN}〜{COMPETITORS_MAX} の範囲である必要があります"
+            f"（受領: {len(competitors)}）"
+        )
+    comparison_items = data.get("comparison_items", [])
+    keys = [item.get("key") for item in comparison_items if item.get("key")]
+    for k in keys:
+        if k in ("name",):
+            continue
+        v = target.get(k, "")
+        if isinstance(v, str) and len(v) > CELL_VALUE_MAX:
+            raise ValueError(
+                f"target_company.{k} は {CELL_VALUE_MAX} 字以内（受領: {len(v)}）: {v}"
+            )
+        for i, c in enumerate(competitors):
+            cv = c.get(k, "")
+            if isinstance(cv, str) and len(cv) > CELL_VALUE_MAX:
+                raise ValueError(
+                    f"competitors[{i}].{k} は {CELL_VALUE_MAX} 字以内（受領: {len(cv)}）: {cv}"
+                )
+
+
 def main():
     parser = argparse.ArgumentParser(description="競合比較サマリー PowerPoint ジェネレーター")
     parser.add_argument("--data", required=True, help="JSONデータファイルのパス")
@@ -380,6 +433,7 @@ def main():
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    _validate_input(data)
     n_comp = len(data.get("competitors", []))
     print(f"  データ読み込み: 対象={data.get('target_company', {}).get('name', 'N/A')}, 競合={n_comp}社")
 

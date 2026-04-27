@@ -1,0 +1,690 @@
+---
+name: market-overview-agent
+description: >
+  「XX市場を調べて」というユーザー依頼を受けて、MBB 戦略コンサルタント品質の市場分析
+  PowerPoint デッキ（10〜12枚）と、出典・自信度を記録したファクトチェック Markdown
+  レポートの2点セットを納品するオーケストレーター型エージェントスキル。
+  本スキル自体はスクリプトを持たず、Web検索＋複数の既存 PPTX スキル
+  （market-environment / market-share / positioning-map / market-kbf / pest-analysis /
+  competitor-summary / executive-summary / table-of-contents / section-divider /
+  data-availability）と品質レビューア（fact-check-reviewer / visual-quality-reviewer）、
+  結合スキル（merge-pptxv2）を順次呼び出してデッキ全体を組み立てる。
+  公開情報で確定できない論点は「検証すべき論点」として明示し、知的誠実性を保つ。
+
+  以下のいずれかのトリガーで必ずこのスキルを使うこと：
+  - 「XX市場を調べて」「XX業界を調査して」「市場分析を作って」「市場概要をパワポに」という依頼
+  - 「市場規模・シェア・KBF・PEST・競合戦略」を統合した1本のレポートが求められた場合
+  - 「Market Overview」「市場サマリー」「市場リサーチ」「業界調査」「市場レビュー」という言葉
+  - 単一の PPTX スキル（market-environment-pptx 等）の起動で済まない、横断的な市場調査依頼
+---
+
+# Market Overview Agent
+
+「XX市場を調べて」依頼から、市場分析 PowerPoint（標準10〜12枚）＋ファクトチェックMDレポートの
+2点セットを生成するオーケストレーター。
+
+**設計原則**:
+- 各論点に1枚のスライド（情報密度を1論点1スライドで担保）
+- 公開情報で確定できないものは断定せず「検証すべき論点」として残す
+- 数値・固有名詞は必ず Web 検索で裏取り（fact-check-reviewer）
+- 生成済みデッキは PNG 化して目視レビュー（visual-quality-reviewer）し、不備は自動修正ループで処理
+- 最終納品物は **PPTX + FactCheck_Report.md** の2つ
+
+---
+
+## 🚨 絶対ルール（v0.1 改善版）
+
+以下は本オーケストレーターが呼び出す**全 PPTX スキル横断**の絶対ルール。逸脱した時点で
+visual review が `needs_fixes` になるため、JSON 生成段階で必ず守ること。
+
+### ルール1: `main_message` の取り扱い
+
+<!-- source: skills/_common/prompts/main_message_principles.md (manual sync until D2) -->
+
+#### 基本ルール
+
+##### ルール1-A: 長さは **65 文字以内**（厳格）
+
+- 句読点・記号・スペースを含めて 65 文字以内
+- テンプレート最上部のメッセージ枠が固定幅のため、超えた場合は要約や段落分けではなく **書き直し**
+- 65 文字を 1 字でも超えた状態で `fill_*.py` に渡すと ValueError で hard-fail する
+
+##### ルール1-B: トーンは **事実記述ベース**（「〜すべき」禁止）
+
+- 公開情報のみで断定できないアクションや戦略示唆は書かない
+- 不明な点は「〜は公開情報からは確定できず追加調査が必要」と率直に書く（検証論点として明示）
+
+**例**:
+- ✗ 「対象会社は海外展開を加速すべき」（公開情報では断定不可）
+- ✓ 「対象会社は国内売上比率が 90% と高く、海外展開の実績は限定的である」（事実記述）
+- ✓ 「対象会社の海外展開方針は Web 情報では限定的、マネジメントインタビューで確認が必要」（検証論点）
+
+#### 65 字オーバー時の短縮原則 4 つ
+
+LLM が初稿で 65 字を超えた場合、以下の順で書き直す:
+
+1. **主語は 1 つだけ** — 「市場は」「主要プレイヤーは」「対象会社は」のいずれか 1 つに絞る
+2. **修飾語を削除** — 「主要な」「重要な」「大きな」「急速な」等の主観的な修飾語を落とす
+3. **数値は 1 つだけ残す** — CAGR と シェアを両方載せず、より重要な 1 つを選ぶ
+4. **結論を述べる、根拠は本文スライドに任せる** — 「〜だから〜である」の前段を切り、結論部のみ残す
+
+**例（市場概要系）**:
+- ✗（85字）「国内 HR Tech クラウド市場は CAGR 約 32% で急拡大しており、勝つには『データ蓄積』『日本仕様適合』『統合エコシステム』の 3 つの KBF を抑える必要がある」
+- ✓（44字）「国内 HR Tech クラウド市場は CAGR 約 32% で急拡大、3 つの KBF が勝ち筋を決める」
+
+**例（対象会社系）**:
+- ✗（72字）「対象会社は売上 500 億円規模で国内シェア 15% を持ち、北米進出を 2024 年から開始したが現状は売上比率 5% に留まる」
+- ✓（38字）「対象会社は国内シェア 15% で 2 位、海外売上比率は 5% に留まる」
+
+### ルール2: 詳細テキストは可能な限り簡潔に
+
+- `executive-summary-pptx` の `findings[].detail`: **120文字以内**
+- `competitor-summary-pptx` の `target_company.*` / `competitors[].*` の各値: **30文字以内**
+- `market-kbf-pptx` の `kbf_list[].description`: **80〜120文字**、`player_examples[].example`: **40〜80文字**
+- `pest-analysis-pptx` の `pest.<axis>.items[].text`: **40文字以内**
+
+### ルール3: category などの分類名は **重複禁止**（findings 5件で）
+
+- `executive-summary-pptx` の `findings[].category` は5件のうち重複させない
+- 「市場」が2件出るなら「市場規模・成長」と「競争構造」のように粒度を変える
+- 推奨カテゴリ: `市場規模`, `競争構造`, `プレイヤー`, `成功要因`, `マクロ環境`, `結論` 等
+
+### ルール4: 競合社数統一の徹底（v0.2 で可変化）
+
+- `market-share-pptx` / `positioning-map-pptx` / `competitor-summary-pptx` / `market-kbf-pptx`（player_examples）すべてで **`scope.json` の `max_competitors`（既定 5、最大 10）と同数の同じ社**を採用する
+- 同一実行内での社名表記も統一（例: 「ヒューマンテクノロジーズ」と「KING OF TIME」を混在させない）
+- `scope.json.kbf_count` も同様にスキル横断で一致させる（market-kbf-pptx の `kbf_list` の長さ）
+
+---
+
+## 答える論点（市場ベース・5本柱＋PEST）
+
+| # | 論点 | 担当スキル |
+|---|------|------------|
+| 1 | 市場の過去X年成長率＆今後の成長率 | `market-environment-pptx` |
+| 2 | 市場のキービジネスファクター（KBF） | `market-kbf-pptx` |
+| 3 | 各社の市場におけるシェア | `market-share-pptx` |
+| 4 | プレイヤーの位置付け（ポジショニング） | `positioning-map-pptx` |
+| 5 | 各社の戦略比較（一覧） | `competitor-summary-pptx` |
+| + | PEST環境 | `pest-analysis-pptx` |
+
+論点の拡充がスキルの成長軸。今後の拡張で `five-forces-pptx` / `value-chain-pptx` 等を
+組み込んだ拡張モード（v0.2 以降）を予定。
+
+---
+
+## 標準デッキ構成（10〜12枚・3セクション）
+
+| # | 出力ファイル | スキル | セクション |
+|---|---|---|---|
+| 01 | `slide_01_exec_summary.pptx` | `executive-summary-pptx` | 冒頭 |
+| 02 | `slide_02_toc.pptx` | `table-of-contents-pptx` | 冒頭 |
+| 03 | `slide_03_section1_market_size.pptx` | `section-divider-pptx`（Section 1: 市場規模・成長）| Section 1 冒頭 |
+| 04 | `slide_04_market_environment.pptx` | `market-environment-pptx` | Section 1 |
+| 05 | `slide_05_section2_competition.pptx` | `section-divider-pptx`（Section 2: 競争構造）| Section 2 冒頭 |
+| 06 | `slide_06_market_share.pptx` | `market-share-pptx` | Section 2 |
+| 07 | `slide_07_positioning.pptx` | `positioning-map-pptx` | Section 2 |
+| 08 | `slide_08_competitor_summary.pptx` | `competitor-summary-pptx` | Section 2 |
+| 09 | `slide_09_section3_success_factors.pptx` | `section-divider-pptx`（Section 3: 成功要因と外部環境）| Section 3 冒頭 |
+| 10 | `slide_10_market_kbf.pptx` | `market-kbf-pptx` ⭐新規 | Section 3 |
+| 11 | `slide_11_pest.pptx` | `pest-analysis-pptx` | Section 3 |
+| 12 | `slide_12_data_availability.pptx` | `data-availability-pptx` | 末尾 |
+
+⭐ = v0.1 で新規開発したスキル
+
+---
+
+## 処理フロー
+
+```
+Step 0: 市場スコープ確認（AskUserQuestion）
+  ↓
+Step 1: Web検索による論点別情報収集 → data_NN_*.json
+  ↓
+Step 2: データアベイラビリティ整理（Markdown）
+  ↓
+Step 2.5: fact-check-reviewer（high_risk/all/skip）
+  ↓
+Step 3: Markdownでユーザーに確認（要確認項目を統合）
+  ↓
+Step 4: Key Findings 整理（Executive Summary 用）
+  ↓
+Step 5: スライド生成（slide_NN_*.pptx を順次作成）
+  ↓
+Step 6: merge_order.json + マージ順序照合表
+  ↓
+Step 7: merge-pptxv2 で結合 → MarketOverview_<market_name>_<date>.pptx
+  ↓
+Step 8: visual-quality-reviewer ＋ 自動修正ループ（最大2ラウンド）
+  ↓
+Step 9: FactCheck_Report.md 生成（最終納品物）
+  ↓
+Step 10: ユーザーへ提示（PPTX + MDの2ファイル）
+```
+
+---
+
+## Step 0: 市場スコープ確認
+
+`AskUserQuestion` で以下を確定する。すべて単一選択（必要なら「Other」で自由記述）。
+
+| 質問 | 選択肢例 | 既定値 |
+|---|---|---|
+| 地理スコープ | 国内 / グローバル / アジア / 北米・欧州 | — |
+| セグメント粒度 | 業界全体ザックリ / セグメント細分化（例：BtoBのみ・BtoCのみ）| — |
+| 分析年数 | 過去3年＋今後3年 / 過去5年＋今後5年 / 過去10年＋今後10年 | — |
+| 主要競合の上限（max_competitors） | 3 / 5 / 7 / 10（範囲: `references/deck_skeleton_standard.json` の `limits.max_competitors` を参照） | 5 |
+| KBFの数（kbf_count） | 2 / 3 / 4 / 5（範囲: 同上 `limits.kbf_count`） | 3 |
+
+**v0.2 追加**: `max_competitors` と `kbf_count` は `references/deck_skeleton_standard.json` の `limits` セクションで `min/max/default` が定義されている。ユーザーが明示しない場合は default を採用。範囲外の値は AskUserQuestion で再確認すること。
+
+`prompts/step0_scope_clarification.md` を参考にプロンプトを組み立てる。
+
+確定したスコープは `{{WORK_DIR}}/<run_id>/scope.json` に保存：
+
+```json
+{
+  "market_name": "国内HR Tech市場",
+  "geography": "国内",
+  "segment": "業界全体",
+  "analysis_years": { "past": 5, "future": 5 },
+  "max_competitors": 5,
+  "kbf_count": 3,
+  "run_id": "2026-04-26_hr_tech",
+  "started_at": "2026-04-26T22:30:00+09:00"
+}
+```
+
+**重要**: `scope.json` の `max_competitors` / `kbf_count` は後続 Step（Web 検索・データ生成・fill_*.py 入力）で参照される。market-share / positioning-map / competitor-summary / market-kbf-pptx の 4 スキル間で一貫した値を使うこと。
+
+`{{WORK_DIR}}/<run_id>/` を以下「作業ディレクトリ」と呼ぶ。
+
+---
+
+## Step 1: Web検索による論点別情報収集
+
+各論点について Web 検索を行い、JSON データを `data_NN_*.json` として保存する。
+
+### 検索の優先順位
+
+| 論点 | 優先ソース |
+|------|-----------|
+| 市場規模・成長率 | 矢野経済 / 富士経済 / IDC / 業界団体 / 政府統計 |
+| KBF | 業界紙 / コンサルレポート / 専門家インタビュー記事 / 各社IR |
+| シェア | 各社IR（年次報告書）/ 業界統計 / 経済紙 |
+| ポジショニング | 各社HP / IR / プレスリリース |
+| 戦略比較 | 中期経営計画 / 統合報告書 / 決算説明会資料 |
+| PEST | 政府統計 / シンクタンク / メディア / 業界団体 |
+
+検索キーワードのテンプレは `prompts/step1_research_template.md` 参照。
+
+### data_NN_*.json の命名
+
+各 JSON は以下の固定命名で作業ディレクトリに保存:
+
+| ファイル名 | 内容 | 対応スキル |
+|---|---|---|
+| `data_01_exec_summary.json` | 5 Key Findings（Step 4で生成）| executive-summary-pptx |
+| `data_02_toc.json` | 目次（3セクション分）| table-of-contents-pptx |
+| `data_03_section1.json` | Section 1中扉 | section-divider-pptx |
+| `data_04_market_environment.json` | 市場規模推移 | market-environment-pptx |
+| `data_05_section2.json` | Section 2中扉 | section-divider-pptx |
+| `data_06_market_share.json` | 市場シェア | market-share-pptx |
+| `data_07_positioning.json` | ポジショニング | positioning-map-pptx |
+| `data_08_competitor_summary.json` | 戦略比較 | competitor-summary-pptx |
+| `data_09_section3.json` | Section 3中扉 | section-divider-pptx |
+| `data_10_market_kbf.json` | KBF×`kbf_count`（既定 3） | market-kbf-pptx |
+| `data_11_pest.json` | PEST | pest-analysis-pptx |
+| `data_12_data_availability.json` | 取得状況 | data-availability-pptx |
+
+### 競合の絞り込み（max_competitors 連動）
+
+ユーザーが `scope.json.max_competitors` を超える数を挙げた場合、または Web 検索で同数を超えてヒットした場合は、以下の優先順位で
+**上位 `max_competitors` 社に絞り込む**:
+
+1. シェア順位（市場の主要プレイヤー）
+2. 売上規模
+3. メディア・業界レポートでの言及頻度
+
+絞り込み根拠は `data_06_market_share.json` の `notes` フィールドに明記する（「対象市場
+の主要 N 社に絞り込み。N+1 番手以下のプレイヤーは追加調査時に拡張」等）。
+
+### max_competitors 上限の統一適用
+
+`market-share-pptx` / `positioning-map-pptx` / `competitor-summary-pptx` /
+`market-kbf-pptx`（player_examples）すべてで **`scope.json.max_competitors` と同数の同じ社**を採用する（読み手が一貫したストーリーで追えるようにするため）。
+
+---
+
+## Step 2: データアベイラビリティ整理
+
+`data-availability-pptx` のJSON 形式（カテゴリ×項目×ステータス×データソース）に整理。
+ステータスは `✓取得済 / △一部取得 / ✗未取得` の3値。
+
+**重要**: ✗/△ の項目は、そのまま FactCheck_Report.md の `data_gaps` セクションへも転記する。
+
+`{{WORK_DIR}}/<run_id>/data_12_data_availability.json` に保存。
+
+---
+
+## Step 2.5: ファクトチェック
+
+`fact-check-reviewer` スキルを呼び出して、Web 取得情報の真偽を裏取り。
+
+### Step 2.5-a: スコープをユーザーに選ばせる
+
+`AskUserQuestion` で以下から選択：
+
+| 選択肢 | 内容 |
+|---|---|
+| **high_risk**（推奨）| 数値・シェア・市場規模・日付・固有名詞のみを検証 |
+| **all** | 上記＋テキスト主張も全件検証（時間がかかる）|
+| **skip** | 省略して Step 3 へ |
+
+### Step 2.5-b: fact-check-reviewer 起動
+
+入力:
+- `data_dir`: `{{WORK_DIR}}/<run_id>/`
+- `scope`: ユーザー選択値
+- `target_company`: 主要競合（`scope.json.max_competitors` 社）のうち最大シェアのプレイヤー（検索精度向上のため）
+
+出力: `{{FACTORY_ROOT}}/work/fact-check-reviewer/fact_check_report.json`
+
+### Step 2.5-c: フラグ項目の取り扱い
+
+`fact_check_report.json` の `flags[]` を以下に分配:
+
+- `severity=high` または `medium` → **Step 3 の Markdown に「要確認項目」として差し込む**
+- 全件 → Step 9 で `FactCheck_Report.md` に転記（最終納品物）
+
+`overall_verdict=pass` の場合はフラグ提示を省略。
+
+---
+
+## Step 3: Markdownでユーザーに確認
+
+調査結果＋推奨スライド構成＋ファクトチェック要確認項目を1つの Markdown でユーザーに提示し、
+承認を得る。
+
+### Markdown テンプレート
+
+```markdown
+## 市場調査結果サマリー: {market_name}
+
+### 1. 調査スコープ
+- 地理: {geography}
+- セグメント: {segment}
+- 分析年数: 過去{N}年 + 今後{M}年
+- 主要競合: {N}社
+
+### 2. データアベイラビリティ
+| カテゴリ | 項目 | ステータス | データソース |
+| ... |
+
+### 3. ファクトチェック要確認項目（severity=high/medium）
+| # | データファイル | 主張 | 検証結果 | severity |
+
+### 4. 推奨デッキ構成（標準10〜12枚）
+（標準デッキ構成テーブル）
+
+### 5. 確認事項
+- 上記スコープと推奨構成でデッキ生成を進めてよいか
+- ファクトチェック要確認項目について、どう対応するか
+  - JSON修正（数値の置き換え・削除）
+  - 注釈付与（出典情報を脚注に明記）
+  - スキップ（そのまま進める）
+```
+
+ユーザー承認後、必要な JSON 修正を行ってから Step 4 へ進む。
+
+---
+
+## Step 4: Key Findings 整理（Executive Summary 用）
+
+5 Findings パターンで `data_01_exec_summary.json` を生成:
+
+1. **市場規模と成長性**: 「市場規模は{X}億円、CAGRは過去{N}年で{Y}%、今後{M}年は{Z}%が見込まれる」
+2. **競争構造**: 「上位{N}社で{X}%のシェアを占め、{N}位に対象会社が位置する。XX社が継続的に首位」
+3. **プレイヤー特性**: 「{特性Aの企業群}と{特性Bの企業群}に二分されており、ポジションの違いが利益率の差につながる」
+4. **成功要因（KBF）**: 「市場で勝つには「{KBF1}」「{KBF2}」「{KBF3}」が鍵。先行プレイヤーが先行優位を持つ」
+5. **マクロ環境（PEST）**: 「{P/E/S/T のうち最も影響度の高い1〜2要因}が市場形成の主たるドライバー」
+
+**トーン**:
+- 事実記述ベース（「〜である」「〜と見られる」）
+- 「〜すべき」は禁止（公開情報では断定不可）
+- 不明な点は「〜は公開情報からは確定できず、追加調査が必要」と明示
+
+---
+
+## Step 5: スライド生成
+
+`references/deck_skeleton_standard.json` の順序通りに slide_NN_*.pptx を生成。
+
+### ⚠️ 最重要: ファイル名の番号 = 最終通し番号
+
+strategy-report-agent v5.1 の規約と同じ。番号と最終並び順を一致させる。
+
+### 共通実行パターン
+
+```bash
+pip install python-pptx -q --break-system-packages
+
+python {{SKILL_DIR}}/<dependency_skill>/scripts/fill_<name>.py \
+  --data {{WORK_DIR}}/<run_id>/data_NN_<name>.json \
+  --template {{SKILL_DIR}}/<dependency_skill>/assets/<template>.pptx \
+  --output {{WORK_DIR}}/<run_id>/slide_NN_<name>.pptx
+```
+
+### 中扉（section-divider）配置の絶対ルール
+
+中扉は、そのセクションの**最初**に配置（末尾ではない）。  
+本デッキは3セクション構成のため、中扉は3つ（slide_03 / slide_05 / slide_09）。
+
+### 色とセクション番号の連動
+
+| セクション# | 中扉 section_number | 色 | TOC sections[i].title |
+|---|---|---|---|
+| 1 | 1 | 紺 | 市場規模・成長 |
+| 2 | 2 | 青 | 競争構造 |
+| 3 | 3 | 緑 | 成功要因と外部環境 |
+
+---
+
+## Step 6: マージ順序照合表 + merge_order.json
+
+### Step 6-a: 照合表（Markdown）の出力＆セルフチェック
+
+```markdown
+## マージ順序照合表（Market Overview 標準版）
+
+| 通し番号 | ファイル名 | 種別 | セクション | 備考 |
+|---|---|---|---|---|
+| 01 | slide_01_exec_summary.pptx | エグサマ | 冒頭 | - |
+| 02 | slide_02_toc.pptx | 目次 | 冒頭 | sections=3 |
+| 03 | slide_03_section1_market_size.pptx | **中扉** | Section 1冒頭 ✓ | section_number=1 |
+| 04 | slide_04_market_environment.pptx | コンテンツ | Section 1 | - |
+| 05 | slide_05_section2_competition.pptx | **中扉** | Section 2冒頭 ✓ | section_number=2 |
+| 06 | slide_06_market_share.pptx | コンテンツ | Section 2 | - |
+| 07 | slide_07_positioning.pptx | コンテンツ | Section 2 | - |
+| 08 | slide_08_competitor_summary.pptx | コンテンツ | Section 2 | - |
+| 09 | slide_09_section3_success_factors.pptx | **中扉** | Section 3冒頭 ✓ | section_number=3 |
+| 10 | slide_10_market_kbf.pptx | コンテンツ | Section 3 | ⭐新規 |
+| 11 | slide_11_pest.pptx | コンテンツ | Section 3 | - |
+| 12 | slide_12_data_availability.pptx | コンテンツ | 末尾 | - |
+```
+
+セルフチェック項目（マージ実行前にすべてYES）：
+
+- [ ] 全ての中扉が「そのセクションのコンテンツより前」に位置している
+- [ ] TOCの `sections[i].title` と、対応する中扉の `title` が一致
+- [ ] TOCの `sections[i].page` と、対応する中扉の通し番号が一致
+- [ ] ファイル番号に歯抜け・重複・逆転がない
+- [ ] エグゼクティブサマリーが通し番号01に配置
+- [ ] データアベイラビリティが末尾に配置
+
+### Step 6-b: merge_order.json 出力（visual-quality-reviewer 用）
+
+`{{WORK_DIR}}/<run_id>/merge_order.json` に保存：
+
+```json
+{
+  "entries": [
+    {"slide_number": 1, "file_name": "slide_01_exec_summary.pptx",
+     "skill_name": "executive-summary-pptx", "data_file": "data_01_exec_summary.json"},
+    {"slide_number": 2, "file_name": "slide_02_toc.pptx",
+     "skill_name": "table-of-contents-pptx", "data_file": "data_02_toc.json"},
+    {"slide_number": 3, "file_name": "slide_03_section1_market_size.pptx",
+     "skill_name": "section-divider-pptx", "data_file": "data_03_section1.json"},
+    {"slide_number": 4, "file_name": "slide_04_market_environment.pptx",
+     "skill_name": "market-environment-pptx", "data_file": "data_04_market_environment.json"},
+    {"slide_number": 5, "file_name": "slide_05_section2_competition.pptx",
+     "skill_name": "section-divider-pptx", "data_file": "data_05_section2.json"},
+    {"slide_number": 6, "file_name": "slide_06_market_share.pptx",
+     "skill_name": "market-share-pptx", "data_file": "data_06_market_share.json"},
+    {"slide_number": 7, "file_name": "slide_07_positioning.pptx",
+     "skill_name": "positioning-map-pptx", "data_file": "data_07_positioning.json"},
+    {"slide_number": 8, "file_name": "slide_08_competitor_summary.pptx",
+     "skill_name": "competitor-summary-pptx", "data_file": "data_08_competitor_summary.json"},
+    {"slide_number": 9, "file_name": "slide_09_section3_success_factors.pptx",
+     "skill_name": "section-divider-pptx", "data_file": "data_09_section3.json"},
+    {"slide_number": 10, "file_name": "slide_10_market_kbf.pptx",
+     "skill_name": "market-kbf-pptx", "data_file": "data_10_market_kbf.json"},
+    {"slide_number": 11, "file_name": "slide_11_pest.pptx",
+     "skill_name": "pest-analysis-pptx", "data_file": "data_11_pest.json"},
+    {"slide_number": 12, "file_name": "slide_12_data_availability.pptx",
+     "skill_name": "data-availability-pptx", "data_file": "data_12_data_availability.json"}
+  ]
+}
+```
+
+---
+
+## Step 7: 結合（merge-pptxv2）
+
+通し番号順に引数を並べてマージ。**`ls *.pptx | sort` の出力をそのまま流すのは禁止**。
+
+```bash
+pip install lxml --break-system-packages -q
+
+python {{SKILL_DIR}}/merge-pptxv2/scripts/merge_pptx_v2.py \
+  {{OUTPUT_DIR}}/MarketOverview_<market_name>_<date>.pptx \
+  {{WORK_DIR}}/<run_id>/slide_01_exec_summary.pptx \
+  {{WORK_DIR}}/<run_id>/slide_02_toc.pptx \
+  {{WORK_DIR}}/<run_id>/slide_03_section1_market_size.pptx \
+  {{WORK_DIR}}/<run_id>/slide_04_market_environment.pptx \
+  {{WORK_DIR}}/<run_id>/slide_05_section2_competition.pptx \
+  {{WORK_DIR}}/<run_id>/slide_06_market_share.pptx \
+  {{WORK_DIR}}/<run_id>/slide_07_positioning.pptx \
+  {{WORK_DIR}}/<run_id>/slide_08_competitor_summary.pptx \
+  {{WORK_DIR}}/<run_id>/slide_09_section3_success_factors.pptx \
+  {{WORK_DIR}}/<run_id>/slide_10_market_kbf.pptx \
+  {{WORK_DIR}}/<run_id>/slide_11_pest.pptx \
+  {{WORK_DIR}}/<run_id>/slide_12_data_availability.pptx
+```
+
+`<market_name>` はスネークケース化（例: `HRTech`）、`<date>` は実行日（YYYY-MM-DD）。
+
+### マージ後の最終検証
+
+merge-pptxv2 の出力ログで、各スライド番号の Main Message と shape数が表示される。
+中扉のshape数は8前後（タイトル＋サブタイトル＋トピックリストのみ）と少なくなり、
+**「コンテンツ（多）→ 中扉（少）→ コンテンツ（多）」の谷**が3箇所（slide_03/05/09）に
+出現するのが正常。
+
+---
+
+## Step 8: ビジュアル品質レビュー＋自動修正ループ
+
+### Step 8-a: visual-quality-reviewer 起動
+
+入力:
+- `merged_pptx`: `{{OUTPUT_DIR}}/MarketOverview_<market_name>_<date>.pptx`
+- `merge_order`: `{{WORK_DIR}}/<run_id>/merge_order.json`
+- `data_dir`: `{{WORK_DIR}}/<run_id>/`
+
+出力: `{{FACTORY_ROOT}}/work/visual-quality-reviewer/visual_review_report.json`
+
+### Step 8-b: レビュー結果の分岐
+
+| `overall_verdict` | 処理 |
+|---|---|
+| `pass` | Step 9 へ進む |
+| `needs_fixes` かつ `severity=high` ≥1件 | **自動修正ループ**（最大2ラウンド）|
+| `needs_fixes` かつ `severity=high` =0件 | ユーザーに差分提示、手動修正 or 許容を選ばせる |
+| `reject` | LibreOffice レンダリング失敗を疑い、ユーザーに報告して停止 |
+
+### 自動修正ループ
+
+`severity=high` の各 issue について:
+1. `issues[i].skill_name` と `issues[i].data_file` から、該当スライドの JSON を特定
+2. `issues[i].regeneration_hint` に従って `data_NN_*.json` を修正
+3. 該当スキルの `fill_*.py` を**同じ slide_NN ファイル名で再実行** → 上書き
+4. 全修正完了後、`merge-pptxv2` を再実行
+5. 再度 `visual-quality-reviewer` を起動
+
+**2ラウンド終了時点で `high` が残れば、ユーザーに残存 issue を提示して判断を仰ぐ**。
+カウンタを必ず持って無限ループを防止すること。
+
+---
+
+## Step 9: FactCheck_Report.md 生成（最終納品物）
+
+`fact_check_report.json` を Markdown に整形して、`{{OUTPUT_DIR}}/FactCheck_Report_<market_name>_<date>.md`
+に保存する。テンプレートは `prompts/step9_factcheck_md_template.md` を参照。
+
+### MD レポートの構成（必須セクション）
+
+```markdown
+# ファクトチェックレポート: {market_name}
+
+**実行日**: {YYYY-MM-DD}  
+**スコープ**: high_risk / all / skip  
+**総合判定**: pass / needs_user_review / skipped  
+**検証件数**: {N} 件 / フラグ件数: {M} 件（high={a} / medium={b} / low={c}）
+
+---
+
+## 1. クレーム別検証結果（スライド番号順）
+
+| スライド | データファイル | 主張 | 検証結果 | severity | 出典URL（裏取り）| 補足 |
+|---|---|---|---|---|---|---|
+| 4 | data_04_market_environment.json | 市場規模1.2兆円（2024年）| confirmed | low | https://... | - |
+| 6 | data_06_market_share.json | A社シェア25.3% | discrepancy | high | https://... | IRでは22.8%。要修正 or 注釈 |
+| ... |
+
+## 2. 自信度サマリー
+
+- **High confidence**（複数ソース確認）: {X} 件
+- **Medium confidence**（単一ソース確認）: {Y} 件
+- **Low confidence**（裏取り不可・推定）: {Z} 件
+
+## 3. データギャップ（Web 公開情報では取得不可）
+
+データアベイラビリティ ✗/△ 項目を転記:
+
+| カテゴリ | 項目 | 理由 | 推奨対応 |
+|---|---|---|---|
+| 市場規模 | 2026年予測値 | 公的統計が2024年までしか公開されていない | 業界団体・矢野経済の予測レポートの追加調達 |
+
+## 4. 検索クエリログ
+
+検索したキーワードと取得した出典URLの一覧:
+
+| クレームID | クエリ | 取得URL | 取得日 |
+|---|---|---|---|
+| c001 | "国内HR Tech市場 規模 2024" | https://... | 2026-04-26 |
+```
+
+### MD レポートの位置付け
+
+- **クライアント納品物**として PPTX と並列に位置付ける
+- 各クレームに `severity`（高/中/低）と検証結果（confirmed / single_source / discrepancy / not_found / stale）を必ず記録
+- 出典URLは裏取りに使った検索結果のURLを記録（一次情報を辿れるように）
+
+---
+
+## Step 10: ユーザーへ提示
+
+最終的に2つのファイルを提示する：
+
+1. `{{OUTPUT_DIR}}/MarketOverview_<market_name>_<date>.pptx`（PPTX デッキ 12枚）
+2. `{{OUTPUT_DIR}}/FactCheck_Report_<market_name>_<date>.md`（ファクトチェックレポート）
+
+提示メッセージ例：
+
+```
+✅ 市場調査レポートの生成が完了しました。
+
+📊 PPTXデッキ: MarketOverview_HRTech_2026-04-26.pptx（12枚）
+🔎 ファクトチェック: FactCheck_Report_HRTech_2026-04-26.md
+   - 検証件数: 28件 / フラグ: 3件（high=0, medium=2, low=1）
+   - 総合判定: pass
+
+【次に検証すべき論点（公開情報で確定できなかった項目）】
+- 2026年以降の市場規模予測（公的統計未整備、業界団体レポート要確認）
+- 上位 N 社以外の新興プレイヤーのシェア（決算非開示）
+
+ご確認ください。
+```
+
+---
+
+## 依存スキル一覧
+
+### コアスキル（必須）
+
+| スキル名 | 配置 | 役割 |
+|---|---|---|
+| `executive-summary-pptx` | user | デッキ冒頭の Key Findings サマリー |
+| `table-of-contents-pptx` | user | 目次（3セクション）|
+| `section-divider-pptx` | user | 中扉（3枚: Section 1/2/3 冒頭）|
+| `market-environment-pptx` | user | 市場規模推移＋CAGR（論点1）|
+| `market-share-pptx` | user | 市場シェア（論点3）|
+| `positioning-map-pptx` | user | プレイヤー位置付け（論点4）|
+| `competitor-summary-pptx` | user | 各社戦略比較（論点5）|
+| `market-kbf-pptx` ⭐ | user | KBF×`kbf_count`（既定 3）のテーブル（論点2、v0.1新規）|
+| `pest-analysis-pptx` | user | PEST環境（追加論点）|
+| `data-availability-pptx` | user | データ取得状況・調査制約 |
+| `merge-pptxv2` | user | 全スライドの結合 |
+
+### 品質レビュー系スキル（必須）
+
+| スキル名 | 配置 | 呼び出し位置 | 役割 |
+|---|---|---|---|
+| `fact-check-reviewer` | user | Step 2.5 | Web取得情報の裏取り |
+| `visual-quality-reviewer` | user | Step 8 | マージ後デッキの目視レビュー＋自動修正 |
+
+⭐ = v0.1 で新規開発
+
+---
+
+## 品質チェックリスト
+
+### デッキ全体
+
+- [ ] エグゼクティブサマリーが冒頭（slide_01）に配置されている
+- [ ] 目次（slide_02）の `sections[]` が3要素（市場規模・成長 / 競争構造 / 成功要因と外部環境）
+- [ ] 中扉が3枚（slide_03/05/09）配置され、それぞれ section_number = 1/2/3
+- [ ] データアベイラビリティが末尾（slide_12）に配置されている
+
+### 中扉配置（過去バグ再発防止）
+
+- [ ] 全ての中扉が「そのセクションのコンテンツより前」に位置している
+- [ ] ファイル名の番号と最終順序が一致している
+- [ ] マージ後の shape 数推移で「コンテンツ→中扉→コンテンツ」の谷が3箇所（03/05/09）に正しく出現している
+- [ ] 目次の `sections[i].page` が、対応する中扉の通し番号（3/5/9）と一致している
+
+### 内容の一貫性
+
+- [ ] 主要競合（`scope.json.max_competitors` 社）が全PPTXスキル（market-share / positioning-map / competitor-summary / market-kbf）で一致している
+- [ ] 全スライドのメインメッセージが事実記述ベース（「〜すべき」が含まれていない）
+- [ ] エグゼクティブサマリーの 5 Findings が他スライドの内容と整合している
+- [ ] FactCheck_Report.md にすべての data_NN_*.json のクレームが記録されている
+- [ ] FactCheck_Report.md の `data_gaps` セクションが、データアベイラビリティの ✗/△ 項目と一致している
+
+### 納品物
+
+- [ ] `{{OUTPUT_DIR}}/MarketOverview_<market_name>_<date>.pptx` が生成された
+- [ ] `{{OUTPUT_DIR}}/FactCheck_Report_<market_name>_<date>.md` が生成された
+- [ ] PowerPoint で開いた際に修復ダイアログが出ない
+
+---
+
+## 注意事項
+
+- **公開情報主義**: Web情報・ユーザーアップロード情報のみで分析する。推定や断定は避ける。
+- **競合社数上限**: `scope.json.max_competitors`（既定 5、最大 10）に従い、ポジショニング・シェア・競合比較・KBF 事例で**同じ社**を採用する（一貫性）。`kbf_count` も同様にスキル横断で揃える。
+- **検証論点の明示**: 公開情報で確定できないものは `data_gaps` または FactCheck_Report.md の追加調査推奨セクションへ明示する。
+- **Web 検索深度**: 1論点あたり 5〜8 コール程度を目安。深度の議論は v0.2 以降。
+- **無限ループ防止**: 自動修正ループは最大2ラウンド。3ラウンド目に入る前に必ずユーザーに判断を仰ぐ。
+
+---
+
+## アセット
+
+| ファイル | 内容 |
+|---|---|
+| `prompts/step0_scope_clarification.md` | Step 0 の AskUserQuestion 雛形 |
+| `prompts/step1_research_template.md` | Step 1 の論点別検索キーワード |
+| `prompts/step9_factcheck_md_template.md` | FactCheck_Report.md の雛形 |
+| `references/deck_skeleton_standard.json` | 標準デッキ12枚の順序とスキル割当 |

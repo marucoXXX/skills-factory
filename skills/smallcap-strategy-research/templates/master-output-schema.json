@@ -1,0 +1,69 @@
+{
+  "_comment": "Master Output Schema for smallcap-strategy-research. Phase 3でPPTXスキル群に引き渡すための統合JSONの雛形。MVP時点ではpptx_slot配下は全て空プレースホルダーで構わない。正式定義は references/output-schemas.md を参照。",
+  "target_company": "",
+  "synthesized_at": "",
+  "phase": "mvp",
+
+  "pptx_slot": {
+    "executive_summary": {
+      "_schema_ref": "executive-summary-pptx",
+      "main_message": "",
+      "chart_title": "",
+      "source": "",
+      "findings": []
+    },
+    "company_overview": {
+      "_schema_ref": "company-overview-pptx-v2",
+      "title": "",
+      "main_message": "",
+      "source": "",
+      "items": [],
+      "photos": {
+        "headquarters": {"url": "", "caption": ""},
+        "product": {"url": "", "caption": ""}
+      }
+    },
+    "swot": {
+      "_schema_ref": "swot-pptx",
+      "main_message": "",
+      "chart_title": "",
+      "swot": {
+        "strengths": {"items": []},
+        "weaknesses": {"items": []},
+        "opportunities": {"items": []},
+        "threats": {"items": []}
+      }
+    },
+    "business_model": {
+      "_schema_ref": "business-model-pptx",
+      "main_message": "",
+      "chart_title": "",
+      "company": {"name": "", "description": ""},
+      "suppliers": [],
+      "customers": [],
+      "implications": []
+    },
+    "data_availability": {
+      "_schema_ref": "data-availability-pptx",
+      "main_message": "",
+      "chart_title": "",
+      "categories": [],
+      "constraints": []
+    },
+    "issue_risk_list": {
+      "_schema_ref": "issue-risk-list-pptx",
+      "main_message": "",
+      "chart_title": "",
+      "items": []
+    },
+    "table_of_contents": {
+      "_schema_ref": "table-of-contents-pptx",
+      "main_message": "目次",
+      "chart_title": "Table of Contents",
+      "sections": []
+    },
+    "section_dividers": []
+  },
+
+  "synthesis_ref": ""
+}
