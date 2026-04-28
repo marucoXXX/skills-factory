@@ -101,6 +101,100 @@ def _hex2rgb(h):
     h = h.replace("#","")
     return RGBColor(int(h[:2],16), int(h[2:4],16), int(h[4:6],16))
 
+# ── Y 軸スケール計算 ──
+def _round_up_nice(x):
+    """1.93 → 2.0、4.7 → 5、47 → 50、187 → 200 のように見栄えの良い max にする"""
+    if x <= 0:
+        return 1
+    mag = 10 ** math.floor(math.log10(x))
+    n = x / mag
+    if   n <= 1.0: nn = 1.0
+    elif n <= 1.2: nn = 1.2
+    elif n <= 1.5: nn = 1.5
+    elif n <= 2.0: nn = 2.0
+    elif n <= 2.5: nn = 2.5
+    elif n <= 3.0: nn = 3.0
+    elif n <= 4.0: nn = 4.0
+    elif n <= 5.0: nn = 5.0
+    elif n <= 6.0: nn = 6.0
+    elif n <= 8.0: nn = 8.0
+    else:          nn = 10.0
+    return nn * mag
+
+def _calc_primary_axis_max(data, override=None):
+    """棒グラフ（積み上げ合計）の最大値から primary Y 軸 max を決める"""
+    if override is not None:
+        return float(override)
+    totals = [sum(d.get("bars", [])) for d in data]
+    if not totals:
+        return 1.0
+    return _round_up_nice(max(totals) * 1.15)
+
+def _calc_secondary_axis_max(data, override=None):
+    """折れ線（％想定）の最大値から secondary Y 軸 max を決める。
+    値域が 0-100 内なら 120（％的に余裕を持たせる）、
+    それ以上なら nice round up を採用。
+    """
+    if override is not None:
+        return float(override)
+    vals = [d.get("line_value", 0) for d in data if d.get("line_value") is not None]
+    if not vals:
+        return 100.0
+    mx = max(vals)
+    if mx <= 100:
+        return 120.0
+    return _round_up_nice(mx * 1.15)
+
+def _set_val_axis_scale(val_ax, axis_min, axis_max):
+    """既存の c:valAx に明示的な min / max を持つ c:scaling を設定する。
+    OOXML schema 順序を保つため、c:scaling 直下に min / max を append する。
+    """
+    sc = val_ax.find(qn('c:scaling'))
+    if sc is None:
+        sc = etree.SubElement(val_ax, qn('c:scaling'))
+        # axId の直後に scaling を移動
+        ax_id = val_ax.find(qn('c:axId'))
+        if ax_id is not None:
+            val_ax.remove(sc)
+            ax_id.addnext(sc)
+    # orientation を確実に
+    ori = sc.find(qn('c:orientation'))
+    if ori is None:
+        ori = etree.SubElement(sc, qn('c:orientation'), attrib={'val': 'minMax'})
+    # 既存の min / max を撤去して再設定
+    for tag in ('c:max', 'c:min'):
+        for el in sc.findall(qn(tag)):
+            sc.remove(el)
+    etree.SubElement(sc, qn('c:max'), attrib={'val': f'{axis_max:g}'})
+    etree.SubElement(sc, qn('c:min'), attrib={'val': f'{axis_min:g}'})
+
+def _reorder_plot_area(pa):
+    """OOXML CT_PlotArea schema 順序に正規化:
+    layout? → chart elements (barChart/lineChart/...) → axes (catAx/valAx/...) → others
+    LibreOffice / PowerPoint が schema 違反順序でレンダ崩壊するのを防ぐ。
+    """
+    chart_tags = {qn(t) for t in (
+        'c:areaChart','c:area3DChart','c:bar3DChart','c:barChart','c:bubbleChart',
+        'c:doughnutChart','c:line3DChart','c:lineChart','c:ofPieChart',
+        'c:pie3DChart','c:pieChart','c:radarChart','c:scatterChart',
+        'c:stockChart','c:surface3DChart','c:surfaceChart',
+    )}
+    axis_tags = {qn(t) for t in ('c:valAx','c:catAx','c:dateAx','c:serAx')}
+    layout_tag = qn('c:layout')
+
+    children = list(pa)
+    layouts = [c for c in children if c.tag == layout_tag]
+    charts  = [c for c in children if c.tag in chart_tags]
+    axes    = [c for c in children if c.tag in axis_tags]
+    others  = [c for c in children if c not in layouts and c not in charts and c not in axes]
+
+    for c in children:
+        pa.remove(c)
+    for c in layouts: pa.append(c)
+    for c in charts:  pa.append(c)
+    for c in axes:    pa.append(c)
+    for c in others:  pa.append(c)
+
 # ── チャート生成 ──
 def build_stacked_combo_chart(slide, cfg, left, top, w, h):
     from pptx.chart.data import CategoryChartData
@@ -124,6 +218,15 @@ def build_stacked_combo_chart(slide, cfg, left, top, w, h):
     pa = chart._chartSpace.chart.plotArea
     bc = pa.findall(qn('c:barChart'))[0]
 
+    # === Y 軸スケール自動計算 ===
+    primary_axis_max   = _calc_primary_axis_max(data, cfg.get("primary_y_axis_max"))
+    secondary_axis_max = _calc_secondary_axis_max(data, cfg.get("secondary_y_axis_max")) if has_line else None
+
+    # 既存（プライマリ）valAx に明示スケールを設定（バー値域に合わせる）
+    primary_val_axes = pa.findall(qn('c:valAx'))
+    if primary_val_axes:
+        _set_val_axis_scale(primary_val_axes[0], 0, primary_axis_max)
+
     # 折れ線を分離
     if has_line:
         sers = bc.findall(qn('c:ser'))
@@ -145,6 +248,7 @@ def build_stacked_combo_chart(slide, cfg, left, top, w, h):
         sec_v="2094734553"; sec_c="2094734554"
         etree.SubElement(lc, qn('c:axId'), attrib={'val':sec_c})
         etree.SubElement(lc, qn('c:axId'), attrib={'val':sec_v})
+        # 二次カテゴリ軸（非表示）
         sc = etree.SubElement(pa, qn('c:catAx'))
         etree.SubElement(sc, qn('c:axId'), attrib={'val':sec_c})
         s2 = etree.SubElement(sc, qn('c:scaling'))
@@ -152,13 +256,20 @@ def build_stacked_combo_chart(slide, cfg, left, top, w, h):
         etree.SubElement(sc, qn('c:delete'), attrib={'val':'1'})
         etree.SubElement(sc, qn('c:axPos'), attrib={'val':'b'})
         etree.SubElement(sc, qn('c:crossAx'), attrib={'val':sec_v})
+        # 二次値軸（右側に可視化、明示的な min/max を設定）
         sv = etree.SubElement(pa, qn('c:valAx'))
         etree.SubElement(sv, qn('c:axId'), attrib={'val':sec_v})
         s3 = etree.SubElement(sv, qn('c:scaling'))
         etree.SubElement(s3, qn('c:orientation'), attrib={'val':'minMax'})
-        etree.SubElement(sv, qn('c:delete'), attrib={'val':'1'})
+        etree.SubElement(s3, qn('c:max'), attrib={'val': f'{secondary_axis_max:g}'})
+        etree.SubElement(s3, qn('c:min'), attrib={'val': '0'})
+        etree.SubElement(sv, qn('c:delete'), attrib={'val':'0'})
         etree.SubElement(sv, qn('c:axPos'), attrib={'val':'r'})
-        etree.SubElement(sv, qn('c:numFmt'), attrib={'formatCode':'0.0','sourceLinked':'0'})
+        line_axis_fmt = line_cfg.get("num_format", "0")
+        etree.SubElement(sv, qn('c:numFmt'), attrib={'formatCode':line_axis_fmt,'sourceLinked':'0'})
+        etree.SubElement(sv, qn('c:majorTickMark'), attrib={'val':'out'})
+        etree.SubElement(sv, qn('c:minorTickMark'), attrib={'val':'none'})
+        etree.SubElement(sv, qn('c:tickLblPos'), attrib={'val':'nextTo'})
         etree.SubElement(sv, qn('c:crossAx'), attrib={'val':sec_c})
         etree.SubElement(sv, qn('c:crosses'), attrib={'val':'max'})
         # 折れ線色
@@ -228,7 +339,12 @@ def build_stacked_combo_chart(slide, cfg, left, top, w, h):
     if psp is None: psp = etree.SubElement(pa, qn('c:spPr'))
     etree.SubElement(psp, qn('a:noFill'))
 
+    # OOXML CT_PlotArea 順序に正規化（chart 要素 → axes）
+    _reorder_plot_area(pa)
+
     print(f"  ✓ 複合チャート: {len(data)}年, {n_ser}棒系列" + (f" + 折れ線" if has_line else ""))
+    print(f"  ✓ Y 軸 自動レンジ: 左軸 max={primary_axis_max:g}" +
+          (f" / 右軸 max={secondary_axis_max:g}" if has_line else ""))
     return cf
 
 def _add_dlbls(ser, pos, fmt, fc, sz):
