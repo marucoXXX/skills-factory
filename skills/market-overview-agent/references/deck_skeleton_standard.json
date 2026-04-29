@@ -141,7 +141,7 @@
     "論点+_pest": 11
   },
   "limits": {
-    "max_competitors": { "default": 5, "min": 3, "max": 10 },
+    "max_competitors": { "default": 5, "min": 3, "max": 5 },
     "kbf_count": { "default": 3, "min": 2, "max": 5 },
     "main_message_max_chars": 65,
     "_note": "v0.2 で導入された Step 0 可変化用の上限値。Step 0 の AskUserQuestion で min/max 範囲内の任意値をユーザーが選べる。default は明示しない場合に採用される。"

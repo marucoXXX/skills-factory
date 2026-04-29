@@ -91,7 +91,7 @@ LLM が初稿で 65 字を超えた場合、以下の順で書き直す:
 
 ### ルール4: 競合社数統一の徹底（v0.2 で可変化）
 
-- `market-share-pptx` / `positioning-map-pptx` / `competitor-summary-pptx` / `market-kbf-pptx`（player_examples）すべてで **`scope.json` の `max_competitors`（既定 5、最大 10）と同数の同じ社**を採用する
+- `market-share-pptx` / `positioning-map-pptx` / `competitor-summary-pptx` / `market-kbf-pptx`（player_examples）すべてで **`scope.json` の `max_competitors`（既定 5、上限 5）と同数の同じ社**を採用する
 - 同一実行内での社名表記も統一（例: 「ヒューマンテクノロジーズ」と「KING OF TIME」を混在させない）
 - `scope.json.kbf_count` も同様にスキル横断で一致させる（market-kbf-pptx の `kbf_list` の長さ）
 
@@ -179,7 +179,7 @@ Step 10: ユーザーへ提示（PPTX + MDの2ファイル）
 | 地理スコープ | 国内 / グローバル / アジア / 北米・欧州 | — |
 | セグメント粒度 | 業界全体ザックリ / セグメント細分化（例：BtoBのみ・BtoCのみ）| — |
 | 分析年数 | 過去3年＋今後3年 / 過去5年＋今後5年 / 過去10年＋今後10年 | — |
-| 主要競合の上限（max_competitors） | 3 / 5 / 7 / 10（範囲: `references/deck_skeleton_standard.json` の `limits.max_competitors` を参照） | 5 |
+| 主要競合の上限（max_competitors） | 3 / 5（範囲: `references/deck_skeleton_standard.json` の `limits.max_competitors` を参照、上限 5） | 5 |
 | KBFの数（kbf_count） | 2 / 3 / 4 / 5（範囲: 同上 `limits.kbf_count`） | 3 |
 | 強調したい会社（highlight_company） | 強調しない / 自由記述で会社名を入力 | **強調しない** |
 
@@ -776,7 +776,7 @@ merge-pptxv2 の出力ログで、各スライド番号の Main Message と shap
 ## 注意事項
 
 - **公開情報主義**: Web情報・ユーザーアップロード情報のみで分析する。推定や断定は避ける。
-- **競合社数上限**: `scope.json.max_competitors`（既定 5、最大 10）に従い、ポジショニング・シェア・競合比較・KBF 事例で**同じ社**を採用する（一貫性）。`kbf_count` も同様にスキル横断で揃える。
+- **競合社数上限**: `scope.json.max_competitors`（既定 5、上限 5、2026-04-29 に 10→5 撤回）に従い、ポジショニング・シェア・競合比較・KBF 事例で**同じ社**を採用する（一貫性）。`kbf_count` も同様にスキル横断で揃える。
 - **検証論点の明示**: 公開情報で確定できないものは `data_gaps` または FactCheck_Report.md の追加調査推奨セクションへ明示する。
 - **Web 検索深度**: 1論点あたり 5〜8 コール程度を目安。深度の議論は v0.2 以降。
 - **無限ループ防止**: 自動修正ループは最大2ラウンド。3ラウンド目に入る前に必ずユーザーに判断を仰ぐ。

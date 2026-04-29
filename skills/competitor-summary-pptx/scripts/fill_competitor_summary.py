@@ -134,11 +134,13 @@ def set_textbox_text(shape, text):
 
 
 def get_font_sizes(num_competitors):
-    """競合社数に応じてフォントサイズを動的決定（v0.2: 対象+10社まで対応）
+    """競合社数に応じてフォントサイズを動的決定（対象+5社まで対応）
 
-    v0.1 では対象+3〜5社（4〜6列）の3段階。
-    v0.2 では deck_skeleton_standard.json の limits.max_competitors=10 に合わせ、
-    対象+6〜10社（7〜11列）まで段階的に縮小する。
+    deck_skeleton_standard.json の limits.max_competitors=5 に合わせ、
+    対象＋3〜5社（4〜6列）の3段階で運用する。
+
+    v0.2 で対象＋10社まで拡張したが、9列構成（target+8）で cell 30字制限の運用負荷が
+    高いため、2026-04-29 に 5 社上限へ撤回（ISSUE-008）。
     """
     # 対象会社を含めた総列数（比較項目列を除く）
     num_companies = num_competitors + 1
@@ -146,18 +148,8 @@ def get_font_sizes(num_competitors):
         return {"header": 14, "body": 13, "item": 14}
     elif num_companies == 5:         # 対象＋4社
         return {"header": 13, "body": 12, "item": 13}
-    elif num_companies == 6:         # 対象＋5社（v0.1 上限）
+    else:                            # 対象＋5社（上限）
         return {"header": 12, "body": 11, "item": 12}
-    elif num_companies == 7:         # 対象＋6社
-        return {"header": 11, "body": 10, "item": 11}
-    elif num_companies == 8:         # 対象＋7社
-        return {"header": 11, "body": 10, "item": 11}
-    elif num_companies == 9:         # 対象＋8社
-        return {"header": 10, "body": 9, "item": 10}
-    elif num_companies == 10:        # 対象＋9社
-        return {"header": 10, "body": 9, "item": 10}
-    else:                            # 対象＋10社 = 11列（v0.2 上限）
-        return {"header": 9, "body": 9, "item": 9}
 
 
 def apply_cell_style(cell, text, *,
@@ -386,11 +378,11 @@ def build_table(slide, data):
 MAIN_MESSAGE_MAX = 65
 CELL_VALUE_MAX = 30
 COMPETITORS_MIN = 2
-COMPETITORS_MAX = 10  # v0.2: deck_skeleton_standard.json limits.max_competitors と同期
+COMPETITORS_MAX = 5  # deck_skeleton_standard.json limits.max_competitors と同期（2026-04-29 ISSUE-008 で 10→5 撤回）
 
 
 def _validate_input(data):
-    """入力JSONのバリデーション。main_message ≤65字、competitors=2〜10、各セル値 ≤30字。"""
+    """入力JSONのバリデーション。main_message ≤65字、competitors=2〜5、各セル値 ≤30字。"""
     main_message = data.get("main_message", "")
     if len(main_message) > MAIN_MESSAGE_MAX:
         raise ValueError(
@@ -402,7 +394,7 @@ def _validate_input(data):
     if not (COMPETITORS_MIN <= len(competitors) <= COMPETITORS_MAX):
         raise ValueError(
             f"competitors の要素数は {COMPETITORS_MIN}〜{COMPETITORS_MAX} の範囲である必要があります"
-            f"（受領: {len(competitors)}）"
+            f"（受領: {len(competitors)}）。max_competitors は 2026-04-29 に 10→5 へ撤回（ISSUE-008）"
         )
     comparison_items = data.get("comparison_items", [])
     keys = [item.get("key") for item in comparison_items if item.get("key")]
