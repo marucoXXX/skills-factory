@@ -1,0 +1,42 @@
+{
+  "_comment": "company-deepdive-agent のデッキ構成定義。会社レベル 8 + (中扉+5)×N + footer 1 = 9+6N 枚の標準版を中核とする。N=セグメント数。company_level_slides は固定、segment_template はセグメントごとに繰り返す。footer_slides は末尾に 1 枚。",
+  "default_variant": "standard",
+  "company_level_slides": [
+    {"n": 1, "topic": "exec_summary", "skill": "executive-summary-pptx", "category": "header", "title": "エグゼクティブサマリー", "rationale": "会社全体 + 全セグメント深掘りの Key Findings を 3-5 個で統合"},
+    {"n": 2, "topic": "toc", "skill": "table-of-contents-pptx", "category": "header", "title": "目次", "rationale": "会社レベル 5 論点 + 各セグメント深掘りの構造を冒頭で示す"},
+    {"n": 3, "topic": "company_profile", "skill": "customer-profile-pptx", "category": "content", "title": "会社プロファイル", "rationale": "商号・本社・設立・資本金・代表者・事業内容・売上規模・従業員数。customer-profile-pptx を対象会社のプロファイルとして使う", "alternative_skill": "company-overview-pptx-v2"},
+    {"n": 4, "topic": "company_history", "skill": "company-history-pptx", "category": "content", "title": "会社の沿革", "rationale": "創業から現在までの主要マイルストーン 10-15 件"},
+    {"n": 5, "topic": "business_portfolio", "skill": "business-portfolio-pptx", "category": "content", "title": "事業ポートフォリオ", "rationale": "セグメント別売上構成・成長率・利益率（非上場時は事業区分の定性表示）"},
+    {"n": 6, "topic": "revenue_analysis", "skill": "revenue-analysis-pptx", "category": "content", "title": "収益性推移", "rationale": "全社売上・EBITDA の年次推移（5-7 年 + 当期見込み）"},
+    {"n": 7, "topic": "financial_benchmark", "skill": "financial-benchmark-pptx", "category": "content", "title": "業界内財務ベンチマーク", "rationale": "競合 N 社との財務指標比較（売上・営業利益率・EBITDA・ROE・自己資本比率等）"},
+    {"n": 8, "topic": "shareholder_structure", "skill": "shareholder-structure-pptx", "category": "content", "title": "株主・役員構成", "rationale": "主要株主・取締役・監査役（非上場時は株主構成 ✗ 明示）"}
+  ],
+  "segment_template": [
+    {"n_offset": 0, "topic": "section_divider", "skill": "section-divider-pptx", "category": "section_divider", "title": "{segment_name} 深掘り", "rationale": "セグメント深掘りブロックの開始を視覚的に区切る"},
+    {"n_offset": 1, "topic": "business_overview", "skill": "business-overview-pptx", "category": "content", "title": "事業の概要", "rationale": "対象セグメントの事業内容・主要拠点・主要製品/サービス・業績"},
+    {"n_offset": 2, "topic": "business_model", "skill": "business-model-pptx", "category": "content", "title": "ビジネスモデル", "rationale": "セグメントの収益構造・取引フロー（サプライヤー・自社・顧客）"},
+    {"n_offset": 3, "topic": "value_chain_matrix", "skill": "value-chain-matrix-pptx", "category": "content", "title": "差別化（バリューチェーン上のポジション）", "rationale": "業界バリューチェーン上で対象セグメントが『どこに強く・どこを他社に任せ・誰と競合協業するか』を整理"},
+    {"n_offset": 4, "topic": "customer_profile", "skill": "customer-profile-pptx", "category": "content", "title": "主要顧客プロファイル", "rationale": "対象セグメントの顧客（B2B = 主要法人取引先 / B2C = 顧客セグメント像）"},
+    {"n_offset": 5, "topic": "market_environment", "skill": "market-environment-pptx", "category": "content", "title": "顧客市場の成長性", "rationale": "対象セグメントの『顧客が属する市場』の規模・成長率推移"}
+  ],
+  "footer_slides": [
+    {"topic": "data_availability", "skill": "data-availability-pptx", "category": "footer", "title": "データアベイラビリティ", "rationale": "会社レベル + 全セグメントの取得・未取得を統合表示。クライアントへの透明性を担保"}
+  ],
+  "naming_rules": {
+    "NN": "通し番号、2 桁ゼロ詰め（01, 02, ..., 15, ..., 33）",
+    "company_level_offset": "0（先頭）",
+    "first_segment_offset": "8（会社レベル 8 枚の後）",
+    "segment_block_size": 6,
+    "footer_offset_formula": "8 + 6×N（N=セグメント数）",
+    "work_dir": "{{WORK_DIR}}/company-deepdive-agent/<run_id>/",
+    "segment_dir": "{{WORK_DIR}}/company-deepdive-agent/<run_id>/segments/<segment_slug>/",
+    "data_file_template": "data_<NN>_<topic>.json",
+    "output_file_template": "slide_<NN>_<topic>.pptx"
+  },
+  "slide_count_table": {
+    "N=1": 15,
+    "N=2": 21,
+    "N=3": 27,
+    "N=4": 33
+  }
+}
