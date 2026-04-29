@@ -21,12 +21,25 @@ description: >
   - 各社の Deepdive デッキを既に持っており、それらを統合したい場合
 ---
 
-# 競合横並び比較・検証論点統合オーケストレーター（skeleton）
+# 競合横並び比較・検証論点統合オーケストレーター（skeleton、実装保留中）
 
-> ⚠️ **このファイルは Phase 1 (skeleton) です**。実装は Phase 5 で完成させる。
-> 関連計画: `/Users/nakamaru/.claude/plans/tidy-soaring-elephant.md`
+> ⚠️ **本スキルは skeleton のまま実装保留中です（2026-04-29 判断）**
+>
+> ISSUE-004 の Phase 4 完了時点で、本スキルが提供する「全社横並び比較」の機能の大半が
+> 既存スキル（`market-overview-agent` + `financial-benchmark-pptx` + `competitor-summary-pptx` +
+> `market-share-pptx` + `positioning-map-pptx` + `market-kbf-pptx`）の組み合わせで
+> 80% 以上カバーできていることを確認した。Phase 5 として独自実装する独自価値は
+> 「複数社 deepdive デッキの論点間統合」「全社共通の検証論点（open_questions）の業界横断集約」の
+> 2 点に絞られるが、この需要が顕在化した時点で実装着手する方針に変更。
+>
+> **トリガー条件が出ても自動起動はせず、ユーザー指示があった場合に実装着手から始める。**
+>
+> 復活させる場合の参照先:
+> - `skills/_common/prompts/cross_topic_consistency_check.md`（適用予定スキルの 1 つ）
+> - `skills/business-deepdive-agent/SKILL.md`（同等の Step 構成・規約パターン）
+> - 関連計画: `~/.claude/plans/tidy-soaring-elephant.md`
 
-ISSUE-004（v0.3）における新規オーケストレーター。市場 → 各社深掘りの最終統合層。
+ISSUE-004（v0.3）における新規オーケストレーター。市場 → 各社深掘りの最終統合層として skeleton 設計済。
 
 ## 設計原則
 

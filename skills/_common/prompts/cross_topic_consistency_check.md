@@ -69,7 +69,7 @@
 | スキル | 適用 |
 |---|---|
 | `business-deepdive-agent` | ✅ Phase 3 から適用（事業セグメント単位 5 論点） |
-| `comparison-synthesis-agent`（Phase 5 で実装予定） | ✅ 適用予定（複数社の論点統合時にも整合性問題が起きうる） |
+| `comparison-synthesis-agent` | ⏸ 実装保留中（Phase 5 不要判断、2026-04-29）。将来実装する場合は本ファイルを取り込み対象とする |
 | `company-deepdive-agent` | ❌ 適用対象外（会社レベル 5 論点はセグメント数が違う別形のため） |
 | `market-overview-agent` | 該当なし（市場分析オーケストレーターは別の整合性課題：scope.json での母集団境界） |
 | `strategy-report-agent` | 該当なし（複数モードで論点構成が変わるため、本ルールは適用しない） |
