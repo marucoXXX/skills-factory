@@ -96,12 +96,37 @@ COLOR_UP = RGBColor(0x1B, 0x7A, 0x3B)          # 上昇（濃緑）
 COLOR_DOWN = RGBColor(0xC0, 0x3A, 0x3A)        # 下降（濃赤）
 COLOR_FLAT = RGBColor(0x66, 0x66, 0x66)        # 変化なし（グレー）
 
-DEFAULT_COLORS = [
-    "#4E79A7", "#F28E2B", "#59A14F", "#E15759", "#76B7B2",
-    "#EDC948", "#B07AA1", "#FF9DA7", "#9C755F", "#BAB0AC",
+# ─── 共通配色（正本: skills/_common/styles/chart_palette.md） ───
+# 編集時は _common/styles/chart_palette.md と他 4 スキルの fill_*.py も同期更新
+# CHART_PALETTE には TARGET_COLOR(赤) と OTHER_COLOR(灰) を含めない（palette 外で固定）
+CHART_PALETTE = [
+    "#4E79A7", "#F28E2B", "#59A14F", "#76B7B2",
+    "#EDC948", "#B07AA1", "#FF9DA7", "#9C755F",
 ]
-# 「その他」は常に灰色
 OTHER_COLOR = "#BAB0AC"
+TARGET_COLOR = "#E15759"
+LABEL_BAR_COLOR = "#4E79A7"
+LABEL_BG_COLOR = "#E8EEF5"
+
+
+def _palette_color(index: int, total: int) -> str:
+    if total <= 1:
+        return CHART_PALETTE[0]
+    return CHART_PALETTE[index % len(CHART_PALETTE)]
+
+
+def _is_other_player(name: str) -> bool:
+    if not name:
+        return False
+    return (
+        name.startswith("その他")
+        or name.startswith("Others")
+        or name.lower().startswith("other")
+    )
+
+
+# 後方互換のためのエイリアス（既存コードからの参照用、削除する場合は他箇所も更新）
+DEFAULT_COLORS = CHART_PALETTE
 
 FONT_NAME_JP = "Meiryo UI"
 FONT_SIZE_SECTION = Pt(14)
@@ -299,7 +324,8 @@ def build_doughnut_chart(slide, section_title, players, year_idx, year_label,
     # 各カテゴリごとに色を設定 (data point level)
     # python-pptxではdata points経由で色を個別設定
     for idx, p in enumerate(players):
-        hex_color = p.get("color") or DEFAULT_COLORS[idx % len(DEFAULT_COLORS)]
+        # color は事前に main 側で強制割り当て済み（JSON の指定は無視されている）
+        hex_color = p["color"]
         rgb = hex_to_rgb(hex_color)
         point = series.points[idx]
         point.format.fill.solid()
@@ -335,9 +361,9 @@ def build_trend_table(slide, section_title, players, years, target_company,
     add_section_title(slide, section_title, left, top, width)
 
     # 各プレイヤーをランキング順にソート（最新年基準）
-    # ただし「その他」は最下段に固定
-    others = [p for p in players if p.get("name") == "その他" or p.get("name") == "Others"]
-    regular = [p for p in players if p.get("name") not in ("その他", "Others")]
+    # ただし「その他」系（前方一致）は最下段に固定
+    others = [p for p in players if _is_other_player(p.get("name", ""))]
+    regular = [p for p in players if not _is_other_player(p.get("name", ""))]
     regular_sorted = sorted(regular, key=lambda p: p["shares"][-1], reverse=True)
     sorted_players = regular_sorted + others
 
@@ -411,8 +437,8 @@ def build_trend_table(slide, section_title, players, years, target_company,
             cell = table.cell(r_idx + 1, c_idx)
 
             if key == "rank":
-                # 「その他」はランク表記なし
-                if p.get("name") in ("その他", "Others"):
+                # 「その他」系はランク表記なし（前方一致）
+                if _is_other_player(p.get("name", "")):
                     text = "—"
                 else:
                     text = str(regular_sorted.index(p) + 1)
@@ -421,10 +447,8 @@ def build_trend_table(slide, section_title, players, years, target_company,
                             is_target=is_target, align_override="ctr")
 
             elif key == "name":
-                color_hex = p.get("color") or (
-                    OTHER_COLOR if p.get("name") in ("その他", "Others")
-                    else DEFAULT_COLORS[r_idx % len(DEFAULT_COLORS)]
-                )
+                # color は事前に main 側で強制割り当て済み
+                color_hex = p["color"]
                 _style_cell(cell, p["name"], is_header=False, is_alt=is_alt,
                             font_size=FONT_SIZE_TABLE, bold=True,
                             color_marker_hex=color_hex,
@@ -593,13 +617,15 @@ def main():
         print("  ✗ ERROR: 'players' and 'years' are required", file=sys.stderr)
         sys.exit(1)
 
-    # デフォルト色の割り当て
+    # 色の強制割り当て（共通パレット使用、JSON の color は無視）
+    # 「その他」系エントリは前方一致で OTHER_COLOR(灰) に上書き、
+    # それ以外は players 配列の index をそのまま使って palette を引く
+    # （P6/P7 で同じ社が同じ色になるよう、target/その他 をスキップせず配列 index で揃える）
     for i, p in enumerate(players):
-        if not p.get("color"):
-            if p.get("name") in ("その他", "Others"):
-                p["color"] = OTHER_COLOR
-            else:
-                p["color"] = DEFAULT_COLORS[i % len(DEFAULT_COLORS)]
+        if _is_other_player(p.get("name", "")):
+            p["color"] = OTHER_COLOR
+        else:
+            p["color"] = _palette_color(i, len(players))
 
     # 左: ドーナツチャート（デフォルトは最新年）
     left_panel = data.get("left_panel", {})

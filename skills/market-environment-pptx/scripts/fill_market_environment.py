@@ -74,6 +74,24 @@ CAGR_X  = Inches(9.80);  CAGR_W  = Inches(3.20)
 
 COLOR_TEXT   = RGBColor(0x33, 0x33, 0x33)
 COLOR_SOURCE = RGBColor(0x66, 0x66, 0x66)
+
+# ─── 共通配色（正本: skills/_common/styles/chart_palette.md） ───
+# 編集時は _common/styles/chart_palette.md と他 4 スキルの fill_*.py も同期更新
+# CHART_PALETTE には TARGET_COLOR(赤) と OTHER_COLOR(灰) を含めない（palette 外で固定）
+CHART_PALETTE = [
+    "#4E79A7", "#F28E2B", "#59A14F", "#76B7B2",
+    "#EDC948", "#B07AA1", "#FF9DA7", "#9C755F",
+]
+OTHER_COLOR = "#BAB0AC"
+TARGET_COLOR = "#E15759"
+LABEL_BAR_COLOR = "#4E79A7"
+LABEL_BG_COLOR = "#E8EEF5"
+
+
+def _palette_color(index: int, total: int) -> str:
+    if total <= 1:
+        return CHART_PALETTE[0]
+    return CHART_PALETTE[index % len(CHART_PALETTE)]
 FONT_JP      = "Meiryo UI"
 
 # ── ユーティリティ ──
@@ -289,9 +307,11 @@ def build_stacked_combo_chart(slide, cfg, left, top, w, h):
         etree.SubElement(msf, qn('a:srgbClr'), attrib={'val':lclr})
         _add_dlbls(ls, 't', num_fmt, '333333', 1000)
 
-    # 棒色＋ラベル
-    for si, bs in enumerate(bc.findall(qn('c:ser'))):
-        clr = bars_cfg[si]["color"].replace("#","") if si < len(bars_cfg) else "999999"
+    # 棒色＋ラベル（スキル固定パレット使用、JSON の color は無視）
+    bar_series = bc.findall(qn('c:ser'))
+    n_bar_series = len(bar_series)
+    for si, bs in enumerate(bar_series):
+        clr = _palette_color(si, n_bar_series).lstrip("#")
         sp = bs.find(qn('c:spPr'))
         if sp is None: sp = etree.SubElement(bs, qn('c:spPr'))
         sf = sp.find(qn('a:solidFill'))
@@ -390,8 +410,9 @@ def add_custom_legend(slide, cfg, left, top, w):
         r = tb.text_frame.paragraphs[0].add_run()
         r.text = lc["series_name"]; r.font.size = Pt(11); r.font.color.rgb = COLOR_TEXT; r.font.name = FONT_JP
         ix = tx + Inches(1.0) + Inches(0.15)
-    for sb in bars:
-        c = _hex2rgb(sb["color"]); ss = Inches(0.15)
+    n_bars_total = len(bars)
+    for sb_idx, sb in enumerate(bars):
+        c = _hex2rgb(_palette_color(sb_idx, n_bars_total)); ss = Inches(0.15)
         sq = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, int(ix), int(top+(lh-ss)/2), ss, ss)
         sq.fill.solid(); sq.fill.fore_color.rgb = c; sq.line.fill.background()
         tx = int(ix+ss+Inches(0.06))

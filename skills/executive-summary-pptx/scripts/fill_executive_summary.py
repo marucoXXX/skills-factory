@@ -108,9 +108,28 @@ CATEGORY_COLORS = {
 
 DEFAULT_COLOR = RGBColor(0x4E, 0x79, 0xA7)  # デフォルト: 紺系
 
+# ─── 共通配色（正本: skills/_common/styles/chart_palette.md） ───
+# 編集時は _common/styles/chart_palette.md と他 4 スキルの fill_*.py も同期更新
+# CHART_PALETTE には TARGET_COLOR(赤) と OTHER_COLOR(灰) を含めない（palette 外で固定）
+CHART_PALETTE = [
+    "#4E79A7", "#F28E2B", "#59A14F", "#76B7B2",
+    "#EDC948", "#B07AA1", "#FF9DA7", "#9C755F",
+]
+OTHER_COLOR = "#BAB0AC"
+TARGET_COLOR = "#E15759"
+LABEL_BAR_COLOR = "#4E79A7"
+LABEL_BG_COLOR = "#E8EEF5"
+LABEL_BAR_RGB = RGBColor(0x4E, 0x79, 0xA7)  # P1 の category バー（▍）の単色青
+
+
+def _palette_color(index: int, total: int) -> str:
+    if total <= 1:
+        return CHART_PALETTE[0]
+    return CHART_PALETTE[index % len(CHART_PALETTE)]
+
 FONT_NAME_JP = "Meiryo UI"
 FONT_SIZE_BADGE = Pt(20)   # 互換のため残置（draw_number_badgeは未使用）
-FONT_SIZE_CATEGORY = Pt(12)
+FONT_SIZE_CATEGORY = Pt(16)
 FONT_SIZE_HEADING = Pt(16)
 FONT_SIZE_DETAIL = Pt(13)
 FONT_SIZE_SOURCE = Pt(11)
@@ -173,17 +192,11 @@ def hex_to_rgb(hex_str):
 
 
 def get_category_color(category):
-    """カテゴリ名から色を取得。未知のカテゴリはデフォルト色"""
-    if not category:
-        return DEFAULT_COLOR
-    # 完全一致
-    if category in CATEGORY_COLORS:
-        return CATEGORY_COLORS[category]
-    # 小文字でも試す
-    lower = category.lower()
-    if lower in CATEGORY_COLORS:
-        return CATEGORY_COLORS[lower]
-    return DEFAULT_COLOR
+    """カテゴリ名から色を取得。
+    新仕様（2026-04-29）: カラフルな意味付き色分けは廃止し、全カテゴリで単色青（LABEL_BAR_COLOR）に統一。
+    旧 CATEGORY_COLORS dict は削除済み。
+    """
+    return LABEL_BAR_RGB
 
 
 # ──────────────────────────────────────────────

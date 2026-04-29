@@ -92,17 +92,40 @@ COLOR_TEXT = RGBColor(0x33, 0x33, 0x33)
 COLOR_SOURCE = RGBColor(0x66, 0x66, 0x66)
 COLOR_WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 
+# ─── 共通配色（正本: skills/_common/styles/chart_palette.md） ───
+# 編集時は _common/styles/chart_palette.md と他 4 スキルの fill_*.py も同期更新
+# CHART_PALETTE には TARGET_COLOR(赤) と OTHER_COLOR(灰) を含めない（palette 外で固定）
+CHART_PALETTE = [
+    "#4E79A7", "#F28E2B", "#59A14F", "#76B7B2",
+    "#EDC948", "#B07AA1", "#FF9DA7", "#9C755F",
+]
+OTHER_COLOR = "#BAB0AC"
+TARGET_COLOR = "#E15759"
+LABEL_BAR_COLOR = "#4E79A7"
+LABEL_BG_COLOR = "#E8EEF5"
+
+
+def _palette_color(index: int, total: int) -> str:
+    if total <= 1:
+        return CHART_PALETTE[0]
+    return CHART_PALETTE[index % len(CHART_PALETTE)]
+
 # PEST 各象限の色
-COLOR_P = RGBColor(0x7B, 0x4F, 0xB0)   # 紫 - Political
-COLOR_E = RGBColor(0x2E, 0x6F, 0xBF)   # 青 - Economic
-COLOR_S = RGBColor(0x3D, 0x8F, 0x5A)   # 緑 - Social
-COLOR_T = RGBColor(0xDA, 0x7A, 0x2D)   # オレンジ - Technological
+# 新仕様（2026-04-29）: PEST 4象限は全て単色青に統一（CATEGORY_COLORS と同じ思想）
+# 旧色（紫/青/緑/橙）は LABEL_BAR_RGB に統一
+LABEL_BAR_RGB = RGBColor(0x4E, 0x79, 0xA7)
+LABEL_BG_RGB = RGBColor(0xE8, 0xEE, 0xF5)
+COLOR_P = LABEL_BAR_RGB
+COLOR_E = LABEL_BAR_RGB
+COLOR_S = LABEL_BAR_RGB
+COLOR_T = LABEL_BAR_RGB
 
 # 薄い背景色
-COLOR_P_LIGHT = RGBColor(0xEE, 0xE9, 0xF4)
-COLOR_E_LIGHT = RGBColor(0xE3, 0xEC, 0xF5)
-COLOR_S_LIGHT = RGBColor(0xE5, 0xEE, 0xE8)
-COLOR_T_LIGHT = RGBColor(0xF8, 0xEB, 0xDB)
+# 新仕様: 4象限の塗り背景も単色（薄い青 LABEL_BG_RGB）に統一
+COLOR_P_LIGHT = LABEL_BG_RGB
+COLOR_E_LIGHT = LABEL_BG_RGB
+COLOR_S_LIGHT = LABEL_BG_RGB
+COLOR_T_LIGHT = LABEL_BG_RGB
 
 # 影響度インジケーター色
 COLOR_IMPACT_POSITIVE = RGBColor(0x1B, 0x7A, 0x3B)    # 濃緑

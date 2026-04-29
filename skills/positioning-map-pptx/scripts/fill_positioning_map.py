@@ -106,10 +106,29 @@ COLOR_QUADRANT_LABEL = RGBColor(0x99, 0x99, 0x99)
 COLOR_TARGET = RGBColor(0xE1, 0x57, 0x59)     # 対象会社の強調色（赤系）
 COLOR_DEFAULT_BUBBLE = RGBColor(0x4E, 0x79, 0xA7)  # 通常色（紺系）
 
-DEFAULT_COLORS = [
+# ─── 共通配色（正本: skills/_common/styles/chart_palette.md） ───
+# 編集時は _common/styles/chart_palette.md と他 4 スキルの fill_*.py も同期更新
+# CHART_PALETTE には TARGET_COLOR(赤) と OTHER_COLOR(灰) を含めない（palette 外で固定）
+# → target は palette と衝突しないため、非ターゲットバブルも配列 index 直引きで OK
+#   （旧 NON_TARGET_PALETTE / _non_target_bubble_color() は廃止）
+CHART_PALETTE = [
     "#4E79A7", "#F28E2B", "#59A14F", "#76B7B2",
     "#EDC948", "#B07AA1", "#FF9DA7", "#9C755F",
 ]
+OTHER_COLOR = "#BAB0AC"
+TARGET_COLOR = "#E15759"
+LABEL_BAR_COLOR = "#4E79A7"
+LABEL_BG_COLOR = "#E8EEF5"
+
+
+def _palette_color(index: int, total: int) -> str:
+    if total <= 1:
+        return CHART_PALETTE[0]
+    return CHART_PALETTE[index % len(CHART_PALETTE)]
+
+
+# 後方互換のためのエイリアス（既存コードからの参照用）
+DEFAULT_COLORS = CHART_PALETTE
 
 FONT_NAME_JP = "Meiryo UI"
 FONT_SIZE_SECTION = Pt(16)
@@ -432,17 +451,15 @@ def draw_positioning_map(slide, data, left, top, width, height):
         bubble_x = cx - diam // 2
         bubble_y = cy - diam // 2
 
-        # 色
+        # 色（共通パレット使用、JSON の color は無視）
+        # target は TARGET_COLOR(赤) で上書き、それ以外は配列 index 直引き
+        # （CHART_PALETTE から赤を除外済みなので衝突しない、P6 と色順が一致）
         if is_target:
             color = COLOR_TARGET
             line_color = RGBColor(0x8B, 0x2C, 0x2E)  # 濃赤
             line_w = Pt(2.5)
-        elif p.get("color"):
-            color = hex_to_rgb(p["color"])
-            line_color = RGBColor(0x33, 0x33, 0x33)
-            line_w = Pt(1.0)
         else:
-            color = hex_to_rgb(DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
+            color = hex_to_rgb(_palette_color(i, len(players)))
             line_color = RGBColor(0x33, 0x33, 0x33)
             line_w = Pt(1.0)
 
