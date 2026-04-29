@@ -323,7 +323,9 @@ D. その他（自由記述）
 - `scope`: ユーザー選択値
 - `target_company`: 主要競合（`scope.json.max_competitors` 社）のうち最大シェアのプレイヤー（検索精度向上のため）
 
+<!-- @if:claude_code -->
 出力: `{{FACTORY_ROOT}}/work/fact-check-reviewer/fact_check_report.json`
+<!-- @endif -->
 
 ### Step 2.5-c: フラグ項目の取り扱い
 
@@ -575,7 +577,9 @@ merge-pptxv2 の出力ログで、各スライド番号の Main Message と shap
 - `merge_order`: `{{WORK_DIR}}/<run_id>/merge_order.json`
 - `data_dir`: `{{WORK_DIR}}/<run_id>/`
 
+<!-- @if:claude_code -->
 出力: `{{FACTORY_ROOT}}/work/visual-quality-reviewer/visual_review_report.json`
+<!-- @endif -->
 
 ### Step 8-b: レビュー結果の分岐
 

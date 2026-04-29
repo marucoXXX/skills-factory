@@ -717,7 +717,9 @@ python <merge-pptxv2_DIR>/scripts/merge_pptx_v2.py \
 - `merge_order`: `{{WORK_DIR}}/merge_order.json`
 - `data_dir`: `{{WORK_DIR}}`
 
+<!-- @if:claude_code -->
 結果は `{{FACTORY_ROOT}}/work/visual-quality-reviewer/visual_review_report.json` に出力される。
+<!-- @endif -->
 
 ### レビュー結果の分岐（オーケストレーターの自動処理）
 

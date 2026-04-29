@@ -9,6 +9,28 @@ Web や手元資料を入力にして、Claude のスキルを使って調査・
 
 `skills/<name>/` に `{{VAR}}` 入りの canonical source を置き、`tools/build_skill.py` で環境ごとに差し替えて配布する。
 
+## Quick Start（初回セットアップ）
+
+このリポジトリは限定共有用です。再配布・公開はしないでください（[NOTICE.md](NOTICE.md)）。
+
+### Claude Code で全スキルを使う
+
+```bash
+git clone git@github.com:marucoXXX/skills-factory.git
+cd skills-factory
+pip install -r requirements.txt
+playwright install chromium     # HTML→PPTX 変換系スキルで必要
+python3 tools/build_skill.py install-all
+```
+
+完了後、`~/.claude/skills/` 配下に全スキルが展開される。Claude Code を再起動すると認識される。
+
+`{{FACTORY_ROOT}}` はクローン先を `tools/build_skill.py` が自動検出するため、profile を編集する必要はない。
+
+### Claude.ai で個別スキルを使う
+
+[GitHub Releases](https://github.com/marucoXXX/skills-factory/releases) から必要なスキルの zip をダウンロードし、Claude.ai のスキル管理画面でアップロードする。
+
 ## ディレクトリ構造
 
 ```
@@ -59,7 +81,7 @@ python3 tools/build_skill.py package-all [--strict]
 
 | 変数 | claude_code | claude_ai |
 |---|---|---|
-| `{{FACTORY_ROOT}}` | `/Users/nakamaru/Developer/projects/skills_factory` | （未定義・未使用） |
+| `{{FACTORY_ROOT}}` | `AUTO`（クローン先を `build_skill.py` が自動検出） | （未定義・未使用） |
 | `{{INPUT_DIR}}` | `{{FACTORY_ROOT}}/inputs` | `/mnt/user-data/uploads` |
 | `{{WORK_DIR}}` | `{{FACTORY_ROOT}}/work/{{SKILL_NAME}}` | `/home/claude` |
 | `{{OUTPUT_DIR}}` | `{{FACTORY_ROOT}}/outputs` | `/mnt/user-data/outputs` |

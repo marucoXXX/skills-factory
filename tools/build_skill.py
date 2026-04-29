@@ -35,6 +35,11 @@ IF_RE = re.compile(r"^\s*(?:<!--\s*|#\s*)@if:([a-z_][a-z0-9_]*)\s*(?:-->)?\s*$")
 ENDIF_RE = re.compile(r"^\s*(?:<!--\s*|#\s*)@endif\s*(?:-->)?\s*$")
 
 
+AUTO_RESOLVERS = {
+    "FACTORY_ROOT": lambda: str(REPO),
+}
+
+
 def load_profile(name: str, skill_name: str) -> dict:
     path = PROFILES_DIR / f"{name}.json"
     if not path.exists():
@@ -42,6 +47,11 @@ def load_profile(name: str, skill_name: str) -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
     vars_ = dict(data["vars"])
     vars_["SKILL_NAME"] = skill_name
+    for k, v in list(vars_.items()):
+        if v == "AUTO":
+            if k not in AUTO_RESOLVERS:
+                raise SystemExit(f"profile {name}: AUTO not supported for {k}")
+            vars_[k] = AUTO_RESOLVERS[k]()
     for _ in range(3):
         for k, v in list(vars_.items()):
             if isinstance(v, str):

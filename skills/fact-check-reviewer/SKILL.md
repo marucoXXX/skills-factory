@@ -26,7 +26,7 @@ Web検索で集めた情報の真偽を再検証する専用レビュアー。
 
 - **実行主体**: Claude 本体。本スキルの Python スクリプトは**ファクト候補の抽出**のみを担い、
   **実際の裏取り（WebSearch / WebFetch）は Claude が行う**
-- **作業ディレクトリ**: `{{WORK_DIR}}/`（= `{{FACTORY_ROOT}}/work/fact-check-reviewer/`）
+- **作業ディレクトリ**: `{{WORK_DIR}}/`
 
 ---
 
@@ -34,7 +34,7 @@ Web検索で集めた情報の真偽を再検証する専用レビュアー。
 
 | 項目 | 形式 | 必須 | 説明 |
 |---|---|---|---|
-| `data_dir` | ディレクトリ | 必須 | 検証対象の `data_*.json` を含むディレクトリ（通常は `{{FACTORY_ROOT}}/work/strategy-report-agent/`） |
+| `data_dir` | ディレクトリ | 必須 | 検証対象の `data_*.json` を含むディレクトリ（通常は `strategy-report-agent` の作業ディレクトリ） |
 | `scope` | 文字列 | 必須 | `high_risk` / `all` / `skip` のいずれか。`strategy-report-agent` が `AskUserQuestion` で取得したユーザー選択値 |
 | `target_company` | 文字列 | 任意 | 対象会社名（裏取り検索クエリの精度向上に使用） |
 

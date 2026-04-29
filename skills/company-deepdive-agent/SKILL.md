@@ -152,7 +152,9 @@ ISSUE-004（v0.3）における新規オーケストレーター。`market-overv
 - `scope`: ユーザー選択値（`high_risk` / `all`）
 - `target_company`: 対象会社の正式名称
 
+<!-- @if:claude_code -->
 出力: `{{FACTORY_ROOT}}/work/fact-check-reviewer/fact_check_report.json`
+<!-- @endif -->
 
 #### Step 2.5-c: フラグ項目の取り扱い
 
@@ -313,7 +315,9 @@ python3 ~/.claude/skills/merge-pptxv2/scripts/merge_pptx_v2.py \
 - `merge_order`: `{{WORK_DIR}}/company-deepdive-agent/<run_id>/merge_order.json`
 - `data_dir`: `{{WORK_DIR}}/company-deepdive-agent/<run_id>/`
 
+<!-- @if:claude_code -->
 出力: `{{FACTORY_ROOT}}/work/visual-quality-reviewer/visual_review_report.json`
+<!-- @endif -->
 
 #### レビュー結果の分岐
 
