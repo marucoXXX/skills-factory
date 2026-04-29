@@ -1,0 +1,35 @@
+{
+  "source": "出典：第一交通産業 有価証券報告書 第65期、決算短信、公式HP",
+  "main_message": "タクシー事業は売上の約6割を占める基幹事業、配車DXで再成長へ",
+  "parent_company": "第一交通産業",
+  "segment_name": "タクシー事業",
+  "overview": {
+    "section_title": "事業の概要",
+    "items": [
+      {"label": "セグメント名", "value": "タクシー事業"},
+      {"label": "事業内容", "value": "一般・観光タクシー、ハイヤー、貸切バスの運行および配車サービス"},
+      {"label": "セグメント開始年", "value": "1960年（創業時）"},
+      {"label": "主要拠点", "value": "本社：北九州市、営業エリア：全国33都道府県・119拠点"},
+      {"label": "主要サービス", "value": "一般タクシー、観光タクシー、福祉・介護タクシー、配車アプリ「DF」"},
+      {"label": "主要顧客", "value": "個人乗客（B2C）、観光・出張需要、自治体・企業契約"},
+      {"label": "セグメント従業員数", "value": "約8,300名（乗務員含む、24/3期）"},
+      {"label": "保有車両数", "value": "約8,400台（業界最大手の一角）"}
+    ]
+  },
+  "performance": {
+    "mode": "revenue_chart",
+    "section_title": "業績",
+    "unit_label": "（単位：億円、%）",
+    "bar_label": "セグメント売上高",
+    "line_label": "セグメント営業利益率",
+    "data": [
+      {"year": "2018", "revenue": 540, "op_margin": 3.2},
+      {"year": "2019", "revenue": 555, "op_margin": 3.4},
+      {"year": "2020", "revenue": 460, "op_margin": -1.5},
+      {"year": "2021", "revenue": 442, "op_margin": -2.0},
+      {"year": "2022", "revenue": 498, "op_margin": 1.2},
+      {"year": "2023", "revenue": 568, "op_margin": 4.1},
+      {"year": "2024", "revenue": 612, "op_margin": 5.3}
+    ]
+  }
+}

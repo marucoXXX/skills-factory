@@ -1,0 +1,66 @@
+{
+  "_comment": "business-deepdive-agent が 1 セグメントについて生成する 5 枚スライドの構造定義。親 company-deepdive-agent が global_slide_offset を加算して merge_order.json を組む素材。",
+  "slide_count": 5,
+  "slides": [
+    {
+      "n": 1,
+      "topic": "business_overview",
+      "skill": "business-overview-pptx",
+      "title": "事業の概要",
+      "data_file_template": "data_{NN}_business_overview.json",
+      "output_file_template": "slide_{NN}_business_overview.pptx",
+      "category": "content",
+      "rationale": "事業セグメント単位の概要（事業内容・主要拠点・主要製品/サービス・業績）を 1 枚で示す",
+      "research_topic_id": 1
+    },
+    {
+      "n": 2,
+      "topic": "business_model",
+      "skill": "business-model-pptx",
+      "title": "ビジネスモデル",
+      "data_file_template": "data_{NN}_business_model.json",
+      "output_file_template": "slide_{NN}_business_model.pptx",
+      "category": "content",
+      "rationale": "対象セグメントの収益構造・取引フロー（サプライヤー・自社・顧客）を模式図で可視化",
+      "research_topic_id": 2
+    },
+    {
+      "n": 3,
+      "topic": "value_chain_matrix",
+      "skill": "value-chain-matrix-pptx",
+      "title": "差別化（バリューチェーン上のポジション）",
+      "data_file_template": "data_{NN}_value_chain_matrix.json",
+      "output_file_template": "slide_{NN}_value_chain_matrix.pptx",
+      "category": "content",
+      "rationale": "業界バリューチェーン上で対象セグメントが『どこに強く・どこを他社に任せ・誰と競合協業するか』を整理",
+      "research_topic_id": 3
+    },
+    {
+      "n": 4,
+      "topic": "customer_profile",
+      "skill": "customer-profile-pptx",
+      "title": "主要顧客プロファイル",
+      "data_file_template": "data_{NN}_customer_profile.json",
+      "output_file_template": "slide_{NN}_customer_profile.pptx",
+      "category": "content",
+      "rationale": "対象セグメントの顧客（B2B = 主要法人取引先 / B2C = 顧客セグメント像）の概要と業績",
+      "research_topic_id": 4
+    },
+    {
+      "n": 5,
+      "topic": "market_environment",
+      "skill": "market-environment-pptx",
+      "title": "顧客市場の成長性",
+      "data_file_template": "data_{NN}_market_environment.json",
+      "output_file_template": "slide_{NN}_market_environment.pptx",
+      "category": "content",
+      "rationale": "対象セグメントの『顧客が属する市場』（会社全体の事業市場ではない）の規模・成長率推移",
+      "research_topic_id": 5
+    }
+  ],
+  "naming_rules": {
+    "NN": "global_slide_offset + slide.n（1 始まり）。NN は 2 桁ゼロ詰め推奨（例: 01, 02, ..., 11, 12）",
+    "slug": "segment_name を ASCII slug 化したもの（例: タクシー事業 → taxi）。親 company-deepdive-agent が決定",
+    "work_dir": "{{WORK_DIR}}/company-deepdive-agent/<parent_run_id>/segments/<segment_slug>/"
+  }
+}

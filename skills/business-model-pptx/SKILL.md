@@ -323,3 +323,21 @@ PowerPoint生成後、以下を確認：
 |---|---|
 | `references/template-mapping.md` | テンプレートのShape名と事業モデル各セクションのマッピング表 |
 | `references/business-model-examples.md` | 事業モデル整理の良い例・悪い例集 |
+
+---
+
+## オーケストレーター連携
+
+### `business-deepdive-agent` から呼び出される場合の規約
+
+| 項目 | 値 |
+|---|---|
+| 入力 JSON ファイル名 | `data_NN_business_model.json`（NN は global_slide_offset 経由で親が採番） |
+| 出力 PPTX ファイル名 | `slide_NN_business_model.pptx`（同上） |
+| 入力ディレクトリ | `{{WORK_DIR}}/company-deepdive-agent/<parent_run_id>/segments/<segment_slug>/` |
+| 出力ディレクトリ | 同上 |
+
+`business-deepdive-agent` は本スキルを **5 論点中 2 番目（ビジネスモデルは？）** として呼び出す。
+作業ディレクトリは `company-deepdive-agent` 配下のセグメント別 subdir に統一し、merge は親が担当。
+
+単独起動時は `{{WORK_DIR}}/business_model_data.json` を使う既存の運用に従う（本セクションの規約は適用されない）。

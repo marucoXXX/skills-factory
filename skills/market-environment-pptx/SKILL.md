@@ -462,7 +462,7 @@ python -m markitdown {{OUTPUT_DIR}}/MarketEnvironment_output.pptx
 
 ## オーケストレーター連携
 
-`market-overview-agent` から呼び出される場合の規約：
+### `market-overview-agent` から呼び出される場合の規約
 
 | 項目 | 値 |
 |---|---|
@@ -475,3 +475,16 @@ python -m markitdown {{OUTPUT_DIR}}/MarketEnvironment_output.pptx
 オーケストレーターは `merge_order.json` の `entries[]` に
 `{ "slide_number": 4, "skill_name": "market-environment-pptx", "data_file": "data_04_market_environment.json", "file_name": "slide_04_market_environment.pptx" }`
 を登録する。
+
+### `business-deepdive-agent` から呼び出される場合の規約
+
+| 項目 | 値 |
+|---|---|
+| 入力 JSON ファイル名 | `data_NN_market_environment.json`（NN は global_slide_offset 経由で親が採番） |
+| 出力 PPTX ファイル名 | `slide_NN_market_environment.pptx`（同上） |
+| 入力ディレクトリ | `{{WORK_DIR}}/company-deepdive-agent/<parent_run_id>/segments/<segment_slug>/` |
+| 出力ディレクトリ | 同上 |
+
+`business-deepdive-agent` は本スキルを **5 論点中 5 番目（顧客は成長するか？）** として呼び出す。
+ここでの市場は会社全体の事業市場ではなく、**対象セグメントの顧客側市場**（例: タクシー事業なら観光・移動需要市場）を扱う。
+作業ディレクトリは `company-deepdive-agent` 配下のセグメント別 subdir に統一し、merge は親が担当。

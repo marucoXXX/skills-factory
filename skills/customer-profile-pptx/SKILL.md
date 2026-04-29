@@ -226,3 +226,22 @@ python -m markitdown {{OUTPUT_DIR}}/CustomerProfile_output.pptx
 | ファイル名 | 内容 |
 |---|---|
 | `references/sample_data.json` | サンプルJSONデータ（株式会社ジップの例） |
+
+---
+
+## オーケストレーター連携
+
+### `business-deepdive-agent` から呼び出される場合の規約
+
+| 項目 | 値 |
+|---|---|
+| 入力 JSON ファイル名 | `data_NN_customer_profile.json`（NN は global_slide_offset 経由で親が採番） |
+| 出力 PPTX ファイル名 | `slide_NN_customer_profile.pptx`（同上） |
+| 入力ディレクトリ | `{{WORK_DIR}}/company-deepdive-agent/<parent_run_id>/segments/<segment_slug>/` |
+| 出力ディレクトリ | 同上 |
+
+`business-deepdive-agent` は本スキルを **5 論点中 4 番目（顧客は誰か？）** として呼び出す。
+B2B セグメントは主要法人取引先のプロファイル、B2C セグメントは代表的な顧客セグメント像を示す。
+作業ディレクトリは `company-deepdive-agent` 配下のセグメント別 subdir に統一し、merge は親が担当。
+
+単独起動時や他オーケストレーター（market-overview-agent / strategy-report-agent）から呼ばれる場合は本セクションの規約は適用されない（既存の運用に従う）。

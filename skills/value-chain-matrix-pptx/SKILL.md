@@ -316,3 +316,21 @@ python -m markitdown {{OUTPUT_DIR}}/ValueChainMatrix_output.pptx
 
 「利益プール分析」で**どこで儲けられるか**を示した後、本スキルで**自社はどこで戦うか**を示すと、
 論理展開が綺麗に繋がる。
+
+---
+
+## オーケストレーター連携
+
+### `business-deepdive-agent` から呼び出される場合の規約
+
+| 項目 | 値 |
+|---|---|
+| 入力 JSON ファイル名 | `data_NN_value_chain_matrix.json`（NN は global_slide_offset 経由で親が採番） |
+| 出力 PPTX ファイル名 | `slide_NN_value_chain_matrix.pptx`（同上） |
+| 入力ディレクトリ | `{{WORK_DIR}}/company-deepdive-agent/<parent_run_id>/segments/<segment_slug>/` |
+| 出力ディレクトリ | 同上 |
+
+`business-deepdive-agent` は本スキルを **5 論点中 3 番目（差別化＝バリューチェーン上のポジション）** として呼び出す。
+作業ディレクトリは `company-deepdive-agent` 配下のセグメント別 subdir に統一し、merge は親が担当。
+
+単独起動時は `{{WORK_DIR}}/value_chain_matrix_data.json` を使う既存の運用に従う（本セクションの規約は適用されない）。
