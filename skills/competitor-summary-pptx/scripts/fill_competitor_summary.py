@@ -8,7 +8,8 @@ fill_competitor_summary.py — 競合比較サマリースライドをPPTXネイ
   - Source             (TEXT_BOX):    出典
 
 方式: 横型比較テーブル（行=比較項目、列=企業）をネイティブテーブルで生成。
-      対象会社の列はイエロー背景＋太字でハイライト。
+      target_company を指定した場合のみ、対象会社の列をイエロー背景＋太字でハイライト。
+      target_company が未指定なら competitors[] のみで全社フラット表示（強調なし）。
       3〜5競合の可変列数に対応（対象会社＋競合で計4〜6列）。
 
 Usage:
@@ -246,16 +247,23 @@ def apply_cell_style(cell, text, *,
 
 
 def build_table(slide, data):
-    """競合比較テーブルを動的に構築"""
-    # 対象会社 + 競合リスト
-    target = data["target_company"]
+    """競合比較テーブルを動的に構築
+
+    target_company が指定されていれば列1をイエロー＋太字で強調。
+    未指定の場合は competitors[] のみを並べ、強調列なしのフラット表示。
+    """
+    target = data.get("target_company") or None
+    has_target = bool(target and target.get("name"))
     competitors = data["competitors"]
     items = data["comparison_items"]  # ["事業内容", "本社所在地", ...]
 
-    # 列数計算: 比較項目列(1) + 対象会社(1) + 競合(N)
-    n_competitors = len(competitors)
+    # 表示企業リスト: target ありなら先頭に target、なしなら competitors のみ
+    companies = ([target] + list(competitors)) if has_target else list(competitors)
+
+    # 列数計算: 比較項目列(1) + 企業列(N or 1+N)
+    n_companies = len(companies)
     n_rows = len(items) + 1  # ヘッダー行 + 項目行
-    n_cols = 2 + n_competitors  # 比較項目 + 対象 + 競合数
+    n_cols = 1 + n_companies  # 比較項目 + 企業
 
     # Content Areaを削除
     content_shape = find_shape(slide, SHAPE_CONTENT_AREA)
@@ -275,18 +283,22 @@ def build_table(slide, data):
     # 列幅計算: 比較項目列14%、残りの86%を企業列で等分
     item_col_w = int(tbl_width * ITEM_COL_RATIO)
     remaining_w = tbl_width - item_col_w
-    company_col_w = remaining_w // (n_competitors + 1)
+    company_col_w = remaining_w // n_companies
 
     # 行高計算: ヘッダー行は固定、データ行は等分
     header_row_h = Inches(0.40)
     available_h = tbl_height - header_row_h
     data_row_h = int(available_h / len(items))
 
-    # フォントサイズ決定
-    fs = get_font_sizes(n_competitors)
+    # フォントサイズ決定（get_font_sizes は内部で +1 して総表示企業数に戻すので
+    # 「target あり/なし」に関わらず "総表示企業数 - 1" を渡す）
+    fs = get_font_sizes(n_companies - 1)
 
     print(f"  ✓ テーブル: {n_rows}行 × {n_cols}列")
-    print(f"    競合数: {n_competitors}, 列幅(企業): {company_col_w/914400:.2f}in")
+    if has_target:
+        print(f"    対象会社+競合={n_companies}社, 列幅(企業): {company_col_w/914400:.2f}in")
+    else:
+        print(f"    全社フラット表示={n_companies}社（強調なし）, 列幅(企業): {company_col_w/914400:.2f}in")
     print(f"    データ行高: {data_row_h/914400:.2f}in, フォント: body={fs['body']}pt")
 
     # テーブル追加
@@ -326,20 +338,14 @@ def build_table(slide, data):
         align="center", v_align="middle",
     )
 
-    # (0,1): 対象会社名（イエローハイライト）
-    apply_cell_style(
-        table.cell(0, 1), target.get("name", "対象会社"),
-        font_size=fs["header"], bold=True,
-        bg_color=COLOR_TARGET_BG,
-        align="center", v_align="middle",
-    )
-
-    # (0,2+): 競合企業名
-    for c_idx, comp in enumerate(competitors):
+    # (0,1+): 企業名（target ありなら列1をイエロー強調、それ以外はグレー）
+    for c_idx, comp in enumerate(companies):
+        is_target_col = has_target and c_idx == 0
         apply_cell_style(
-            table.cell(0, 2 + c_idx), comp.get("name", f"競合{c_idx+1}"),
+            table.cell(0, 1 + c_idx),
+            comp.get("name", f"競合{c_idx+1}"),
             font_size=fs["header"], bold=True,
-            bg_color=COLOR_HEADER_BG,
+            bg_color=COLOR_TARGET_BG if is_target_col else COLOR_HEADER_BG,
             align="center", v_align="middle",
         )
 
@@ -360,22 +366,15 @@ def build_table(slide, data):
             align="left", v_align="middle",
         )
 
-        # (row, 1): 対象会社の値（イエローハイライト）
-        target_val = target.get(item_key, "")
-        apply_cell_style(
-            table.cell(row, 1), target_val,
-            font_size=fs["body"], bold=True,
-            bg_color=COLOR_TARGET_BG,
-            align="left", v_align="top",
-        )
-
-        # (row, 2+): 競合の値
-        for c_idx, comp in enumerate(competitors):
+        # (row, 1+): 企業の値（target あり&列1のみイエロー＋bold）
+        for c_idx, comp in enumerate(companies):
+            is_target_col = has_target and c_idx == 0
             val = comp.get(item_key, "")
             apply_cell_style(
-                table.cell(row, 2 + c_idx), val,
-                font_size=fs["body"], bold=False,
-                bg_color=row_bg,
+                table.cell(row, 1 + c_idx), val,
+                font_size=fs["body"],
+                bold=is_target_col,
+                bg_color=COLOR_TARGET_BG if is_target_col else row_bg,
                 align="left", v_align="top",
             )
 
@@ -397,7 +396,8 @@ def _validate_input(data):
         raise ValueError(
             f"main_message は {MAIN_MESSAGE_MAX} 字以内（受領: {len(main_message)}）: {main_message[:80]}..."
         )
-    target = data.get("target_company", {})
+    target = data.get("target_company") or {}
+    has_target = bool(target.get("name"))
     competitors = data.get("competitors", [])
     if not (COMPETITORS_MIN <= len(competitors) <= COMPETITORS_MAX):
         raise ValueError(
@@ -409,11 +409,12 @@ def _validate_input(data):
     for k in keys:
         if k in ("name",):
             continue
-        v = target.get(k, "")
-        if isinstance(v, str) and len(v) > CELL_VALUE_MAX:
-            raise ValueError(
-                f"target_company.{k} は {CELL_VALUE_MAX} 字以内（受領: {len(v)}）: {v}"
-            )
+        if has_target:
+            v = target.get(k, "")
+            if isinstance(v, str) and len(v) > CELL_VALUE_MAX:
+                raise ValueError(
+                    f"target_company.{k} は {CELL_VALUE_MAX} 字以内（受領: {len(v)}）: {v}"
+                )
         for i, c in enumerate(competitors):
             cv = c.get(k, "")
             if isinstance(cv, str) and len(cv) > CELL_VALUE_MAX:
@@ -435,7 +436,8 @@ def main():
 
     _validate_input(data)
     n_comp = len(data.get("competitors", []))
-    print(f"  データ読み込み: 対象={data.get('target_company', {}).get('name', 'N/A')}, 競合={n_comp}社")
+    target_name = (data.get("target_company") or {}).get("name") or "（指定なし・強調なしモード）"
+    print(f"  データ読み込み: 対象={target_name}, 競合={n_comp}社")
 
     # テンプレート読み込み
     prs = Presentation(args.template)

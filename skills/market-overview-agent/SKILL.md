@@ -181,8 +181,16 @@ Step 10: ユーザーへ提示（PPTX + MDの2ファイル）
 | 分析年数 | 過去3年＋今後3年 / 過去5年＋今後5年 / 過去10年＋今後10年 | — |
 | 主要競合の上限（max_competitors） | 3 / 5 / 7 / 10（範囲: `references/deck_skeleton_standard.json` の `limits.max_competitors` を参照） | 5 |
 | KBFの数（kbf_count） | 2 / 3 / 4 / 5（範囲: 同上 `limits.kbf_count`） | 3 |
+| 強調したい会社（highlight_company） | 強調しない / 自由記述で会社名を入力 | **強調しない** |
 
 **v0.2 追加**: `max_competitors` と `kbf_count` は `references/deck_skeleton_standard.json` の `limits` セクションで `min/max/default` が定義されている。ユーザーが明示しない場合は default を採用。範囲外の値は AskUserQuestion で再確認すること。
+
+**強調会社（highlight_company）の運用**:
+- 既定値は `null`（強調しない）。クライアントが特定の会社にフォーカスしたい場合のみ会社名を文字列で受け取る
+- 指定された会社名は P6 (market-share) / P7 (positioning-map) / P8 (competitor-summary) の 3 スライドで横断的に強調される（イエロー背景・赤バブル等）
+- 指定なしの場合は P6/P7/P8 すべてで「強調列なし／全プレイヤー均等表示」になる
+- 後続 Step 1 で確定する `players[].name` と完全一致させる必要があるため、Step 1 で実プレイヤー名が揃った段階で `scope.json.highlight_company` の表記を再確認・正規化すること（不一致なら強調が当たらない）
+- 本フィールドは Step 2.5 の `fact-check-reviewer` に渡す `target_company`（検索精度向上用）とは**別物**。両者を混同しないこと
 
 ### Step 0.5: 事前スコーピング Web 検索（必須）
 
@@ -218,12 +226,15 @@ D. その他（自由記述）
   "analysis_years": { "past": 5, "future": 5 },
   "max_competitors": 5,
   "kbf_count": 3,
+  "highlight_company": null,
   "included_business_models": ["タクシー事業者"],
   "excluded_segments": ["配車アプリ事業者"],
   "run_id": "2026-04-27_taxi_industry_operators",
   "started_at": "2026-04-27T10:00:00+09:00"
 }
 ```
+
+`highlight_company` は文字列（強調する会社名）または `null`（強調なし、デフォルト）。
 
 **重要**:
 - `scope.json` の `max_competitors` / `kbf_count` は後続 Step（Web 検索・データ生成・fill_*.py 入力）で参照される。market-share / positioning-map / competitor-summary / market-kbf-pptx の 4 スキル間で一貫した値を使うこと。
@@ -287,6 +298,21 @@ D. その他（自由記述）
 `market-share-pptx` / `positioning-map-pptx` / `competitor-summary-pptx` /
 `market-kbf-pptx`（player_examples）すべてで **`scope.json.max_competitors` と同数の同じ社**を採用する（読み手が一貫したストーリーで追えるようにするため）。
 
+### highlight_company の伝搬（P6/P7/P8 横断）
+
+`scope.json.highlight_company` の値に応じて、Step 1 のデータ生成時に各 JSON へ次のとおり伝搬する。**3 スライドで同じ社を強調することで読み手のストーリーが揃う**。
+
+| scope.highlight_company | data_06 (market-share) | data_07 (positioning) | data_08 (competitor-summary) |
+|---|---|---|---|
+| `null`（強調なし・デフォルト） | `target_company` フィールド省略（または `null`） | 同左 | `target_company` オブジェクト省略 → 全社フラット表示 |
+| `"○○社"`（強調指定あり） | `target_company: "○○社"` | `target_company: "○○社"` | `target_company: {"name": "○○社", <comparison_items の各 key>: ...}` オブジェクト形式 |
+
+**運用ルール**:
+1. `scope.highlight_company` の文字列は `data_06.players[].name`・`data_07.players[].name`・`data_08.competitors[].name` のいずれかと**完全一致**させる（不一致なら強調されない）
+2. P8 では `target_company` がオブジェクトなので、強調する会社の `comparison_items` 各キーの値を必ず埋める。一方で `competitors[]` からはその会社を**除外**する（重複表示防止）
+3. P6/P7/P8 は単独実行可能なスキル。`scope.json` を直接読まないため、本オーケストレーターが値を JSON に埋め込む責務を負う
+4. ユーザーが「強調を後から変更したい」と言った場合は、Step 1 の data_06/07/08 JSON を 3 つとも書き換えるだけで済む（再 Web 検索は不要）
+
 ---
 
 ## Step 2: データアベイラビリティ整理
@@ -321,7 +347,7 @@ D. その他（自由記述）
 入力:
 - `data_dir`: `{{WORK_DIR}}/<run_id>/`
 - `scope`: ユーザー選択値
-- `target_company`: 主要競合（`scope.json.max_competitors` 社）のうち最大シェアのプレイヤー（検索精度向上のため）
+- `target_company`: 検索精度向上用の代表プレイヤー名。主要競合（`scope.json.max_competitors` 社）の最大シェアプレイヤーを推奨。**スライド上の「強調会社」（`scope.json.highlight_company`）とは無関係**で、本パラメータは fact-check-reviewer の Web 検索クエリ精度向上のみに使う。`scope.json.highlight_company` が指定されていればそれを優先採用しても良いが、未指定でも本パラメータは最大シェアプレイヤーで埋めて構わない
 
 <!-- @if:claude_code -->
 出力: `{{FACTORY_ROOT}}/work/fact-check-reviewer/fact_check_report.json`

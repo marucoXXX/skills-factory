@@ -26,7 +26,7 @@
 入力:
 - `data_dir`: `{{WORK_DIR}}/<run_id>/` （Step 2 で書き出された `data_NN_*.json` 群）
 - `scope`: ユーザー選択値（`high_risk` / `all`）
-- `target_company`（オプション）: 主要競合の中で最大シェアのプレイヤー名（検索精度向上）
+- `target_company`（オプション）: 検索精度向上用の代表プレイヤー名。主要競合の最大シェアプレイヤーを推奨。**スライド上の「強調会社」（`scope.highlight_company`）とは無関係**で、このパラメータは fact-check-reviewer の Web 検索クエリ精度向上のみに使う。ユーザーが `scope.highlight_company` を指定していればそれを優先採用しても良いが、未指定でも本パラメータは最大シェアプレイヤーで埋めて構わない
 
 出力: `{{FACTORY_ROOT}}/work/fact-check-reviewer/fact_check_report.json`
 
