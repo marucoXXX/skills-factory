@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """Build skills from canonical source for claude_code / claude_ai targets.
 
-Canonical skills live under ``skills/<name>/`` with ``{{VAR}}`` placeholders and
-optional ``@if:<profile>`` blocks. Profiles are loaded from ``profiles/*.json``.
+Canonical skills live under ``skills/<name>/`` or ``skills/<category>/<name>/``
+with ``{{VAR}}`` placeholders and optional ``@if:<profile>`` blocks. Profiles
+are loaded from ``profiles/*.json``.
 
 Commands:
   list
-  check        <skill> [--profile <p>] [--strict]
-  build        <skill> --profile <p> --out <dir>
-  install      <skill> [--profile claude_code]
-  package      <skill> [--profile claude_ai]
+  check             <skill> [--profile <p>] [--strict]
+  build             <skill> --profile <p> --out <dir>
+  install           <skill> [--profile claude_code]
+  package           <skill> [--profile claude_ai]
   install-all
-  package-all  [--profile claude_ai] [--strict]
+  package-all       [--profile claude_ai] [--strict]
+  install-category  <category> [--profile claude_code] [--strict]
+  package-category  <category> [--profile claude_ai] [--strict]
 """
 from __future__ import annotations
 
@@ -121,6 +124,75 @@ def iter_skill_files(src_root: Path):
         yield src
 
 
+def is_skill_root(d: Path) -> bool:
+    """Return True if ``d`` is the shallowest directory containing a SKILL.md.
+
+    This prevents false matches from nested SKILL.md (e.g. inside a skill's
+    references/ or examples/ subdirectory).
+    """
+    if not (d / "SKILL.md").exists():
+        return False
+    p = d.parent
+    while p != SKILLS_DIR and p != p.parent:
+        if (p / "SKILL.md").exists():
+            return False
+        p = p.parent
+    return True
+
+
+def _all_skill_root_dirs() -> list[Path]:
+    """Return all skill root directories (may include duplicate basenames)."""
+    if not SKILLS_DIR.exists():
+        return []
+    out: list[Path] = []
+    for skill_md in sorted(SKILLS_DIR.rglob("SKILL.md")):
+        d = skill_md.parent
+        if is_skill_root(d):
+            out.append(d)
+    return out
+
+
+def iter_skill_dirs():
+    """Yield unique skill root directories under SKILLS_DIR.
+
+    Raises SystemExit if two skills share the same basename (name collision).
+    """
+    by_name: dict[str, list[Path]] = {}
+    for d in _all_skill_root_dirs():
+        by_name.setdefault(d.name, []).append(d)
+    collisions = {n: ds for n, ds in by_name.items() if len(ds) > 1}
+    if collisions:
+        lines = []
+        for name, dirs in sorted(collisions.items()):
+            paths = ", ".join(str(d.relative_to(SKILLS_DIR)) for d in dirs)
+            lines.append(f"  {name}: {paths}")
+        raise SystemExit("skill name collisions:\n" + "\n".join(lines))
+    for name in sorted(by_name):
+        yield by_name[name][0]
+
+
+def find_skill_dir(skill_name: str) -> Path:
+    """Resolve a skill name to its source directory (flat or nested)."""
+    for d in iter_skill_dirs():
+        if d.name == skill_name:
+            return d
+    raise SystemExit(f"skill not found: {skill_name}")
+
+
+def iter_category_skills(category: str):
+    """Yield skill root directories under ``skills/<category>/``."""
+    cat_dir = SKILLS_DIR / category
+    if not cat_dir.is_dir():
+        raise SystemExit(f"category not found: {cat_dir}")
+    found_any = False
+    for d in iter_skill_dirs():
+        if cat_dir in d.parents:
+            found_any = True
+            yield d
+    if not found_any:
+        raise SystemExit(f"no skills found under category: {category}")
+
+
 def build(
     skill: str,
     profile_name: str,
@@ -128,9 +200,7 @@ def build(
     *,
     strict: bool,
 ) -> list[tuple[Path, str]]:
-    src_root = SKILLS_DIR / skill
-    if not (src_root / "SKILL.md").exists():
-        raise SystemExit(f"SKILL.md not found in {src_root}")
+    src_root = find_skill_dir(skill)
     profile = load_profile(profile_name, skill)
     if out_dir.exists():
         shutil.rmtree(out_dir)
@@ -151,11 +221,12 @@ def build(
 
 
 def cmd_list(_: argparse.Namespace) -> None:
-    if not SKILLS_DIR.exists():
-        return
-    for p in sorted(SKILLS_DIR.iterdir()):
-        if p.is_dir() and (p / "SKILL.md").exists():
-            print(p.name)
+    for d in iter_skill_dirs():
+        rel = d.relative_to(SKILLS_DIR)
+        if rel.parent == Path("."):
+            print(d.name)
+        else:
+            print(f"{rel}  ({d.name})")
 
 
 def cmd_check(args: argparse.Namespace) -> None:
@@ -199,21 +270,35 @@ def cmd_package(args: argparse.Namespace) -> None:
 
 
 def cmd_install_all(args: argparse.Namespace) -> None:
-    for p in sorted(SKILLS_DIR.iterdir()):
-        if p.is_dir() and (p / "SKILL.md").exists():
-            ns = argparse.Namespace(
-                skill=p.name, profile=args.profile, strict=args.strict
-            )
-            cmd_install(ns)
+    for d in iter_skill_dirs():
+        ns = argparse.Namespace(
+            skill=d.name, profile=args.profile, strict=args.strict
+        )
+        cmd_install(ns)
 
 
 def cmd_package_all(args: argparse.Namespace) -> None:
-    for p in sorted(SKILLS_DIR.iterdir()):
-        if p.is_dir() and (p / "SKILL.md").exists():
-            ns = argparse.Namespace(
-                skill=p.name, profile=args.profile, strict=args.strict
-            )
-            cmd_package(ns)
+    for d in iter_skill_dirs():
+        ns = argparse.Namespace(
+            skill=d.name, profile=args.profile, strict=args.strict
+        )
+        cmd_package(ns)
+
+
+def cmd_install_category(args: argparse.Namespace) -> None:
+    for d in iter_category_skills(args.category):
+        ns = argparse.Namespace(
+            skill=d.name, profile=args.profile, strict=args.strict
+        )
+        cmd_install(ns)
+
+
+def cmd_package_category(args: argparse.Namespace) -> None:
+    for d in iter_category_skills(args.category):
+        ns = argparse.Namespace(
+            skill=d.name, profile=args.profile, strict=args.strict
+        )
+        cmd_package(ns)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -256,6 +341,18 @@ def main(argv: list[str] | None = None) -> None:
     p_pkg_all.add_argument("--profile", default="claude_ai")
     p_pkg_all.add_argument("--strict", action="store_true")
     p_pkg_all.set_defaults(func=cmd_package_all)
+
+    p_cat = sub.add_parser("install-category")
+    p_cat.add_argument("category", help="e.g. bdd")
+    p_cat.add_argument("--profile", default="claude_code")
+    p_cat.add_argument("--strict", action="store_true")
+    p_cat.set_defaults(func=cmd_install_category)
+
+    p_pkg_cat = sub.add_parser("package-category")
+    p_pkg_cat.add_argument("category", help="e.g. bdd")
+    p_pkg_cat.add_argument("--profile", default="claude_ai")
+    p_pkg_cat.add_argument("--strict", action="store_true")
+    p_pkg_cat.set_defaults(func=cmd_package_category)
 
     args = parser.parse_args(argv)
     args.func(args)
