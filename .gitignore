@@ -13,3 +13,6 @@ outputs/*
 !outputs/.gitkeep
 work/*
 !work/.gitkeep
+
+# BDD project runtime workspace
+bdd-project/
