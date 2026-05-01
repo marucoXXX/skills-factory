@@ -2,7 +2,7 @@
 
 > **対象読者**: 戦略コンサル業務担当の社内チームメンバー
 > **目的**: 「どんな依頼が来たら、どのスキルを起動すればよいか」を俯瞰する
-> **時点**: 2026-04-29（ISSUE-004 Phase 4 完了時点のスナップショット）
+> **時点**: 2026-05-01（ISSUE-004 クローズ後のスナップショット。3 主軸エージェント体制に再整理）
 
 ---
 
@@ -13,9 +13,11 @@
 業務上の「同じようなスライドを毎回手で作る」苦痛を、以下の 2 段構えで解消します:
 
 1. **PPTX 単体スキル（50 個）**: 「市場規模推移 1 枚」「SWOT 1 枚」「会社沿革 1 枚」のような **1 枚のスライド** を JSON 入力から生成
-2. **オーケストレータエージェント（6 個）**: ユーザーの「○○市場を調べて」レベルの依頼を受け、Web 検索を走らせ、複数の PPTX 単体スキルを束ねて **デッキ 1 本** に仕上げる
+2. **オーケストレータエージェント（主軸 3 + 補助 3）**: ユーザーの「○○市場を調べて」レベルの依頼を受け、Web 検索を走らせ、複数の PPTX 単体スキルを束ねて **デッキ 1 本** に仕上げる
+   - **主軸 3** = `market-overview-agent` / `company-deepdive-agent` / `business-deepdive-agent`（業務はこの 3 つで回す前提）
+   - **補助 3** = `strategy-report-agent`（過去 E2E 成果物、今後は基本使わない）/ `comparison-synthesis-agent`（開発中）/ `smallcap-strategy-research`（開発中）
 
-加えて、**レビュー層**（事実裏取り・ビジュアル品質チェック）と **共通基盤**（`_common/`）が品質を担保します。
+加えて、**レビュー層**（事実裏取り・ビジュアル品質チェック）、**BDD ワークフロースキル群**（`skills/bdd/`、新設）、および **共通基盤**（`_common/`）が品質を担保します。
 
 本資料の読み方:
 
@@ -33,13 +35,18 @@
 flowchart TB
     User([ユーザー依頼<br/>「XX市場を調べて」<br/>「XX社を深掘り」 等])
 
-    subgraph Orchestrator["オーケストレータ層 (6 個)"]
-        MO[market-overview-agent]
-        SR[strategy-report-agent]
-        CD[company-deepdive-agent]
-        BD[business-deepdive-agent]
-        CS[comparison-synthesis-agent 🔄]
-        SC[smallcap-strategy-research ⚠️]
+    subgraph Orchestrator["オーケストレータ層 (主軸 3 + 補助 3)"]
+        direction TB
+        subgraph Main["⭐主軸 3"]
+            MO[market-overview-agent]
+            CD[company-deepdive-agent]
+            BD[business-deepdive-agent]
+        end
+        subgraph Sub["補助 3"]
+            SR[strategy-report-agent<br/>📦 過去 E2E 成果物]
+            CS[comparison-synthesis-agent<br/>🔄 開発中]
+            SC[smallcap-strategy-research<br/>🔄 開発中]
+        end
     end
 
     subgraph PPTX["PPTX 単体層 (50 個) — 1 枚のスライド = 1 スキル"]
@@ -56,6 +63,10 @@ flowchart TB
         MG[merge-pptxv2]
     end
 
+    subgraph BDD["BDD ワークフロー層 (skills/bdd/, 新設)"]
+        BI[bdd-init / bdd-ingest-* / bdd-financial-model / bdd-report]
+    end
+
     subgraph Common["共通基盤 _common/"]
         CP[prompts/<br/>scope_clarification<br/>main_message_principles<br/>cross_topic_consistency_check 等]
         CR[references/<br/>orchestrator_contract.md]
@@ -70,13 +81,14 @@ flowchart TB
     MG --> Final([完成デッキ .pptx])
 ```
 
-**4 つの層の役割**:
+**5 つの層の役割**:
 
 | 層 | 役割 | 数 |
 |---|---|---|
-| オーケストレータ | ユーザー対話・Web 検索・複数 PPTX スキル呼び分け・結合まで一気通貫 | 6 |
+| オーケストレータ | ユーザー対話・Web 検索・複数 PPTX スキル呼び分け・結合まで一気通貫 | 主軸 3 + 補助 3 |
 | PPTX 単体 | JSON 入力から **1 枚** の PowerPoint スライドを生成 | 50 |
 | レビュー / ユーティリティ | 事実裏取り・ビジュアル品質チェック・PPTX 結合 | 3 |
+| BDD ワークフロー（新設） | BDD プロジェクトの状態管理（論点・仮説・事実・財務モデル）と最終デッキ組立 | 6 |
 | 共通基盤 | オーケストレータが共通で従うプロンプト・契約スキーマ | — |
 
 ---
@@ -85,22 +97,34 @@ flowchart TB
 
 「どの依頼でどれを起動するか」を 1 枚で確認するための表です。
 
+### ⭐ 主軸 3（業務はまずこの 3 つで回す）
+
 | # | 名前 | 起点となる依頼 | 主な出力 |
 |---|---|---|---|
 | 1 | `market-overview-agent` | 「XX 市場を調べて」「XX 業界の概要をパワポで」 | 市場分析デッキ 10-12 枚 + ファクトチェック .md |
-| 2 | `strategy-report-agent` | 「BDD」「競合分析レポート」「M&A ターゲット評価」 | 企業調査レポート 13-25 枚 |
-| 3 | `company-deepdive-agent` | 「○○ 社の深掘り」「○○ 社の戦略を会社+事業で」 | 1 社の会社+全事業セグメント結合デッキ |
-| 4 | `business-deepdive-agent` | 「○○ 社の ○○ 事業の深掘り」 | 事業 1 セグメント 5 枚（主に親 #3 から呼ばれる） |
-| 5 | `comparison-synthesis-agent` 🔄 | 「複数社の戦略を横並び比較」 | 比較サマリーデッキ + 検証論点（**Phase 5 未実装**） |
-| 6 | `smallcap-strategy-research` ⚠️ | 「非上場企業の調査」（有報なし） | Markdown レポート（**4/27 retrospective で評価低、参考のみ**） |
+| 2 | `company-deepdive-agent` | 「○○ 社の深掘り」「○○ 社の戦略を会社+事業で」 | 1 社の会社+全事業セグメント結合デッキ（9+6N 枚） |
+| 3 | `business-deepdive-agent` | 「○○ 社の ○○ 事業の深掘り」 | 事業 1 セグメント 5 枚（主に親 #2 から呼ばれる、単独起動も可） |
+
+### 補助 3（積極推奨ではない / 開発中）
+
+| # | 名前 | 位置づけ | 状態 |
+|---|---|---|---|
+| 4 | `strategy-report-agent` | 過去に E2E で作った企業調査レポート（BDD / 競合分析 / M&A 評価）。動作するが、今後は基本的に主軸 3 + BDD ワークフローで代替する | 📦 過去成果物 |
+| 5 | `comparison-synthesis-agent` | 複数社 Deepdive を横並び比較統合（Phase 5 設計）。skeleton のみ、本格実装は需要発生待ち | 🔄 開発中 |
+| 6 | `smallcap-strategy-research` | 非上場企業向け（有報なし）の戦略調査。既存実装は 2026-04-27 retrospective でユーザー評価低く、リブート方針を検討中 | 🔄 開発中 |
 
 **凡例**:
-- 🔄 = 計画済だが未実装（ISSUE-004 Phase 5）
-- ⚠️ = 別系統。新規開発の参考にしないこと（4/27 retrospective 結論）
+- ⭐ = 主軸（実利用ではこの 3 つを優先）
+- 📦 = 過去 E2E 成果物として動作するが、現行ワークフローでは非推奨
+- 🔄 = 開発中（skeleton ないし旧実装あり、本格運用ではない）
 
 ---
 
 ## 4. 各オーケストレータの「使いどころ」
+
+> 業務はまず **主軸 3**（4.1〜4.3）で組み立てる。補助 3（4.4〜4.6）は過去成果物 / 開発中で、現時点では積極推奨ではない。
+
+### ⭐ 主軸 3
 
 ### 4.1 `market-overview-agent` — 市場調査の起点
 
@@ -127,33 +151,13 @@ flowchart TB
 
 ---
 
-### 4.2 `strategy-report-agent` — 企業調査レポートの王道
-
-**こんな依頼**:
-- 「○○ 社を競合分析して BDD レポートにして」
-- 「M&A ターゲットとして ○○ 社を評価」
-- 「新規参入調査レポート」
-
-**特徴**: v5.0 思想転換で **「事業環境の理解 → 対象会社の戦い方の理解」の 4 セクション構成** を採用。公開情報のみで書けない「戦略的示唆・推奨アクション」は廃止し、代わりに「**今後検証すべき論点**」でレポートを着地させる（知的誠実性重視）。
-
-**入力**: 対象会社名 + レポート用途（BDD / 競合分析 / M&A 評価 等）
-
-**出力**: 企業調査レポート 13-25 枚（標準版 13-15 枚、拡張版 20-25 枚）
-
-**内部で呼ぶ PPTX スキル（主要）**:
-`business-model-pptx` / `business-portfolio-pptx` / `customer-profile-pptx` / `market-environment-pptx` / `competitor-summary-pptx` / `financial-benchmark-pptx` / `growth-driver-pptx` / `issue-risk-list-pptx` / `swot-pptx` / `value-chain-matrix-pptx` / `table-of-contents-pptx` / `section-divider-pptx`
-
-**呼ぶレビュー**: `fact-check-reviewer` + `visual-quality-reviewer`（自動修正ループ）
-
----
-
-### 4.3 `company-deepdive-agent` — 会社レベルの深掘り司令塔
+### 4.2 `company-deepdive-agent` — 会社レベルの深掘り司令塔
 
 **こんな依頼**:
 - 「○○ 社を深掘りしてください」
 - 「○○ 社の戦略を会社レベル + 事業セグメント別に把握」
 
-**特徴**: ISSUE-004 Phase 4 で導入された新オーケストレータ。**会社レベル 5 論点 + 全事業セグメントの両軸** で 1 社の戦略を透視する。
+**特徴**: ISSUE-004 Phase 4（2026-04-29 完了）で導入された主軸オーケストレータ。**会社レベル 5 論点 + 全事業セグメントの両軸** で 1 社の戦略を透視する。
 
 **入力**: 対象会社名（上場・非上場どちらでも可。取れない情報は `data-availability` で「✗未取得」明示）
 
@@ -173,7 +177,7 @@ flowchart TB
 
 ---
 
-### 4.4 `business-deepdive-agent` — 事業セグメント単位の深掘り
+### 4.3 `business-deepdive-agent` — 事業セグメント単位の深掘り
 
 **こんな依頼**:
 - 「○○ 社の ○○ 事業の深掘り」
@@ -186,43 +190,62 @@ flowchart TB
 
 | 論点 | PPTX |
 |---|---|
-| 事業の概要は？ | `business-overview-pptx` ⭐新規 (ISSUE-004 Phase 2 で実装) |
+| 事業の概要は？ | `business-overview-pptx`（ISSUE-004 Phase 2 で実装） |
 | ビジネスモデルは？ | `business-model-pptx` |
 | 差別化ポイントは？ | `value-chain-matrix-pptx` |
 | 顧客は誰か？ | `customer-profile-pptx` |
 | 顧客は成長するか？ | `market-environment-pptx`（**顧客側市場**の規模・成長率） |
 
-**重要ルール（Phase 4 後追補で導入中 🔄）**:
-B2B 受託業（ビルメンテ業 / 半導体製造装置メーカー / HR Tech SaaS 等）では、論点 4 で確定した「顧客の業種」と論点 5 の「市場の業種」を**必ず一致させる**。例: ビルメンテ業の場合、論点 5 は「不動産業 / オフィスビル賃貸市場」であって「ビルメンテ市場」ではない。
+**重要ルール（Phase 4 後追補で導入済 ✅、2026-04-29）**:
+B2B 受託業（ビルメンテ業 / 半導体製造装置メーカー / HR Tech SaaS 等）では、論点 4 で確定した「顧客の業種」と論点 5 の「市場の業種」を**必ず一致させる**。例: ビルメンテ業の場合、論点 5 は「不動産業 / オフィスビル賃貸市場」であって「ビルメンテ市場」ではない。共通プロンプト `skills/_common/prompts/cross_topic_consistency_check.md` で構造的に強制している。
 
 ---
 
-### 4.5 `comparison-synthesis-agent` 🔄 — 複数社の横並び比較統合
+### 補助 3（過去成果物 / 開発中）
+
+### 4.4 `strategy-report-agent` 📦 — 過去 E2E 成果物（今後は基本使わない）
+
+**こんな依頼（過去）**:
+- 「○○ 社を競合分析して BDD レポートにして」
+- 「M&A ターゲットとして ○○ 社を評価」
+- 「新規参入調査レポート」
+
+**ステータス**: 📦 **過去に E2E で完成させた企業調査レポート用エージェント。動作はするが、現行ワークフローでは基本的に使わない**方針。
+
+**現行での代替**:
+- BDD レポート → `skills/bdd/` の BDD ワークフロー（`bdd-init` → `bdd-ingest-*` → `bdd-report`）
+- 競合分析 → `market-overview-agent` + `company-deepdive-agent` × N 社
+- M&A ターゲット評価 → `company-deepdive-agent`（必要に応じて BDD ワークフロー）
+
+**特徴（参考、過去仕様）**: v5.0 思想転換で **「事業環境の理解 → 対象会社の戦い方の理解」の 4 セクション構成** を採用。公開情報のみで書けない「戦略的示唆・推奨アクション」は廃止し、代わりに「**今後検証すべき論点**」でレポートを着地させる（知的誠実性重視）。**入力**: 対象会社名 + レポート用途。**出力**: 企業調査レポート 13-25 枚。
+
+---
+
+### 4.5 `comparison-synthesis-agent` 🔄 — 複数社の横並び比較統合（開発中）
 
 **こんな依頼**:
 - 「○○ 社・△△ 社・□□ 社の戦略を比較して」
 - 「複数社の Deepdive を統合」
 
-**ステータス**: **🔄 ISSUE-004 Phase 5 未実装**（skeleton のみ）。Phase 4 完了後に着手予定。
+**ステータス**: 🔄 **開発中（skeleton のみ、本格実装は需要発生待ち）**。ISSUE-004 Phase 5 として設計済だが、既存スキル（`financial-benchmark-pptx` / `competitor-summary-pptx` / `market-overview-agent`）の組み合わせで業務上 80% 代替可能と判断され、2026-04-29 時点では skeleton 温存判断。
 
-**設計意図**:
+**設計意図（参考）**:
 - 3 社（または 5 社）の `Deepdive_*.pptx` を入力に、横並び比較サマリー + **全社共通の検証論点** を統合デッキに生成
-- 同時に `competitor-summary-pptx` の参照を `comparison-synthesis-agent` に書き換える
 - 想定呼び出しスキル: `competitor-summary-pptx` / `executive-summary-pptx` / `issue-risk-list-pptx` / `financial-benchmark-pptx` / `positioning-map-pptx` / `data-availability-pptx`
 
-現状で「複数社の比較」が必要な場合は、当面 `competitor-summary-pptx`（単体）+ `financial-benchmark-pptx`（単体）を手動で組み合わせる運用になります。
+**現状運用**: 「複数社の比較」が必要な場合は、当面 `competitor-summary-pptx`（単体）+ `financial-benchmark-pptx`（単体）を手動で組み合わせる。
 
 ---
 
-### 4.6 `smallcap-strategy-research` ⚠️ — 非上場企業向け（参考のみ）
+### 4.6 `smallcap-strategy-research` 🔄 — 非上場企業向け（開発中）
 
 **こんな依頼**: 「非上場の中小企業を調査」「有報がない会社の戦略を調べて」
 
-**ステータス**: ⚠️ **4/27 retrospective でユーザー評価「うまくいっていない」。新規開発の参考にしない方針** が ISSUE-004 で確定。
+**ステータス**: 🔄 **開発中**。2026-04-27 retrospective で旧実装はユーザー評価「うまくいっていない」と判断。新規開発の直接の参考にはしない方針。リブートまたは設計見直しの位置づけで、現時点では本格運用ではない。
 
-**特徴**: 登記・官報決算公告・補助金採択・求人情報・経営者 SNS・業界団体の **断片情報** を複数のサブエージェントに並列収集させ、Synthesis で三角測量して戦略仮説（Where to play / How to win / Capability / Aspiration / Reality Check）を構築する設計。Markdown 出力中心。
+**特徴（旧実装、参考）**: 登記・官報決算公告・補助金採択・求人情報・経営者 SNS・業界団体の **断片情報** を複数のサブエージェントに並列収集させ、Synthesis で三角測量して戦略仮説（Where to play / How to win / Capability / Aspiration / Reality Check）を構築する設計。Markdown 出力中心。
 
-**現状運用**: 非上場企業の依頼が来た場合は、**当面 `strategy-report-agent` で取れる範囲で作成し、`data-availability-pptx` で「✗未取得」明示する**ほうが推奨。
+**現状運用**: 非上場企業の依頼が来た場合は、**`company-deepdive-agent` で取れる範囲で作成し、`data-availability-pptx` で「✗未取得」明示する**運用を推奨。
 
 ---
 
@@ -254,17 +277,17 @@ sequenceDiagram
     Note over User,CS: B 社・C 社も同様に深掘り
 
     User->>CS: 3 社統合
-    Note right of CS: 🔄 Phase 5 未実装<br/>当面は手動運用
+    Note right of CS: 🔄 開発中 (skeleton)<br/>当面は手動運用
     CS-->>User: Comparison_<業界>.pptx<br/>+ 検証論点一覧
 ```
 
-**現状（2026-04-29）取れる範囲**:
+**現状（2026-05-01）取れる範囲**:
 - ✅ Step 1（市場理解）: `market-overview-agent` で完結
 - ✅ Step 2（各社深掘り）: `company-deepdive-agent` × N 回で完結
-- 🔄 Step 3（横並び比較）: `comparison-synthesis-agent` 未実装 → 当面は単体スキルで手動組合せ
+- 🔄 Step 3（横並び比較）: `comparison-synthesis-agent` は開発中（skeleton のみ） → 当面は `competitor-summary-pptx` + `financial-benchmark-pptx` で手動組合せ
 
-**Phase 5 完了後に取れるようになる範囲**:
-- 上記 Step 3 が自動化され、3 社の Deepdive を入力するだけで比較デッキ + 検証論点が一気通貫で出る
+**Step 3 が本格実装された場合に取れるようになる範囲**:
+- 3 社の Deepdive を入力するだけで比較デッキ + 検証論点が一気通貫で出る（需要発生時に着手予定）
 
 ---
 
@@ -285,7 +308,7 @@ sequenceDiagram
 | **デッキ部品** | 4 | `section-divider` (中扉) / `table-of-contents` (目次) / `executive-summary` (Key Findings 3-5) / `data-availability` (取得カバレッジ表) |
 | **課題管理** | 1 | `issue-risk-list` (課題・リスク一覧) |
 | **バリュエーション** | 1 | `valuation-summary` (フットボール / EV ブリッジ / 財務サマリー) |
-| **smallcap 専用** ⚠️ | 5 | `smallcap-where-to-play` / `-how-to-win` / `-capability` / `-aspiration` / `-strategy-summary`（**`smallcap-strategy-research` 専用、新規開発の参考にしない**） |
+| **smallcap 専用** 🔄 | 5 | `smallcap-where-to-play` / `-how-to-win` / `-capability` / `-aspiration` / `-strategy-summary`（`smallcap-strategy-research` 専用、本体エージェントが開発中のため当面は本格運用ではない） |
 | **ブランドラッパー** | 1 | `nttdata-pptx` (NTT DATA 公式テンプレ適用、他 PPTX スキルと併用) |
 | **合計** | **50** | |
 
@@ -301,7 +324,24 @@ sequenceDiagram
 | `visual-quality-reviewer` | PPTX を PNG 化してスライド単位で **文字溢れ・要素重なり・配色崩れ** をチェックリスト評価 → 不備スライドと再生成ヒントを JSON で返却 | 各オーケストレータの最終 Step（merge 後の自動修正ループ） |
 | `merge-pptxv2` | 複数 .pptx を 1 本に結合。**チャートの `_rels` / Excel データ / Content-Type を全て正しく保持**（v1 のバグを修正済） | オーケストレータの結合フェーズ、ユーザーが手動結合したい場合の単発利用 |
 
-⚠️ **既知の不整合（ISSUE-006）**: `visual-quality-reviewer/scripts/render_pptx.py` の CLI 引数が SKILL.md の説明と一致していない（保留中、P2）。
+---
+
+## 7.5 BDD ワークフロー層 `skills/bdd/`（新設）
+
+BDD（ビジネスデュー・ディリジェンス）プロジェクトを **ファイルベースの状態管理**（`bdd-project/` ディレクトリ）で支援するスキル群。論点・仮説・事実・財務モデルを永続化し、議事録 / 開示資料の取り込みで段階的にアップデートする設計。最終的な PPTX 組立は既存 PPTX 単体スキル群を再利用する。
+
+| スキル | 役割 |
+|---|---|
+| `bdd-core-issues` | 業界横断のコア論点マスター（L1×10、L2×41）+ スキーマ定義（アセット） |
+| `bdd-init` | プロジェクト初期化。IM / Web 調査からコア論点コピー + 初期仮説生成 + 追加論点抽出 |
+| `bdd-ingest-disclosure` | 有報・決算短信・統合報告書を読み込み、財務 Fact 大量追加 + 仮説強化 |
+| `bdd-ingest-minutes` | マネイン議事録から発言を「事実」として抽出、仮説を歴史性付きで更新（古い仮説は history に退避） |
+| `bdd-financial-model` | `facts.json` + `hypotheses.json` から財務モデル（Excel）を構築・更新。ドライバー ↔ 論点の逆引きを `drivers.json` で管理 |
+| `bdd-report` | プロジェクト状態から最終 PPTX デッキを組み立てるオーケストレータ。既存 PPTX スキル群（market-environment / swot / company-overview-v2 / customer-profile / valuation-summary / executive-summary 等）を呼び分け |
+
+**典型ワークフロー**: `bdd-init` → `bdd-ingest-disclosure` → `bdd-financial-model` → `bdd-ingest-minutes`（マネイン繰り返し）→ `bdd-financial-model --update` → `bdd-report`。
+
+**位置づけ**: かつて `strategy-report-agent` が担っていた「BDD レポート」用途を、状態管理＋逐次更新のワークフローとして再設計したもの。詳細は `skills/bdd/README.md` を参照。
 
 ---
 
@@ -338,9 +378,9 @@ skills/_common/
 
 ---
 
-## 10. 開発状況スナップショット（2026-04-29 時点）
+## 10. 開発状況スナップショット（2026-05-01 時点）
 
-### ISSUE-004（会社・事業 深掘りエージェント群の新規実装）
+### ISSUE-004（会社・事業 深掘りエージェント群の新規実装）✅ クローズ（2026-04-29）
 
 | Phase | 内容 | 状態 |
 |---|---|---|
@@ -348,8 +388,19 @@ skills/_common/
 | Phase 2 | `business-overview-pptx` 実装 | ✅ |
 | Phase 3 | `business-deepdive-agent` E2E（事業 1 セグメント） | ✅ |
 | Phase 4 | `company-deepdive-agent` E2E（二幸産業 15 枚デッキ） | ✅ |
-| **Phase 4 後追補** | **論点間整合性ルール導入**（B2B 受託業の自社市場 vs 顧客市場の混同防止） | 🔄 進行中 |
-| Phase 5 | `comparison-synthesis-agent` 実装 | ⏳ 未着手 |
+| Phase 4 後追補 | 論点間整合性ルール導入（`_common/cross_topic_consistency_check.md`） | ✅ |
+| Phase 5 | `comparison-synthesis-agent` 実装 | ⏸ 実装保留（既存スキル組合せで 80% 代替可能、需要発生待ち） |
+
+主軸 3 エージェント体制（`market-overview-agent` / `company-deepdive-agent` / `business-deepdive-agent`）が確立し、ISSUE-004 自体はクローズ。
+
+### 直近クローズした ISSUE（参考）
+
+| ID | 内容 | Closed |
+|---|---|---|
+| ISSUE-005 | 市場スコープの事業モデル境界確認（`included_business_models[]`） | 2026-04-28 |
+| ISSUE-006 | `render_pptx.py` CLI と SKILL.md の引数不整合 | 2026-04-29 |
+| ISSUE-007 | `market-environment-pptx` の bars/line Y 軸スケール乖離（dual-axis 対応） | 2026-04-28 |
+| ISSUE-008 | `competitor-summary` 30 字 cell 制限が 9 列構成で厳しい（`max_competitors` を 5 に戻して根本対応） | 2026-04-29 |
 
 ### 未解決 ISSUE（保留中、`ISSUES.md` 参照）
 
@@ -358,8 +409,6 @@ skills/_common/
 | ISSUE-001 | `build_skill.py` への `@import` 機構導入 | P3 |
 | ISSUE-002 | Web 検索深度の動的制御 | P3 |
 | ISSUE-003 | AI による自動 main_message 短縮 | P3 |
-| ISSUE-006 | `render_pptx.py` CLI と SKILL.md の引数不整合 | P2 |
-| ISSUE-008 | competitor-summary 30 字 cell 制限が 9 列構成で厳しい | P3 |
 
 ---
 
@@ -367,16 +416,19 @@ skills/_common/
 
 | 依頼例 | 使うスキル | 補足 |
 |---|---|---|
-| 「○○ 市場の規模と主要プレイヤーを把握したい」 | `market-overview-agent` | 1 本起動でデッキ + ファクトチェックまで |
-| 「○○ 社を競合分析して BDD レポートに」 | `strategy-report-agent` | 13-25 枚の調査レポートが出る |
-| 「○○ 社の戦略を会社+事業の両軸で深掘り」 | `company-deepdive-agent` | 1 社で 9+6N 枚の結合デッキ |
-| 「市場調査 → 主要 3 社を比較したい」 | `market-overview-agent` → `company-deepdive-agent` × 3 → 手動結合 | 第 5 章のフロー。Phase 5 完了後は `comparison-synthesis-agent` で一気通貫化 |
+| 「○○ 市場の規模と主要プレイヤーを把握したい」 | `market-overview-agent` ⭐ | 1 本起動でデッキ + ファクトチェックまで |
+| 「○○ 社の戦略を会社+事業の両軸で深掘り」 | `company-deepdive-agent` ⭐ | 1 社で 9+6N 枚の結合デッキ |
+| 「○○ 社の ○○ 事業 1 セグメントだけ深掘り」 | `business-deepdive-agent` ⭐ | 5 論点 5 枚。単独起動も可 |
+| 「市場調査 → 主要 3 社を比較したい」 | `market-overview-agent` → `company-deepdive-agent` × 3 → 手動結合 | 第 5 章のフロー。`comparison-synthesis-agent` 本格実装後は一気通貫化予定（開発中） |
+| 「○○ 社を BDD で評価したい」 | BDD ワークフロー: `bdd-init` → `bdd-ingest-disclosure` → `bdd-financial-model` → `bdd-ingest-minutes` → `bdd-report` | 第 7.5 節。`strategy-report-agent` の現行代替 |
+| 「M&A ターゲットとして評価」 | `company-deepdive-agent` ⭐（必要に応じ BDD ワークフロー） | 主軸エージェントで戦略を透視 |
 | 「議事録から SWOT スライド 1 枚」 | `swot-pptx`（単体） | オーケストレータを通さず単発で OK |
 | 「議事録から論点をロジックツリー化」 | `logic-tree-pptx` または `issue-tree` | 後者は PPTX なしの構造化、前者は 1 枚スライド |
 | 「複数 PPTX を結合して 1 デッキに」 | `merge-pptxv2`（単体） | チャート / Excel 参照を保持して結合 |
 | 「PPTX のビジュアル品質をレビュー」 | `visual-quality-reviewer`（単体） | 任意の PPTX に対して単独起動可能 |
 | 「データの裏取りだけしたい」 | `fact-check-reviewer`（単体） | JSON データを渡して再検索で裏取り |
-| 「非上場の中小企業を調査」 | `strategy-report-agent` + `data-availability-pptx`「✗未取得」明示 | ⚠️ `smallcap-strategy-research` は 4/27 評価低、参考のみ。Phase 5 完了後に再評価 |
+| 「非上場の中小企業を調査」 | `company-deepdive-agent` ⭐ + `data-availability-pptx`「✗未取得」明示 | `smallcap-strategy-research` は開発中で本格運用ではない |
+| 「過去 strategy-report-agent で作ったレポートを再生成」 | `strategy-report-agent` 📦 | 動作はするが、新規案件は主軸 3 + BDD ワークフロー優先 |
 
 ---
 
@@ -393,4 +445,4 @@ skills/_common/
 
 ---
 
-> 本資料の更新ポイント: 新スキル追加時は第 6 章のカテゴリ表に追加。Phase 5 完了時は第 4.5 章 / 第 5 章 / 第 10 章を更新。スキル数が変わったら冒頭サマリと第 2 章のラベルも更新。
+> 本資料の更新ポイント: 新スキル追加時は第 6 章のカテゴリ表に追加。`comparison-synthesis-agent` 実装着手時は第 4.5 章 / 第 5 章 / 第 10 章を更新。`smallcap-strategy-research` リブート時は第 4.6 章を更新。BDD ワークフローのスキル追加時は第 7.5 章を更新。スキル数が変わったら冒頭サマリと第 2 章のラベルも更新。
