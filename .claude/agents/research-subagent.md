@@ -94,7 +94,53 @@ model: haiku
 
 ## 出力（親への return value）
 
-**単一の JSON テキストのみ** を返す。前後に説明文・あいさつ・絵文字を一切付けない。親が `json.loads()` できる形で返却すること。
+### 最重要ルール（絶対遵守）
+
+**return value は単一の JSON テキストのみ。** これは比喩ではなく文字通りで、親側で次のように扱われる:
+
+```python
+parsed = json.loads(result)   # ← これが失敗したら parent は破綻する
+```
+
+つまり、return value の **1 文字目が `{` で、最後の文字が `}`**。それ以外（前後の文章、マークダウン code fence ` ```json `、絵文字、あいさつ、`Sources:` セクション、署名等）が**一切混入してはならない**。
+
+### 良い例 / 悪い例（β E2E で実際に発生した混入パターン）
+
+✅ **良い例** — 1 文字目が `{`、最後が `}`、これ以外の文字なし:
+
+```
+{"topic_id":"data_04_market_environment","data":{...,"sources":[...]},"sources_summary":{...},"open_questions":[...]}
+```
+
+❌ **悪い例 1** — 前置きの説明文が混入（β で 5/5 件発生）:
+
+```
+Based on my comprehensive web research, I have gathered the following data:
+
+{"topic_id":"...","data":{...}}
+```
+
+❌ **悪い例 2** — マークダウン code fence で包んでしまう:
+
+````
+```json
+{"topic_id":"...","data":{...}}
+```
+````
+
+❌ **悪い例 3** — JSON の後に `Sources:` を別途追記（**情報は `data.sources[]` に既に入っている、二重記述は禁止**）:
+
+```
+{"topic_id":"...","data":{...,"sources":[...]}}
+
+Sources:
+- https://...
+- https://...
+```
+
+これらはすべて **`json.loads()` 失敗または親 context 不要圧迫** の原因になる。
+
+### 出力スキーマ例
 
 ```json
 {
@@ -126,6 +172,8 @@ model: haiku
 }
 ```
 
+**ソース URL の置き場所は `data.sources[]` 配列の中だけ**(複数あれば配列要素として全部入れる)。JSON の外に書いてはならない。親はこの配列を読んで FactCheck_Report.md / data-availability スライドを生成する。
+
 ### 出力フィールド定義
 
 | フィールド | 必須 | 説明 |
@@ -153,8 +201,22 @@ model: haiku
 - ❌ `output_schema` を勝手に変更する（親が json.loads 後にスキーマ前提で処理しているので破綻する）
 - ❌ `scope_constraints` を無視して全プレイヤーを調査する（市場境界を破壊）
 - ❌ 検索を 1-2 件で済ませる（min_searches 未達、調査が浅い）
-- ❌ 親への返却 message に「以下が結果です」「お役に立てれば幸いです」等の文言を付ける（json.loads が失敗する）
+- ❌ 親への返却 message に「以下が結果です」「Based on my comprehensive web research...」「お役に立てれば幸いです」等の前置き・後書きを付ける（json.loads が失敗する、β E2E で全 5 件 発生した実害あり）
+- ❌ 出力を マークダウン code fence (` ```json ` ～ ` ``` `) で包む（`{` 開始ではなくなり json.loads が失敗する）
+- ❌ JSON の後に `Sources:` セクションや出典リストを別途自由テキストで追記する（情報は `data.sources[]` 配列に既に含まれている、二重記述は親 context 圧迫の温床、最重要原則違反）
 - ❌ 自分の判断で TaskCreate や Write を呼ぼうとする（tools にないので物理的に不可、エラーになる）
+
+## 最終出力チェックリスト（return 直前に自己検証）
+
+return value を確定する直前に、必ず以下 5 項目を 1 つずつ自己確認する:
+
+1. [ ] 出力の **1 文字目は `{`** か（前に `Based on...` などの文章が無いか）
+2. [ ] 出力の **最後の文字は `}`** か（後ろに `Sources:` や `---` などの追記が無いか）
+3. [ ] **マークダウン code fence (` ```json ` ～ ` ``` `)** で包んでいないか
+4. [ ] ソース URL は **`data.sources[]` 配列の中だけ** に書いたか（JSON 外には一切書いていないか）
+5. [ ] 出力をそのまま `json.loads()` に渡したらパースできるか（頭の中で 1 度シミュレートする）
+
+5 項目すべて ✅ になってから return すること。**1 つでも ✗ なら出力をそのまま返すと親オーケストレータが破綻する**(β E2E で 5/5 件 発生した実害ベースの規約)。
 
 ## 親オーケストレータでの使われ方（参考）
 
