@@ -11,7 +11,7 @@
 
 ## ISSUE-001: build_skill.py への `@import` 機構導入
 
-**Status**: 保留 / **Priority**: P3 / **Decided**: 2026-04-27 / **Updated**: 2026-04-29 (再確認、保留継続: トリガー条件未達 — ファイル数 6/8、同期漏れ 0/3)
+**Status**: 保留 / **Priority**: P3 / **Decided**: 2026-04-27 / **Updated**: 2026-05-02 (Phase B-4/B-5 で `_common/` ファイル数が 9 に到達し**起票トリガー条件 1 達成**。ただし同期漏れ 0/3 のため起票判断はユーザーへ持ち込み)
 
 ### 背景
 v0.2 Phase D で 3 orchestrator（market-overview-agent / strategy-report-agent / smallcap-strategy-research）の重複ブロックを `skills/_common/` に集約する作業を、**手動コピペ運用（D1）** で開始した。`build_skill.py` への `@import` 自動化（D2）は、今セッション（2026-04-27）で **判断保留** に決定。
@@ -24,14 +24,18 @@ v0.2 Phase D で 3 orchestrator（market-overview-agent / strategy-report-agent 
 5. **エラーメッセージの追跡可能性** — ネスト import で未解決変数が出たときに、どのファイル経由で持ち込まれたかを辿れるか。
 
 ### v0.3 で D2 着手するトリガー（どちらかを満たしたら起票）
-- `skills/_common/` 配下のファイル数が **8 ファイル以上** に膨らむ
-- 手動コピペ運用で **3 回以上の同期漏れインシデント** が発生する
+- ✅ `skills/_common/` 配下のファイル数が **8 ファイル以上** に膨らむ → **2026-05-02 達成**(9 ファイル: cross_topic_consistency_check / main_message_principles / step_final_visual_review_loop / step_state_tracking / step0_scope_clarification / step2_5_factcheck_invocation / harness_levers / orchestrator_contract / chart_palette)
+- ⏳ 手動コピペ運用で **3 回以上の同期漏れインシデント** → 0/3 のまま
+
+### 2026-05-02 の判断
+ファイル数トリガーは達成したが、同期漏れインシデントが発生していないため運用上の痛みは未顕在化。harness_check ブランチでも「`<!-- source: skills/_common/... (manual sync until D2) -->` コメント + 手動コピペ」が機能しており、9 ファイル目（`harness_levers.md` / `step_state_tracking.md`）の追加でも同期漏れは生じなかった。**起票するか継続保留かはユーザー判断**(harness_check のレビュー時に合わせて確定)。
 
 ### 参考ファイル
 - `tools/build_skill.py`(現状: {{VAR}} 3パス置換 + @if/@endif 実装)
-- `skills/_common/`(v0.2 D1 で新設、手動運用)
+- `skills/_common/`(v0.2 D1 で新設、9 ファイル / 手動運用)
 - `/Users/nakamaru/.claude/plans/4-market-overview-v0.2.md` P3-9 セクション
 - `/Users/nakamaru/.claude/plans/fancy-cooking-walrus.md` Phase D1 セクション
+- `/Users/nakamaru/.claude/plans/md-llm-melodic-twilight.md` harness_check 計画書（2026-05-02 で Phase B-6 まで完了、検証フェーズ残）
 
 ---
 

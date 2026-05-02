@@ -210,3 +210,39 @@
 | 12 | ステートレス | 🟡 (state file) | 🟢 | 🟢 (TaskCreate) |
 
 **目標**: 🔴 を 0、🟢 を現在 15 → 24 へ。#10 / #11 は本フェーズで満点にしない（subagent 完全分割と起動経路拡張は別フェーズ）。
+
+---
+
+## Phase B 完了時の **実 Status**(2026-05-02)
+
+α 検証（smoke test + build_skill.py check + 規約整備）まで完了した時点の Status。**E2E 未確認（β / γ）のため、実装済でも実動作確認は次セッション以降**。
+
+| # | 原則 | ① | ② | ③ | 備考 |
+|---|---|---|---|---|---|
+| 1 | ツール呼び出し | 🟡 ¹ | 🟡 ² | 🟢 | ¹ hook 実装済 unit test PASS、E2E 未 / ² subagent 配置済、E2E 未 |
+| 2 | プロンプト管理 | 🟢 | 🟢 | N/A | 元から達成 |
+| 3 | コンテキスト制御 | 🟡 ³ | 🟡 ² | 🟡 ⁴ | ³ description 規約は 5-15 行で書いたが、実 LLM の発火抑制効果は未測定 / ⁴ TaskCreate 規約は SKILL.md に書いたが LLM 遵守は未測定 |
+| 4 | 構造化出力 | 🟡 ¹ | 🟡 ² | N/A | hook validation の実発火は β で確認 |
+| 5 | 状態統合 | 🟡 ⁵ | 🟢 | 🟡 ⁴ | ⁵ SessionStart hook は smoke test で stdout 出力確認済、実 LLM context 注入の効果は未測定 |
+| 6 | 開始停止再開 | 🟡 ⁵ | 🟢 | 🟡 ⁴ | TaskList による resume 動作は実運用で確認要 |
+| 7 | 人間との対話 | N/A | 🟢 | 🟢 | 元から達成、subagent SKILL.md で AskUserQuestion 不可を明示済 |
+| 8 | 制御フロー | 🟡 ¹ | 🟡 ² | 🟡 ⁴ | check_task_progression.py の inversion 検出は unit test PASS、実 LLM が TaskCreate を呼ぶかの確認が β / γ のキーポイント |
+| 9 | エラー圧縮 | 🟡 ¹ | 🟢 | N/A | validate_pptx_after_fill.py の実発火は β で確認 |
+| 10 | 責務サイズ | 🟡 (規約) | 🟡 (部分分割) | 🟡 | 元計画通り、本フェーズで満点目指さず |
+| 11 | どこからでも起動 | 🟡 | N/A | N/A | レバー④ 対応の別フェーズ（本フェーズ範囲外） |
+| 12 | ステートレス | 🟡 ⁵ | 🟢 | 🟡 ⁴ | task_state.json スキーマ確定済、運用は β / γ で確認 |
+
+### 凡例
+
+- 🟢: 実装 + 実動作確認済（smoke test or 元からの実績）
+- 🟡: 実装済だが E2E 未確認 / 部分達成
+- 🔴: 未対応 / 期待外
+
+### 集計
+- 🟢: 6（元から達成のセル）
+- 🟡: 22（実装済 E2E 未）
+- 🔴: 0
+- N/A: 8
+
+### 次セッションでの目標
+β / γ E2E 実施で 🟡 → 🟢 への昇格を目指す。少なくとも `#1 ① / #4 ① / #8 ① / #9 ①` の hooks 系と `#1 ② / #3 ② / #4 ②` の subagent 系は 🟢 に上がる見込み。詳細は `docs/harness_check/handoff.md` Section 2 / `~/.claude/plans/harness-check-verification-next-session.md` 参照。
