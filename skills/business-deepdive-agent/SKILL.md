@@ -14,6 +14,11 @@ description: >
   - company-deepdive-agent から呼び出された場合
   - 多角化企業の特定セグメントの戦略を、会社全体ではなく事業単位で深く調べたい場合
   - 顧客市場・差別化・ビジネスモデルを 1 つの事業セグメントに絞って整理したい場合
+
+  以下の場合は別スキルを使う:
+  - 「会社全体（複数事業横断）を深掘り」 → company-deepdive-agent
+  - 「市場全体の調査」 → market-overview-agent
+  - 単一の PPTX スライドだけ作りたい → 該当する個別 PPTX スキル（business-overview-pptx 等）
 ---
 
 # 事業セグメント深掘りオーケストレーター
@@ -27,6 +32,36 @@ ISSUE-004（v0.3）における新規オーケストレーター。`company-deep
 - **結合は本スキルでは行わない**: 5 枚の個別 PPTX を出力し、merge は親（`company-deepdive-agent`）が担当
 - **fact-check / visual-review は本スキルでは呼ばない**: 親オーケストレーターが統合デッキに対して一括実施する（重複コール削減）
 - 公開情報のみ。取れない項目は data-availability に「✗」記録（親オーケストレータに引き渡す）
+
+---
+
+## 進捗トラッキング規約（全 Step 横断、必須）
+
+<!-- source: skills/_common/prompts/step_state_tracking.md (manual sync until D2) -->
+
+各 Step の開始/終了で `TaskCreate` / `TaskUpdate` を呼び、`task_state.json` を更新する。詳細規約は `skills/_common/prompts/step_state_tracking.md` を正本とする。
+
+- **subject フォーマット**: `business-deepdive: Step <N> - <topic>`(例: `business-deepdive: Step 1 - Web検索 (5論点)`)
+- **task_state.json 配置**: `{{WORK_DIR}}/company-deepdive-agent/<parent_run_id>/segments/<segment_slug>/task_state.json`(scope.json と同じディレクトリ。単独起動でも同様の構造を擬似生成)
+- **開始時**: `TaskCreate` で task を起こす → `TaskUpdate(in_progress)` → `task_state.json.steps[]` に append
+- **終了時**: `TaskUpdate(completed)` → `task_state.json` の該当 entry を `completed` + `completed_at` に更新
+- **失敗・再試行時**: `TaskUpdate(completed)` を呼ばない。`task_state.json` の `retry_count` のみインクリメント。2 回失敗したらユーザーに判断を仰ぐ
+
+`tools/hooks/check_task_progression.py` が `fill_*.py` / `merge_pptx_v2.py` 起動前にこのファイルを参照し、Step ordering inversion（前 Step が `completed` でないまま次 Step に進んだ状態）を検出して exit 2 でブロックする。
+
+---
+
+## ハーネスレバー利用規約（参照）
+
+<!-- source: skills/_common/references/harness_levers.md (manual sync until D2) -->
+
+本オーケストレーターは Claude Code ハーネス機構を以下のとおり活用する。詳細規約は `skills/_common/references/harness_levers.md` を参照。
+
+| レバー | 適用箇所 |
+|---|---|
+| ① hooks (`tools/hooks/*.py`) | `check_merge_order_exists` / `validate_pptx_after_fill` / `check_task_progression` / `load_session_context` が `.claude/settings.json` 経由で発火（親 `company-deepdive-agent` 配下で merge / validate 実施時にも有効）|
+| ② subagent (`.claude/agents/research-subagent.md`) | Step 1 で 5 論点を並列 Web 検索する際に **必ず** Agent ツール経由で呼ぶ。生 HTML / 検索結果を親 context に積まない |
+| ③ TaskCreate / AskUserQuestion | 各 Step の開始/終了で TaskCreate（上記規約）。Step 0（単独起動時の対話）と Step 3（5 論点 Markdown 承認）で AskUserQuestion 必須 |
 
 ---
 
@@ -94,6 +129,8 @@ B-05 顧客市場の成長性 (market-environment-pptx)
 
 ### Step 0: 引数受領 / 単独起動時の対話
 
+**進捗**: 開始時 `TaskCreate(subject="business-deepdive: Step 0 - 引数受領")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。単独起動の場合は `AskUserQuestion` 必須。
+
 #### 内部呼び出しの場合（推奨）
 
 `company-deepdive-agent` から以下のパラメータを JSON で受け取る:
@@ -124,31 +161,63 @@ AskUserQuestion で以下を聞く:
 `segment_slug` は `segment_name` を ASCII 化した値（例: タクシー事業 → `taxi`）を生成し、ユーザーに確認して必要なら修正させる。
 `global_slide_offset = 0`（単独起動なので NN = 1..5）。
 
-### Step 1: Web 検索でセグメント別 5 論点情報収集
+### Step 1: research-subagent 経由でセグメント別 5 論点情報収集
 
-5 論点それぞれについて、`prompts/step1_research_template.md` のクエリテンプレートに `{parent_company_name}` / `{segment_name}` / `{industry}` を展開して **5-8 件** WebSearch を実行する。
+**進捗**: 開始時 `TaskCreate(subject="business-deepdive: Step 1 - Web検索 (5論点)")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。
 
-| 論点 | 優先ソース |
-|---|---|
-| 事業の概要 | 有報「事業の状況」/ セグメント情報 / 公式 HP の事業説明ページ |
-| ビジネスモデル | 統合報告書 / セグメント別事業説明 / IR Day 資料 |
-| 差別化 | 業界レポート / IR Q&A / メディアインタビュー（**自社が属する業界**のバリューチェーン） |
-| 顧客 | 有報「主要販売先」/ 業界レポート / 顧客側 IR 資料(**顧客の業種 `customer_industry` を確定**)|
-| 顧客の成長 | **`customer_industry` の業界レポート**（矢野経済・富士経済・官公庁統計等）。**自社の事業市場ではない**|
+5 論点それぞれについて、`research-subagent`(`.claude/agents/research-subagent.md`) を **Agent ツール経由で起動** して情報収集する。各 subagent は 5-8 件の Web 検索 + 必要に応じた fetch を実施し、`output_schema` に沿った要約済み JSON のみ親に返却する。**生 HTML / 検索結果テキストは subagent 自身の context 内で完結し、親 context には流入しない**。
 
-検索結果から JSON 化に必要な情報（数値・期間・出典）を抽出する。
+#### subagent 呼び出しパターン（論点ごと）
+
+```python
+import json
+result = Agent(
+    subagent_type="research-subagent",
+    description=f"{segment_name} の<論点名>調査",
+    prompt=json.dumps({
+        "topic_id": "data_<NN>_business_overview",  # 論点別の data ファイル名と対応
+        "topic_description": "<論点の自然文要約>",
+        "output_schema": {<該当 PPTX スキルの JSON schema>},
+        "parent_context": {
+            "industry": industry,
+            "target_company": parent_company_name,
+            "scope_constraints": {}  # 業務上の境界がある場合のみ
+        },
+        "search_budget": {"min_searches": 5, "max_searches": 8}
+    })
+)
+parsed = json.loads(result)
+# parsed["data"] を {{work_dir}}/data_<NN>_<topic>.json に Write で書き出す
+# parsed["open_questions"] / parsed["sources_summary"] は segment_data_availability.json と segment_summary.json に転記
+```
+
+`prompts/step1_research_template.md` のクエリテンプレートは subagent 起動時の `topic_description` 構築のヒントとして親が参照する（subagent は受け取った `topic_description` を起点に検索する）。
+
+| 論点 | 優先ソース | subagent への topic_description で強調すべき点 |
+|---|---|---|
+| 事業の概要 | 有報「事業の状況」/ セグメント情報 / 公式 HP の事業説明ページ | セグメントの売上・主要製品・主要数字 |
+| ビジネスモデル | 統合報告書 / セグメント別事業説明 / IR Day 資料 | サプライヤー・顧客の取引フロー、価値交換の構造 |
+| 差別化 | 業界レポート / IR Q&A / メディアインタビュー（**自社が属する業界**のバリューチェーン） | 自社業界（顧客業界ではない）のバリューチェーン上のポジション |
+| 顧客 | 有報「主要販売先」/ 業界レポート / 顧客側 IR 資料(**顧客の業種 `customer_industry` を確定**)| 顧客企業のプロファイル + 顧客の業種を必ず特定 |
+| 顧客の成長 | **`customer_industry` の業界レポート**（矢野経済・富士経済・官公庁統計等）。**自社の事業市場ではない**| 論点 4 で確定した `customer_industry` の市場規模・成長率 |
 
 #### 順序厳守: 論点 4 → 論点 5
 
-論点 5（顧客の成長）は、論点 4（顧客）で確定した **`customer_industry`** を入力に取る。論点 4 を飛ばして論点 5 を先に検索すると、自社の事業市場と顧客市場を取り違える典型的な混同（後述「論点間整合性ルール」）が発生する。
+論点 5（顧客の成長）は、論点 4（顧客）で確定した **`customer_industry`** を入力に取る。論点 4 を飛ばして論点 5 を先に subagent 起動すると、自社の事業市場と顧客市場を取り違える典型的な混同（後述「論点間整合性ルール」）が発生する。
+
+そのため subagent 起動も **論点 1-4 を完了してから論点 5 を起動** する逐次パターンを必須とする（論点 1-3 は並列起動可、論点 4 完了 → `customer_industry` 確定 → 論点 5 の `parent_context.industry` をその値に切り替えて起動）。
 
 ```
-論点 4 検索 → 顧客企業/セグメント特定 → customer_industry = ?（業種を確定）
+論点 1-3 並列 subagent → 結果 JSON を data_<NN>_*.json に書き出し
    ↓
-論点 5 検索: {customer_industry} 市場規模 推移
+論点 4 subagent → 顧客企業/セグメント特定 → customer_industry = ?（業種を確定）
+   ↓
+論点 5 subagent: parent_context.industry = customer_industry
 ```
 
 ### Step 2: data-availability セグメント単位記録
+
+**進捗**: 開始時 `TaskCreate(subject="business-deepdive: Step 2 - data-availability")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。
 
 各論点について「取得済(✓) / 一部取得(△) / 未取得(✗)」を `segment_data_availability.json` に記録:
 
@@ -170,6 +239,8 @@ AskUserQuestion で以下を聞く:
 親 `company-deepdive-agent` が全社統合の data-availability スライドに転記する。
 
 ### Step 3: 5 つの data_NN_*.json を作成 → ユーザー承認
+
+**進捗**: 開始時 `TaskCreate(subject="business-deepdive: Step 3 - data JSON 作成 + 承認")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。**ユーザー承認の `AskUserQuestion` 必須**（自由対話での承認は禁止）。
 
 各論点について、対応 PPTX スキルの SKILL.md に従って `data_NN_<topic>.json` を作成。
 ファイル名:
@@ -203,6 +274,8 @@ AskUserQuestion で以下を聞く:
 ❌ がある場合は JSON を組み立てる**前**に修正する。詳細は後述「論点間整合性ルール」を参照。
 
 ### Step 4: 5 つの fill_*.py を順次実行
+
+**進捗**: 開始時 `TaskCreate(subject="business-deepdive: Step 4 - PPTX 生成 (5枚)")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。本 Step 中は `validate_pptx_after_fill.py` hook が各 fill_*.py 実行後に PPTX 整合性を自動検証する（壊れていれば exit 2 で停止）。
 
 承認後、5 つの PPTX を生成:
 
@@ -244,6 +317,8 @@ python ~/.claude/skills/market-environment-pptx/scripts/fill_market_environment.
 
 ### Step 5: segment_summary.json を出力
 
+**進捗**: 開始時 `TaskCreate(subject="business-deepdive: Step 5 - segment_summary")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。
+
 ```json
 {
   "segment_name": "タクシー事業",
@@ -276,6 +351,8 @@ python ~/.claude/skills/market-environment-pptx/scripts/fill_market_environment.
 `open_questions` は親 `comparison-synthesis-agent` で全社統合の検証論点に集約される。
 
 ### Step 6: 終了
+
+**進捗**: 開始時 `TaskCreate(subject="business-deepdive: Step 6 - 終了処理")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。
 
 #### 単独起動の場合
 - ユーザーに 5 PPTX のフルパスを提示して終了
