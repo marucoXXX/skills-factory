@@ -166,6 +166,35 @@
 - `included_business_models = []`（空配列）は「全モデル統合扱い」を意味し、v0.2 までと同じ挙動（境界なし全プレイヤー対象）
 - 既存の scope.json（`included_business_models` フィールドがない）は `[]` 同等として扱う
 
+### `brand` フィールド（V1 brand-aware 拡張、format_add ブランチで導入）
+
+scope.json に **任意フィールド** `brand` を追加：
+
+| キー | 型 | 値域 | デフォルト | 役割 |
+|---|---|---|---|---|
+| `brand` | string | `"stellar_aiz"` / `"rollup"` | `"stellar_aiz"`（未指定時） | クライアント別 PPTX フォーマット切替 |
+
+#### 責務分担（既存原則の例外）
+
+「scope.json は orchestrator のみ読む」原則は維持しつつ、`brand` は **CLI 引数 `--brand` で fill_*.py に伝播**することを明示する。fill_*.py は scope.json を直接 open しない（既存の単体起動互換も維持）：
+
+```bash
+# orchestrator 内部で:
+brand=$(jq -r '.brand // "stellar_aiz"' $WORK_DIR/$RUN_ID/scope.json)
+python fill_*.py --brand $brand --data ... --output ...
+```
+
+#### V1 で brand-aware 化済の fill スクリプト
+- `fill_customer_profile.py`（commit `b767ee3`）
+- `fill_company_history.py`（commit `c199f03`）
+- `fill_market_environment.py`（commit `128fa15`）
+
+残り 25 fill スクリプトは V2 で順次対応（ISSUE-009）。
+未対応 fill_*.py に `--brand` を渡しても無視される（後方互換）。
+
+#### 詳細
+`skills/_common/references/brand_migration_guide.md` を参照。
+
 ---
 
 ## 5. オーケストレーター実装時のチェックリスト
