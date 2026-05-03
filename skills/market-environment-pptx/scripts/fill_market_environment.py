@@ -17,6 +17,11 @@ Usage:
 
 import argparse, copy, json, math, os, sys
 
+# ── brand_resolver bootstrap (skills/_common/lib/brand_resolver.py) ──
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(SKILL_DIR, "..", "_common", "lib"))
+from brand_resolver import resolve_brand, add_brand_arg  # noqa: E402
+
 from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
 from pptx.enum.text import PP_ALIGN
@@ -66,7 +71,9 @@ SHAPE_CHART_TITLE  = "Text Placeholder 2"
 SHAPE_CONTENT_AREA = "Content Area"
 SHAPE_SOURCE       = "Source"
 
-# ── レイアウト定数 ──
+# ── Brand-aware module globals ──
+# Default values match stella for safety; reassigned in main() via _apply_theme(theme)
+# after argparse resolves --brand. SHAPE_* names above are template-structure invariants.
 PANEL_Y = Inches(1.50)
 CHART_X = Inches(0.50);  CHART_W = Inches(9.00);  CHART_H = Inches(5.00)
 CHART_Y = PANEL_Y + Inches(0.55)
@@ -75,9 +82,10 @@ CAGR_X  = Inches(9.80);  CAGR_W  = Inches(3.20)
 COLOR_TEXT   = RGBColor(0x33, 0x33, 0x33)
 COLOR_SOURCE = RGBColor(0x66, 0x66, 0x66)
 
-# ─── 共通配色（正本: skills/_common/styles/chart_palette.md） ───
-# 編集時は _common/styles/chart_palette.md と他 4 スキルの fill_*.py も同期更新
-# CHART_PALETTE には TARGET_COLOR(赤) と OTHER_COLOR(灰) を含めない（palette 外で固定）
+# ─── 配色（brand 経由で resolve、stella 既定値を初期値として保持） ───
+# V1 以降は brand theme.json (skills/_common/brands/<id>/theme.json) が単一情報源。
+# 旧来 skills/_common/styles/chart_palette.md の手動同期運用は stella のみ継続
+# （brand-aware にすると Rollup 等は theme.json から自動 resolve され同期負荷が消える）。
 CHART_PALETTE = [
     "#4E79A7", "#F28E2B", "#59A14F", "#76B7B2",
     "#EDC948", "#B07AA1", "#FF9DA7", "#9C755F",
@@ -87,12 +95,45 @@ TARGET_COLOR = "#E15759"
 LABEL_BAR_COLOR = "#4E79A7"
 LABEL_BG_COLOR = "#E8EEF5"
 
+FONT_JP = "Meiryo UI"
+
 
 def _palette_color(index: int, total: int) -> str:
     if total <= 1:
         return CHART_PALETTE[0]
     return CHART_PALETTE[index % len(CHART_PALETTE)]
-FONT_JP      = "Meiryo UI"
+
+
+def _apply_theme(theme):
+    """Reassign module-level brand-aware globals from a resolved BrandTheme.
+
+    Called once from main() after `--brand` is parsed. Module-load-time
+    defaults above remain correct for direct imports / tests that don't
+    go through main() (regression safety net).
+    """
+    global PANEL_Y, CHART_X, CHART_W, CHART_H, CHART_Y, CAGR_X, CAGR_W
+    global COLOR_TEXT, COLOR_SOURCE
+    global CHART_PALETTE, OTHER_COLOR, TARGET_COLOR, LABEL_BAR_COLOR, LABEL_BG_COLOR
+    global FONT_JP
+
+    PANEL_Y = theme.layout("panel_y_in")
+    CHART_X = theme.layout("chart_x_in")
+    CHART_W = theme.layout("chart_w_in")
+    CHART_H = theme.layout("chart_h_in")
+    CHART_Y = PANEL_Y + theme.layout("chart_y_offset_in")
+    CAGR_X  = theme.layout("cagr_x_in")
+    CAGR_W  = theme.layout("cagr_w_in")
+
+    COLOR_TEXT   = theme.color("text")
+    COLOR_SOURCE = theme.color("source")
+
+    CHART_PALETTE   = list(theme.chart_palette)
+    OTHER_COLOR     = theme.hex("highlight_other")
+    TARGET_COLOR    = theme.hex("highlight_target")
+    LABEL_BAR_COLOR = theme.hex("label_bar")
+    LABEL_BG_COLOR  = theme.hex("label_bg")
+
+    FONT_JP = theme.font_ea
 
 # ── ユーティリティ ──
 def find_shape(slide, name):
@@ -565,9 +606,22 @@ def add_period_separator(slide, cfg, cl, ct, cw, ch):
 # ── メイン ──
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", required=True); ap.add_argument("--template", required=True)
+    ap.add_argument("--data", required=True)
+    ap.add_argument(
+        "--template", required=False, default=None,
+        help="Optional explicit template path. If omitted, resolved from --brand "
+             "(via brand_resolver.template_path).",
+    )
     ap.add_argument("--output", required=True)
+    add_brand_arg(ap)
     args = ap.parse_args()
+
+    theme = resolve_brand(args.brand, SKILL_DIR)
+    _apply_theme(theme)
+    template_path = args.template or theme.template_path(SKILL_DIR, "market-environment")
+    print(f"  ✓ Brand: {theme.id} ({theme.label})")
+    print(f"  ✓ Template: {template_path}")
+
     with open(args.data, "r", encoding="utf-8") as f: data = json.load(f)
 
     _mm = data.get("main_message", "")
@@ -577,7 +631,7 @@ def main():
         )
 
     print("=== 市場環境分析スライド生成（ネイティブPPTX）===")
-    prs = Presentation(args.template); slide = prs.slides[0]
+    prs = Presentation(template_path); slide = prs.slides[0]
 
     set_textbox_text(find_shape(slide, SHAPE_MAIN_MESSAGE), data.get("main_message",""))
     set_textbox_text(find_shape(slide, SHAPE_CHART_TITLE), data.get("chart_title","市場環境分析"))

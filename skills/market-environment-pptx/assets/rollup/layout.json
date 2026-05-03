@@ -1,0 +1,10 @@
+{
+  "_comment": "V1 placeholder — uses stellar_aiz template (16:9) via brand_resolver.template_path() fallback. Layout values match stella since the rendered slide is 16:9. V2 will introduce a curated A4-landscape Rollup template with its own layout values.",
+  "panel_y_in": 1.50,
+  "chart_x_in": 0.50,
+  "chart_w_in": 9.00,
+  "chart_h_in": 5.00,
+  "chart_y_offset_in": 0.55,
+  "cagr_x_in": 9.80,
+  "cagr_w_in": 3.20
+}
