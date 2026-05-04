@@ -4,8 +4,8 @@
   "label": "Rollup Standard Format (vF 20250928)",
   "spec_doc": "skills/_common/brands/rollup/format_spec.md",
   "slide_size": {
-    "width_in": 11.69,
-    "height_in": 8.27,
+    "width_in": 11.693,
+    "height_in": 8.268,
     "aspect": "A4-landscape"
   },
   "fonts": {

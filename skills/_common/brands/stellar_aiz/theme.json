@@ -8,7 +8,7 @@
     "aspect": "16:9"
   },
   "fonts": {
-    "latin": "Meiryo UI",
+    "latin": "Arial",
     "ea": "Meiryo UI",
     "fallback_ea": ["MS PGothic", "Hiragino Sans"]
   },
