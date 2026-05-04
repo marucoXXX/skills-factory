@@ -258,7 +258,7 @@ def build_overview_table(slide, items, left, top, width):
     if _THEME is not None and _THEME.line_height_pt() is not None:
         min_floor = Inches((_THEME.line_height_pt() + 4) / 72.0)  # 12pt 行 + 4pt 余白
         section_title_h = Inches(0.40)
-        bottom_margin = Inches(0.05)
+        bottom_margin = Inches(0.02)  # ユーザー視覚調整 (2026-05-04): 0.05→0.02 in
         available_h = SOURCE_Y - PANEL_Y - section_title_h - bottom_margin
         total_min_h = min_floor * n_rows
         if total_min_h < available_h:
@@ -742,9 +742,15 @@ def add_cagr_annotation(slide, perf_data, chart_left, chart_top, chart_width, ch
     print(f"  ✓ CAGR注釈: {cagr_text} ({data[0]['year']}→{data[-1]['year']})")
 
 
-def add_unit_label(slide, text, left, top, width):
-    """単位表記テキストを追加（左寄せ）"""
-    txBox = slide.shapes.add_textbox(left, top, width, Inches(0.22))
+def add_unit_label(slide, text, left, top, width, height=None):
+    """単位表記テキストを追加（左寄せ）。
+
+    height default: stella regression のため Inches(0.22) (旧挙動)。
+    roleup では呼出側が Inches(0.27) を指定。
+    """
+    if height is None:
+        height = Inches(0.22)
+    txBox = slide.shapes.add_textbox(left, top, width, height)
     tf = txBox.text_frame
     p = tf.paragraphs[0]
     p.alignment = PP_ALIGN.LEFT
@@ -932,24 +938,34 @@ def main():
     # セクションタイトル
     add_section_title(slide, section_title_right, RIGHT_X, PANEL_Y, RIGHT_W)
 
-    # 単位表記（左側）
+    # 単位表記:
+    # stella: 既存通り chart 左上 (RIGHT_X, panel_y+0.35) に幅 2.50 in。
+    # roleup: ユーザー視覚調整 (2026-05-04) で chart 右上 (9.75, 1.99) に幅 1.53 in。
     unit_label = perf.get("unit_label", "")
     if unit_label:
-        add_unit_label(slide, unit_label, RIGHT_X, PANEL_Y + Inches(0.35), Inches(2.50))
+        if _THEME is not None and _THEME.id != "stellar_aiz":
+            add_unit_label(slide, unit_label, Inches(9.75), Inches(1.99),
+                           Inches(1.53), height=Inches(0.27))
+        else:
+            add_unit_label(slide, unit_label, RIGHT_X, PANEL_Y + Inches(0.35), Inches(2.50))
 
     # カスタム凡例（右側）
     add_custom_legend(slide, perf, RIGHT_X, PANEL_Y + Inches(0.35), RIGHT_W)
 
-    # 複合チャート — 利用可能スペースの垂直中央に配置。
-    # available = SOURCE_Y(下端) - PANEL_Y - section_title_h(0.40) - bottom_margin(0.05)
-    # stella の既存値: 1.50 + 0.55 = 2.05 と一致する数値設計 (regression-zero)。
-    section_title_h = Inches(0.40)
-    bottom_margin = Inches(0.05)
-    available_top = PANEL_Y + section_title_h
-    available_bottom = SOURCE_Y - bottom_margin
-    chart_top = available_top + ((available_bottom - available_top) - CHART_H) // 2
-    if chart_top < available_top:
-        chart_top = available_top  # 下限保証
+    # 複合チャート位置:
+    # roleup: ユーザー視覚調整 (2026-05-04) で chart_top = panel_y + 0.95 = 2.46 に固定。
+    # stella: 利用可能スペースの垂直中央配置(旧 chart_top = panel_y + 0.55 = 2.05 と一致、
+    #         regression-zero 維持)。
+    if _THEME is not None and _THEME.id != "stellar_aiz":
+        chart_top = PANEL_Y + Inches(0.95)
+    else:
+        section_title_h = Inches(0.40)
+        bottom_margin = Inches(0.05)
+        available_top = PANEL_Y + section_title_h
+        available_bottom = SOURCE_Y - bottom_margin
+        chart_top = available_top + ((available_bottom - available_top) - CHART_H) // 2
+        if chart_top < available_top:
+            chart_top = available_top
     chart_frame = build_combo_chart(slide, perf, RIGHT_X, chart_top, RIGHT_W, CHART_H)
 
     # CAGR注釈

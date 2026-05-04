@@ -473,8 +473,18 @@ def add_section_subtitle(slide, text, left, top, width, theme):
     return txBox
 
 
-def add_unit_label(slide, text, left, top):
-    tb = slide.shapes.add_textbox(left, top, Inches(3.0), Inches(0.25))
+def add_unit_label(slide, text, left, top, width=None, height=None):
+    """Unit label textbox.
+
+    width default: stella regression のため 3.0 inch (旧挙動)。
+    height default: stella regression のため 0.25 inch (旧挙動)。
+    roleup ではテキスト幅・高さにフィットする値を呼出側で指定。
+    """
+    if width is None:
+        width = Inches(3.0)
+    if height is None:
+        height = Inches(0.25)
+    tb = slide.shapes.add_textbox(left, top, width, height)
     p = tb.text_frame.paragraphs[0]; p.alignment = PP_ALIGN.LEFT
     r = p.add_run(); r.text = text; r.font.size = Pt(11)
     r.font.color.rgb = COLOR_TEXT; r.font.name = FONT_JP
@@ -690,18 +700,25 @@ def main():
 
     cfg = data.get("chart", {})
     ul = cfg.get("unit_label","")
-    if ul: add_unit_label(slide, ul, CHART_X, PANEL_Y)
 
-    # サブタイトル(セクション見出し): roleup のみ表示。stella は section_title field 未使用で
-    # regression-zero (sample_data.json に存在しても表示しない)。
-    section_title = data.get("section_title", "")
-    if section_title and theme.id != "stellar_aiz":
-        add_section_subtitle(slide, section_title, CHART_X, PANEL_Y, CHART_W + CAGR_W, theme)
-
-    # 凡例位置: stella は既存通り PANEL_Y + 0.25。
-    # roleup は subtitle (PANEL_Y) と重ならないよう PANEL_Y + 0.40 に下げる。
-    legend_top = PANEL_Y + (Inches(0.40) if theme.id != "stellar_aiz" else Inches(0.25))
-    add_custom_legend(slide, cfg, CHART_X, legend_top, CHART_W)
+    if theme.id == "stellar_aiz":
+        # stella: 既存挙動維持 (生成順序・座標が旧と完全一致 → regression-zero)
+        if ul:
+            add_unit_label(slide, ul, CHART_X, PANEL_Y)
+        add_custom_legend(slide, cfg, CHART_X, PANEL_Y + Inches(0.25), CHART_W)
+    else:
+        # roleup (ユーザー視覚調整 2026-05-04):
+        # サブタイトル: panel_y+0.05 に section_title (12pt 左寄せ #897141)
+        # 凡例: panel_y+0.51, chart_x+0.21 (0.62 in)
+        # 単位ラベル: 凡例右側 chart 右上 (6.52, panel_y+0.51) に幅 1.39 in
+        section_title = data.get("section_title", "")
+        if section_title:
+            add_section_subtitle(slide, section_title, CHART_X, PANEL_Y + Inches(0.05),
+                                 CHART_W + CAGR_W, theme)
+        add_custom_legend(slide, cfg, CHART_X + Inches(0.21), PANEL_Y + Inches(0.51), CHART_W)
+        if ul:
+            add_unit_label(slide, ul, Inches(6.52), PANEL_Y + Inches(0.51),
+                           Inches(1.39), height=Inches(0.27))
     build_stacked_combo_chart(slide, cfg, CHART_X, CHART_Y, CHART_W, CHART_H)
     add_period_separator(slide, cfg, CHART_X, CHART_Y, CHART_W, CHART_H)
     add_growth_annotations(slide, cfg, CHART_X, CHART_Y, CHART_W, CHART_H)
