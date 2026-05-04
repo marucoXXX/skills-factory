@@ -1,13 +1,13 @@
 {
-  "_comment": "V1 placeholder — uses stellar_aiz template (16:9) via brand_resolver.template_path() fallback. Layout values match stella since the rendered slide is 16:9. V2 will introduce a curated A4-landscape Rollup template with its own layout values.",
-  "panel_y_in": 1.50,
+  "_comment": "Phase 3 — A4 横 (11.693×8.268 in) 公式テンプレ slide4 (レイアウト②: 左右 2 分割) から逆算。subtitle (0.42,1.51,5.44,0.36) → panel_y=1.51, left content area (0.41,1.92,5.23,5.64), right content area (6.07,1.92,5.23,5.64), source (0.41,7.57,10.88,0.44). chart 利用可能高さ = 7.57 - (1.51+0.55) = 5.51 inch、安全側に 4.50 inch 確保",
+  "panel_y_in": 1.51,
   "left_x_in": 0.41,
-  "left_w_in": 5.80,
-  "right_x_in": 6.50,
-  "right_w_in": 6.40,
-  "chart_h_in": 4.80,
+  "left_w_in": 5.23,
+  "right_x_in": 6.07,
+  "right_w_in": 5.23,
+  "chart_h_in": 4.50,
   "source_x_in": 0.41,
-  "source_y_in": 7.05,
-  "source_w_in": 8.00,
-  "source_h_in": 0.30
+  "source_y_in": 7.57,
+  "source_w_in": 10.88,
+  "source_h_in": 0.44
 }
