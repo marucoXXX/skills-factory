@@ -8,16 +8,16 @@ Checks performed:
   4. Required shapes exist in the slide:
        - 'Title 1'           (SHAPE_MAIN_MESSAGE for all Pilot 3)
        - 'Text Placeholder 2' (SHAPE_CHART_TITLE for all Pilot 3)
-       - 'Source 3'          (rollup only, Phase 4 reference)
+       - 'Source 3'          (roleup only, Phase 4 reference)
   5. No required shapes are duplicated in a way that would confuse fill_*.py
      (e.g. two shapes both named 'Title 1').
 
 Usage:
   python3 tools/check_template_invariants.py \\
-      --brand rollup \\
-      skills/customer-profile-pptx/assets/rollup/customer-profile-template.pptx \\
-      skills/company-history-pptx/assets/rollup/company-history-template.pptx \\
-      skills/market-environment-pptx/assets/rollup/market-environment-template.pptx
+      --brand roleup \\
+      skills/customer-profile-pptx/assets/roleup/customer-profile-template.pptx \\
+      skills/company-history-pptx/assets/roleup/company-history-template.pptx \\
+      skills/market-environment-pptx/assets/roleup/market-environment-template.pptx
 
   python3 tools/check_template_invariants.py \\
       --brand stellar_aiz \\
@@ -43,11 +43,11 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # Per-brand required shape names.
 REQUIRED_SHAPES_BY_BRAND = {
     "stellar_aiz": ("Title 1", "Text Placeholder 2"),
-    "rollup":      ("Title 1", "Text Placeholder 2", "Source 3"),
+    "roleup":      ("Title 1", "Text Placeholder 2", "Source 3"),
 }
 
 # Tolerance for slide size in EMU. 5000 EMU ≈ 0.0055 inch — accommodates the
-# slight rounding gap between the precise A4 size in the official rollup pptx
+# slight rounding gap between the precise A4 size in the official roleup pptx
 # and the rounded values shown in theme.json.
 SLIDE_SIZE_TOL_EMU = 5000
 

@@ -344,15 +344,15 @@ python <SKILL_DIR>/scripts/fill_market_environment.py \
   --data {{WORK_DIR}}/market_environment_data.json \
   --output {{OUTPUT_DIR}}/MarketEnvironment_output.pptx
 
-# Rollup 社向け（Yu Gothic UI / 褐色 chart_palette）
+# Roleup 社向け（Yu Gothic UI / 褐色 chart_palette）
 python <SKILL_DIR>/scripts/fill_market_environment.py \
   --data {{WORK_DIR}}/market_environment_data.json \
-  --brand rollup \
+  --brand roleup \
   --output {{OUTPUT_DIR}}/MarketEnvironment_output.pptx
 ```
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
-`--brand` の有効値は `stellar_aiz` / `rollup`、デフォルトは `stellar_aiz`。
+`--brand` の有効値は `stellar_aiz` / `roleup`、デフォルトは `stellar_aiz`。
 `--template` 省略時は brand から自動解決（stella にフォールバック）。
 オーケストレーター（market-overview-agent / strategy-report-agent 等）から呼ぶ場合、
 parent は scope.json の `brand` を `--brand` で渡す。
@@ -456,10 +456,10 @@ python -m markitdown {{OUTPUT_DIR}}/MarketEnvironment_output.pptx
 |---|---|
 | `assets/stellar_aiz/market-environment-template.pptx` | Stellar AIZ 用テンプレート（16:9、company-overview-templateベース） |
 | `assets/stellar_aiz/layout.json` | Stellar AIZ 用座標定義 |
-| `assets/rollup/layout.json` | Rollup 用座標定義（V1 では Stella と同値、curated テンプレ未配置時はフォールバック） |
+| `assets/roleup/layout.json` | Roleup 用座標定義（V1 では Stella と同値、curated テンプレ未配置時はフォールバック） |
 
-V1 では Rollup 専用テンプレ pptx は配置せず、`brand_resolver.template_path()` のフォールバック経由で stella テンプレを流用する。
-V2 で Rollup curated テンプレ（A4 横、Yu Gothic UI、褐色アクセント）を `assets/rollup/market-environment-template.pptx` として導入する予定。
+V1 では Roleup 専用テンプレ pptx は配置せず、`brand_resolver.template_path()` のフォールバック経由で stella テンプレを流用する。
+V2 で Roleup curated テンプレ（A4 横、Yu Gothic UI、褐色アクセント）を `assets/roleup/market-environment-template.pptx` として導入する予定。
 
 ## スクリプト
 

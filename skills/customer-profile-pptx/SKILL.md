@@ -142,10 +142,10 @@ python <SKILL_DIR>/scripts/fill_customer_profile.py \
   --data {{WORK_DIR}}/customer_profile_data.json \
   --output {{OUTPUT_DIR}}/CustomerProfile_output.pptx
 
-# Rollup 社向け
+# Roleup 社向け
 python <SKILL_DIR>/scripts/fill_customer_profile.py \
   --data {{WORK_DIR}}/customer_profile_data.json \
-  --brand rollup \
+  --brand roleup \
   --output {{OUTPUT_DIR}}/CustomerProfile_output.pptx
 
 # テンプレートを明示指定（オプション）
@@ -156,7 +156,7 @@ python <SKILL_DIR>/scripts/fill_customer_profile.py \
 ```
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
-`--brand` の有効値は `stellar_aiz` / `rollup`、デフォルトは `stellar_aiz`。
+`--brand` の有効値は `stellar_aiz` / `roleup`、デフォルトは `stellar_aiz`。
 `--template` は省略可。省略時は brand から自動解決される
 （`assets/<brand>/customer-profile-template.pptx`、未存在なら stellar_aiz にフォールバック）。
 オーケストレーター（market-overview-agent / company-deepdive-agent 等）から呼ぶ場合、
@@ -232,10 +232,10 @@ python -m markitdown {{OUTPUT_DIR}}/CustomerProfile_output.pptx
 |---|---|
 | `assets/stellar_aiz/customer-profile-template.pptx` | Stellar AIZ 用テンプレート（company-history-template ベース、16:9） |
 | `assets/stellar_aiz/layout.json` | Stellar AIZ 用座標定義（panel_y / left_x / right_x 等） |
-| `assets/rollup/layout.json` | Rollup 用座標定義（V1 では Stella と同値、curated テンプレ未配置時はフォールバック） |
+| `assets/roleup/layout.json` | Roleup 用座標定義（V1 では Stella と同値、curated テンプレ未配置時はフォールバック） |
 
-V1 では Rollup 専用テンプレ pptx は配置せず、`brand_resolver.template_path()` のフォールバック機構経由で `assets/stellar_aiz/customer-profile-template.pptx` を流用する。
-V2 で Rollup curated テンプレ（A4 横、Yu Gothic UI、褐色アクセント）を `assets/rollup/customer-profile-template.pptx` として導入する予定。
+V1 では Roleup 専用テンプレ pptx は配置せず、`brand_resolver.template_path()` のフォールバック機構経由で `assets/stellar_aiz/customer-profile-template.pptx` を流用する。
+V2 で Roleup curated テンプレ（A4 横、Yu Gothic UI、褐色アクセント）を `assets/roleup/customer-profile-template.pptx` として導入する予定。
 
 ## スクリプト
 

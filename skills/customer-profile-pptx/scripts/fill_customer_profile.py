@@ -12,7 +12,7 @@ Usage:
   python fill_customer_profile.py \
     --data /home/claude/customer_profile_data.json \
     --output /mnt/user-data/outputs/CustomerProfile_output.pptx \
-    [--brand stellar_aiz|rollup] [--template <path>]
+    [--brand stellar_aiz|roleup] [--template <path>]
 
 `--brand` (default: stellar_aiz) selects the output format. Theme JSON,
 layout coordinates, and the per-brand template under assets/<brand>/ are
@@ -44,7 +44,7 @@ from brand_resolver import resolve_brand, add_brand_arg  # noqa: E402
 from format_helpers import apply_line_spacing, require_source  # noqa: E402
 
 SKILL_ID = "customer-profile-pptx"
-SHAPE_SOURCE = "Source 3"   # rollup template only; stella falls back to add_textbox
+SHAPE_SOURCE = "Source 3"   # roleup template only; stella falls back to add_textbox
 
 def _finalize_pptx(path):
     """LibreOffice roundtrip to normalize OOXML so PowerPoint stops asking for repair.
@@ -240,7 +240,7 @@ def build_overview_table(slide, items, left, top, width):
     col1_w = width - col0_w
 
     # 行の最小高さ — PPTがテキスト折り返しに応じて自動拡張する。
-    # brand に line_height_pt があれば余白込みで動的計算 (rollup 12pt → 0.20in 程度)、
+    # brand に line_height_pt があれば余白込みで動的計算 (roleup 12pt → 0.20in 程度)、
     # なければ stella の既存値 0.35in (14pt 行) を維持。
     if _THEME is not None and _THEME.line_height_pt() is not None:
         # 12pt 行 + 4pt 余白 = 16pt = 0.222in
@@ -317,7 +317,7 @@ def _style_cell(cell, text, bold, font_size, row_idx):
     pPr = etree.SubElement(p_elem, qn("a:pPr"))
     pPr.set("algn", "l")
 
-    # 行間: brand に line_height_pt があれば spcPts (rollup=12pt) で固定、
+    # 行間: brand に line_height_pt があれば spcPts (roleup=12pt) で固定、
     # なければ既存挙動の spcPct 100% (stella 既定)。
     if _THEME is not None and _THEME.line_height_pt() is not None:
         apply_line_spacing(pPr, _THEME)
@@ -808,7 +808,7 @@ def add_custom_legend(slide, perf_data, left, top, width):
 def add_source_label(slide, text):
     """スライド左下に出典テキストを追加。
 
-    rollup テンプレに 'Source 3' placeholder があればそこへ書き込み、
+    roleup テンプレに 'Source 3' placeholder があればそこへ書き込み、
     無ければ動的に textbox を生成 (stella の既存挙動)。
     """
     src_shape = None
@@ -869,7 +869,7 @@ def main():
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    # Phase 4 (ISSUE-011): rollup は出所必須。stella は no-op (既存 warning 維持)。
+    # Phase 4 (ISSUE-011): roleup は出所必須。stella は no-op (既存 warning 維持)。
     require_source(data, theme, skill_id=SKILL_ID)
 
     prs = Presentation(template_path)

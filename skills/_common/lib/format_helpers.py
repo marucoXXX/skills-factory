@@ -3,7 +3,7 @@
 Centralised conversions for:
   - cell value rendering (zero / negative / thousands separator)
   - fiscal-period strings ("YY/MM期" vs free-form)
-  - paragraph line-spacing (rollup spcPts vs stella default)
+  - paragraph line-spacing (roleup spcPts vs stella default)
 
 All helpers accept a `BrandTheme` and fall back to neutral behaviour when the
 theme does not specify a key, so they are safe to call from skills that mix
@@ -62,7 +62,7 @@ def format_cell_value(value, theme) -> str:
 def format_fiscal_period(year: int, month: int, theme) -> str:
     """Render a fiscal period label per the brand's fiscal_period_format.
 
-    Currently only "YY/MM期" is recognised (rollup); when the theme does not
+    Currently only "YY/MM期" is recognised (roleup); when the theme does not
     specify a format, returns "{year}/{month:02d}" without a suffix.
 
     Args:

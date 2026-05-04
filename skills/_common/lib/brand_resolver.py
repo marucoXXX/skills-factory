@@ -26,11 +26,11 @@ Schema 2.0 accessors (Phase 1, ISSUE-011):
 
     body_sz = theme.font_size_body_pt(skill_id="executive-summary-pptx")
     nf      = theme.number_format_excel()    # "_ * #,##0_ ;_ * (#,##0)_ ;_ \"-\"_ ;_ @_ "
-    lh      = theme.line_height_pt()         # 12 for rollup, None for stella
+    lh      = theme.line_height_pt()         # 12 for roleup, None for stella
     neg     = theme.negative_format()        # "paren" / "triangle" / "minus"
-    z       = theme.zero_text()              # "-" for rollup, "0" for stella
-    fp      = theme.fiscal_period_format()   # "YY/MM期" for rollup, None for stella
-    guide_x = theme.layout_rule("left_align_guide_x_in")  # 0.41 for rollup, None for stella
+    z       = theme.zero_text()              # "-" for roleup, "0" for stella
+    fp      = theme.fiscal_period_format()   # "YY/MM期" for roleup, None for stella
+    guide_x = theme.layout_rule("left_align_guide_x_in")  # 0.41 for roleup, None for stella
     if theme.is_source_required() and not data.get("source"):
         raise ValueError("source required")
 """
@@ -45,7 +45,7 @@ from typing import Optional
 from pptx.dml.color import RGBColor
 from pptx.util import Inches, Pt
 
-VALID_BRANDS = ("stellar_aiz", "rollup")
+VALID_BRANDS = ("stellar_aiz", "roleup")
 DEFAULT_BRAND = "stellar_aiz"
 
 # Resolve _common/brands/<id>/theme.json relative to this file.

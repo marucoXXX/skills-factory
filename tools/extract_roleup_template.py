@@ -1,14 +1,14 @@
-"""Extract a single-slide rollup template from the official rollup style guide.
+"""Extract a single-slide roleup template from the official roleup style guide.
 
 Usage:
-  python3 tools/extract_rollup_template.py \\
-      --source work/rollup_official_templates/standard_format_vF_20250928.pptx \\
+  python3 tools/extract_roleup_template.py \\
+      --source work/roleup_official_templates/standard_format_vF_20250928.pptx \\
       --slide-index 3 \\
-      --output skills/customer-profile-pptx/assets/rollup/customer-profile-template.pptx \\
-      --layout-name "rollup-2col"
+      --output skills/customer-profile-pptx/assets/roleup/customer-profile-template.pptx \\
+      --layout-name "roleup-2col"
 
 What this does:
-  1. Open the official multi-slide rollup style guide pptx.
+  1. Open the official multi-slide roleup style guide pptx.
   2. Extract one selected slide (--slide-index, 1-based).
   3. Strip sample text content from text shapes (so fill_*.py writes into a
      clean placeholder).
@@ -54,17 +54,28 @@ ET.register_namespace("a", NS_A)
 ET.register_namespace("p", NS_P)
 ET.register_namespace("r", NS_R)
 
-# Mapping: official-template shape name → rollup-template shape name.
-# A "second occurrence" of the same source name (sub-panel on the right) gets
-# the suffix; the first occurrence wins the bare rename.
+# Mapping: official-template shape name → roleup-template shape name.
+# Aligned with format_spec.md (vF 20250928) shape role assignment per user
+# feedback (2026-05-04):
+#   - "タイトル 3" (22pt slide title position, p.3 of vF) → 'Title 1'
+#     = main_message input slot
+#   - "テキスト プレースホルダー 4" (14pt key message position) → 'Text Placeholder 2'
+#     = chart_title input slot
+#   - "テキスト プレースホルダー 3" (6pt source position) → 'Source 3'
+#     = source input slot
 SHAPE_RENAME = {
-    "テキスト プレースホルダー 4": ["Title 1"],
-    "テキスト プレースホルダー 5": ["Text Placeholder 2", "Text Placeholder 2 Right"],
+    "タイトル 3": ["Title 1"],
+    "テキスト プレースホルダー 4": ["Text Placeholder 2"],
     "テキスト プレースホルダー 3": ["Source 3"],
 }
 
-# Source shape names that should be removed entirely (sample 22pt title).
-SHAPES_TO_REMOVE = {"タイトル 3"}
+# Source shape names that should be removed entirely.
+# "テキスト プレースホルダー 5" (12pt subtitle position, may appear twice in
+# 2-column layouts like p.4) is removed because fill_*.py creates dynamic
+# textboxes for section titles at the same coordinates (driven by
+# layout.json/panel_y_in). Decoration shapes (object 8 separators, 正方形/長方形
+# panels) are preserved.
+SHAPES_TO_REMOVE = {"テキスト プレースホルダー 5"}
 
 
 def extract_slide(src_pptx: Path, dst_pptx: Path, slide_idx: int) -> None:
@@ -72,7 +83,7 @@ def extract_slide(src_pptx: Path, dst_pptx: Path, slide_idx: int) -> None:
     if not src_pptx.exists():
         raise FileNotFoundError(f"source pptx not found: {src_pptx}")
 
-    tmp_root = Path(tempfile.mkdtemp(prefix="rollup_extract_"))
+    tmp_root = Path(tempfile.mkdtemp(prefix="roleup_extract_"))
     src_dir = tmp_root / "src"
     src_dir.mkdir()
     with zipfile.ZipFile(src_pptx, "r") as z:
@@ -171,7 +182,7 @@ def rename_and_clean_shapes(pptx_path: Path) -> dict:
 
     Returns a dict of {old_name: new_name(s)} for verification.
     """
-    tmp_root = Path(tempfile.mkdtemp(prefix="rollup_rename_"))
+    tmp_root = Path(tempfile.mkdtemp(prefix="roleup_rename_"))
     work = tmp_root / "work"
     work.mkdir()
     with zipfile.ZipFile(pptx_path, "r") as z:

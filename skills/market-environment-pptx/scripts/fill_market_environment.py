@@ -85,7 +85,7 @@ COLOR_SOURCE = RGBColor(0x66, 0x66, 0x66)
 # ─── 配色（brand 経由で resolve、stella 既定値を初期値として保持） ───
 # V1 以降は brand theme.json (skills/_common/brands/<id>/theme.json) が単一情報源。
 # 旧来 skills/_common/styles/chart_palette.md の手動同期運用は stella のみ継続
-# （brand-aware にすると Rollup 等は theme.json から自動 resolve され同期負荷が消える）。
+# （brand-aware にすると Roleup 等は theme.json から自動 resolve され同期負荷が消える）。
 CHART_PALETTE = [
     "#4E79A7", "#F28E2B", "#59A14F", "#76B7B2",
     "#EDC948", "#B07AA1", "#FF9DA7", "#9C755F",

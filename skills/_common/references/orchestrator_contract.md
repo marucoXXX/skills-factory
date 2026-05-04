@@ -172,7 +172,7 @@ scope.json に **任意フィールド** `brand` を追加：
 
 | キー | 型 | 値域 | デフォルト | 役割 |
 |---|---|---|---|---|
-| `brand` | string | `"stellar_aiz"` / `"rollup"` | `"stellar_aiz"`（未指定時） | クライアント別 PPTX フォーマット切替 |
+| `brand` | string | `"stellar_aiz"` / `"roleup"` | `"stellar_aiz"`（未指定時） | クライアント別 PPTX フォーマット切替 |
 
 #### 責務分担（既存原則の例外）
 

@@ -1,8 +1,8 @@
 {
   "$schema_version": "2.0",
-  "id": "rollup",
-  "label": "Rollup Standard Format (vF 20250928)",
-  "spec_doc": "skills/_common/brands/rollup/format_spec.md",
+  "id": "roleup",
+  "label": "Roleup Standard Format (vF 20250928)",
+  "spec_doc": "skills/_common/brands/roleup/format_spec.md",
   "slide_size": {
     "width_in": 11.693,
     "height_in": 8.268,

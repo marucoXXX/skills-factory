@@ -138,7 +138,7 @@ def _is_other_player(name: str) -> bool:
 
 - 2026-04-29: 初版作成。p1-golden-frog.md プラン承認に基づき 5 スキルへ展開
 - 2026-04-29: P6/P7 色不整合バグ修正（snug-dancing-alpaca.md）。CHART_PALETTE を 10→8 色に削減（赤・灰を palette 外へ）、`_is_other_player()` で「その他」判定を前方一致化、配列 index 直引きに統一、`NON_TARGET_PALETTE` 廃止
-- 2026-05-04: brand-aware 化（format_add ブランチ、Phase B-3 commit `128fa15`）。本ファイル §1〜§4 は **stella ブランドの正本として維持**、市場環境 fill が brand 経由で resolve するように変更。新ブランド（rollup 等）の chart_palette は `skills/_common/brands/<id>/theme.json` の単一源で管理。詳細は §6 参照
+- 2026-05-04: brand-aware 化（format_add ブランチ、Phase B-3 commit `128fa15`）。本ファイル §1〜§4 は **stella ブランドの正本として維持**、市場環境 fill が brand 経由で resolve するように変更。新ブランド（roleup 等）の chart_palette は `skills/_common/brands/<id>/theme.json` の単一源で管理。詳細は §6 参照
 
 ---
 
@@ -151,15 +151,15 @@ def _is_other_player(name: str) -> bool:
 
 stella 内の他 4 同期対象スキル（market-share / positioning-map / executive-summary / pest-analysis）は **V1 範囲外**で hardcode のまま継続（V2 で brand-aware 化予定）。それまでは本ファイルが stella 5 スキル間の手動同期源として機能。
 
-### 6.2 rollup（および将来の追加ブランド）の chart_palette
+### 6.2 roleup（および将来の追加ブランド）の chart_palette
 
-`skills/_common/brands/rollup/theme.json` の `chart_palette` フィールドが**単一情報源**。
+`skills/_common/brands/roleup/theme.json` の `chart_palette` フィールドが**単一情報源**。
 fill_*.py が `theme.chart_palette` で resolve するため、本ファイルと別系統で管理される。
 
 | ブランド | chart_palette 同期源 | 同期負荷 |
 |---|---|---|
 | stellar_aiz | 本ファイル（手動 5 同期） | 5 ファイル × 編集ごと |
-| rollup | `_common/brands/rollup/theme.json`（自動 resolve） | 0 |
+| roleup | `_common/brands/roleup/theme.json`（自動 resolve） | 0 |
 | 追加ブランド | `_common/brands/<id>/theme.json`（自動 resolve） | 0 |
 
 新ブランドは theme.json 単一源で済むため、ISSUE-001（@import 機構）の必要性は低下。

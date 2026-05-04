@@ -9,7 +9,7 @@ fill_company_history.py — 会社沿革データをPPTXネイティブテーブ
   python fill_company_history.py \
     --data /home/claude/company_history_data.json \
     --output /mnt/user-data/outputs/CompanyHistory_output.pptx \
-    [--brand stellar_aiz|rollup] [--template <path>]
+    [--brand stellar_aiz|roleup] [--template <path>]
 
 `--brand` (default: stellar_aiz) selects the output format. `--template`
 is optional; if omitted it is resolved via brand_resolver.template_path()

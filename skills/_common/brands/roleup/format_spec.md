@@ -1,8 +1,8 @@
-# Rollup Standard Format (vF 20250928) 正本仕様書
+# Roleup Standard Format (vF 20250928) 正本仕様書
 
-**版**: vF 20250928 / **確定日**: 2026-05-04 / **出典**: `work/rollup_official_templates/standard_format_vF_20250928.pptx`(slide3「PPT作成時の留意点」)
+**版**: vF 20250928 / **確定日**: 2026-05-04 / **出典**: `work/roleup_official_templates/standard_format_vF_20250928.pptx`(slide3「PPT作成時の留意点」)
 
-本ドキュメントは brand `rollup` の納品標準フォーマットの**正本**である。`theme.json` の数値はすべて本書由来であり、矛盾が生じた場合は本書が優先する。
+本ドキュメントは brand `roleup` の納品標準フォーマットの**正本**である。`theme.json` の数値はすべて本書由来であり、矛盾が生じた場合は本書が優先する。
 
 ---
 
@@ -57,7 +57,7 @@
 ```python
 # brand_resolver.py 拡張 API
 def font_size_body_pt(self, skill_id: str) -> int:
-    if self.id == "rollup" and skill_id == "executive-summary-pptx":
+    if self.id == "roleup" and skill_id == "executive-summary-pptx":
         return 12
     return self.defaults.get("font_size_body_pt", 10)
 ```
@@ -94,7 +94,7 @@ def format_cell_value(value, theme):
             return theme.zero_text()              # "-"
         if value < 0:
             if theme.negative_format() == "paren":
-                return f"({abs(value):,.0f})"     # rollup default
+                return f"({abs(value):,.0f})"     # roleup default
             return f"△{abs(value):,.0f}"          # 許容代替
         return f"{value:,.0f}"
     return str(value)
@@ -161,7 +161,7 @@ slide3 留意点より:
 
 ## 10. 公式テンプレートの 11 レイアウト一覧
 
-`work/rollup_official_templates/standard_format_vF_20250928.pptx` 内のレイアウト見本(Phase 2 で各 skill にどのレイアウトを割り当てるかを決定):
+`work/roleup_official_templates/standard_format_vF_20250928.pptx` 内のレイアウト見本(Phase 2 で各 skill にどのレイアウトを割り当てるかを決定):
 
 | slide | レイアウト名 | 構造 | 想定 skill 用途(暫定) |
 |---|---|---|---|
@@ -181,11 +181,11 @@ slide3 留意点より:
 | 14 | 目次 | TOC | (table-of-contents-pptx 対象外) |
 | 15 | 中扉 | section divider | (section-divider-pptx 対象外) |
 
-**Phase 2 確定タスク**: Pilot 3 (customer-profile / company-history / market-environment) に slide4 / slide11 / slide3 のいずれかを割り当て、`assets/rollup/<skill>-template.pptx` として抽出する。詳細は Phase 2 で決定。
+**Phase 2 確定タスク**: Pilot 3 (customer-profile / company-history / market-environment) に slide4 / slide11 / slide3 のいずれかを割り当て、`assets/roleup/<skill>-template.pptx` として抽出する。詳細は Phase 2 で決定。
 
 ## 11. theme.json schema 2.0 への反映
 
-本書から `skills/_common/brands/rollup/theme.json` に追加する key 一覧(Phase 1 で実施):
+本書から `skills/_common/brands/roleup/theme.json` に追加する key 一覧(Phase 1 で実施):
 
 ```jsonc
 {

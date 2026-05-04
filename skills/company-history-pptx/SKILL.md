@@ -130,7 +130,7 @@ IMや会社HPの「沿革」「History」セクションから以下を抽出す
 
 テンプレートは brand 別に配置: `assets/<brand>/company-history-template.pptx`。
 `--brand` 引数で切替（デフォルト `stellar_aiz`）、`--template` 省略時は brand から自動解決
-（`brand_resolver.template_path()` 経由、curated rollup テンプレ未配置時は stella にフォールバック）。
+（`brand_resolver.template_path()` 経由、curated roleup テンプレ未配置時は stella にフォールバック）。
 
 ```bash
 TEMPLATE="<SKILL_DIR>/assets/stellar_aiz/company-history-template.pptx"  # 明示指定する場合
@@ -190,15 +190,15 @@ python <SKILL_DIR>/scripts/fill_company_history.py \
   --data {{WORK_DIR}}/company_history_data.json \
   --output {{OUTPUT_DIR}}/CompanyHistory_output.pptx
 
-# Rollup 社向け
+# Roleup 社向け
 python <SKILL_DIR>/scripts/fill_company_history.py \
   --data {{WORK_DIR}}/company_history_data.json \
-  --brand rollup \
+  --brand roleup \
   --output {{OUTPUT_DIR}}/CompanyHistory_output.pptx
 ```
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
-`--brand` の有効値は `stellar_aiz` / `rollup`、デフォルトは `stellar_aiz`。
+`--brand` の有効値は `stellar_aiz` / `roleup`、デフォルトは `stellar_aiz`。
 オーケストレーター（business-deepdive-agent / company-deepdive-agent 等）から呼ぶ場合、
 parent は scope.json の `brand` を `--brand` で渡す。
 
@@ -231,10 +231,10 @@ PowerPoint生成後、以下を確認：
 |---|---|
 | `assets/stellar_aiz/company-history-template.pptx` | Stellar AIZ 用テンプレート（16:9、Shape 構造は references/template-mapping.md 参照） |
 | `assets/stellar_aiz/layout.json` | Stellar AIZ 用 layout（テンプレ駆動のため最小、コメントのみ） |
-| `assets/rollup/layout.json` | Rollup 用 layout（V1 placeholder、テンプレは stella にフォールバック） |
+| `assets/roleup/layout.json` | Roleup 用 layout（V1 placeholder、テンプレは stella にフォールバック） |
 
-V1 では Rollup 専用テンプレ pptx は配置せず、`brand_resolver.template_path()` のフォールバック経由で stella テンプレを流用する。
-V2 で Rollup curated テンプレ（A4 横、Yu Gothic UI、褐色アクセント）を `assets/rollup/company-history-template.pptx` として導入する予定。
+V1 では Roleup 専用テンプレ pptx は配置せず、`brand_resolver.template_path()` のフォールバック経由で stella テンプレを流用する。
+V2 で Roleup curated テンプレ（A4 横、Yu Gothic UI、褐色アクセント）を `assets/roleup/company-history-template.pptx` として導入する予定。
 
 ## スクリプト
 
