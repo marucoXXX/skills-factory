@@ -89,14 +89,39 @@ N+1 全社共通の検証論点 (issue-risk-list-pptx)
 
 ### Step 0: 比較対象の確定
 
-`AskUserQuestion` で以下を確定:
+<!-- source: skills/_common/prompts/step0_brand_clarification.md (manual sync until D2) -->
 
-| 質問 | 選択肢 |
-|---|---|
-| 比較対象の会社（複数選択）| `work/company-deepdive-agent/` 配下の run_id 一覧から複数選択 |
-| 対象市場名 | テキスト入力（例: 国内タクシー市場）|
-| 事業セグメント横並び比較を含めるか | A. 含める（推奨）/ B. 会社レベルのみ |
-| 検証論点の集約方法 | A. 各社の open_questions を集約（推奨）/ B. 全社共通の論点のみ抽出 |
+`AskUserQuestion` で以下を確定（**ブランドは先頭で確定**。詳細仕様は `skills/_common/prompts/step0_brand_clarification.md` を正本とする）:
+
+| # | 質問 | 選択肢 |
+|---|---|---|
+| 1 | **ブランド**（出力 PPTX フォーマット） | `_discover_brands()` の戻り値から動的取得（既定 `stellar_aiz`）。各社 deepdive run_id の `scope.json.brand` が割れている場合は本ステップで再確定する |
+| 2 | 比較対象の会社（複数選択）| `work/company-deepdive-agent/` 配下の run_id 一覧から複数選択 |
+| 3 | 対象市場名 | テキスト入力（例: 国内タクシー市場）|
+| 4 | 事業セグメント横並び比較を含めるか | A. 含める（推奨）/ B. 会社レベルのみ |
+| 5 | 検証論点の集約方法 | A. 各社の open_questions を集約（推奨）/ B. 全社共通の論点のみ抽出 |
+
+ブランド質問の実装パターン（agnostic、`_discover_brands()` で動的取得）:
+
+```python
+import json, os, sys
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from brand_resolver import _discover_brands, _BRANDS_DIR
+
+discovered = _discover_brands()
+options = []
+for brand_id in discovered:
+    with open(os.path.join(_BRANDS_DIR, brand_id, "theme.json")) as f:
+        theme_data = json.load(f)
+    label = theme_data.get("label", brand_id)
+    if brand_id == "stellar_aiz":
+        label += " (Recommended)"
+    options.append({"label": label, "description": f"id={brand_id}"})
+# 推奨: 各社 deepdive run_id の scope.json.brand を読んで「全社一致なら既定値、割れていたら再確定」をデフォルト提示。
+# AskUserQuestion(question="...", header="ブランド", options=options, multiSelect=False)
+```
+
+確定したブランドは本 agent の比較デッキ全体（fill スキル群への `--brand` 引数）で使う。各社 deepdive デッキを再 merge する場合は、既存の各社デッキは元の brand のまま、新規追加スライド群は確定したブランドで生成する（混在が嫌な場合はユーザーに警告して全社再生成を提案）。
 
 ### Step 1: 各社 Deepdive データの読み込み
 

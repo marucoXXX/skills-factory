@@ -202,7 +202,38 @@ Step 10: ユーザーへ提示（PPTX + MDの2ファイル）
 
 ## Step 0: 市場スコープ確認
 
-**進捗**: 開始時 `TaskCreate(subject="market-overview: Step 0 - スコープ確認")` → Step 0.0 / 0.5 完了後にまとめて `TaskUpdate(completed)` + `task_state.json` 更新。**`AskUserQuestion` 必須**(自由対話での確定は禁止、Step 0.0 と Step 0.5 両方で必須)。
+**進捗**: 開始時 `TaskCreate(subject="market-overview: Step 0 - スコープ確認")` → Step 0.0-pre / 0.0 / 0.5 完了後にまとめて `TaskUpdate(completed)` + `task_state.json` 更新。**`AskUserQuestion` 必須**(自由対話での確定は禁止、Step 0.0-pre / 0.0 / 0.5 全てで必須)。
+
+<!-- source: skills/_common/prompts/step0_brand_clarification.md (manual sync until D2) -->
+
+### Step 0.0-pre: ブランド確認（必須）
+
+本デッキの**出力ブランド**（クライアント別 PPTX フォーマット）を `scope.json.brand` に保存する。共通原則・AskUserQuestion テンプレ・自由記述ハンドリング・unsupported skill fallback の詳細仕様は `skills/_common/prompts/step0_brand_clarification.md` を正本とする。
+
+実装パターン（agnostic、`_discover_brands()` で動的取得）:
+
+```python
+import json, os, sys
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from brand_resolver import _discover_brands, _BRANDS_DIR
+
+discovered = _discover_brands()  # 例: ('roleup', 'stellar_aiz')
+options = []
+for brand_id in discovered:
+    with open(os.path.join(_BRANDS_DIR, brand_id, "theme.json")) as f:
+        theme_data = json.load(f)
+    label = theme_data.get("label", brand_id)
+    if brand_id == "stellar_aiz":
+        label += " (Recommended)"
+    options.append({"label": label, "description": f"id={brand_id}"})
+
+AskUserQuestion(
+    question="このデッキはどのクライアント・ブランドのフォーマットで出力しますか？",
+    header="ブランド", options=options, multiSelect=False,
+)
+# 確定値は scope.json.brand に文字列保存（既定 "stellar_aiz"）。
+# 「Other」で _discover_brands に含まれない id を入力された場合は AskUserQuestion を再実行。
+```
 
 <!-- source: skills/_common/prompts/step0_scope_clarification.md (manual sync until D2) -->
 
@@ -267,6 +298,8 @@ D. その他（自由記述）
   "highlight_company": null,
   "included_business_models": ["タクシー事業者"],
   "excluded_segments": ["配車アプリ事業者"],
+  "brand": "stellar_aiz",
+  "brand_label": "Stellar AIZ（既定）",
   "run_id": "2026-04-27_taxi_industry_operators",
   "started_at": "2026-04-27T10:00:00+09:00"
 }

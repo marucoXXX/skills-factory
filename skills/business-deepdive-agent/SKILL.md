@@ -131,9 +131,11 @@ B-05 顧客市場の成長性 (market-environment-pptx)
 
 **進捗**: 開始時 `TaskCreate(subject="business-deepdive: Step 0 - 引数受領")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。単独起動の場合は `AskUserQuestion` 必須。
 
+<!-- source: skills/_common/prompts/step0_brand_clarification.md (manual sync until D2) -->
+
 #### 内部呼び出しの場合（推奨）
 
-`company-deepdive-agent` から以下のパラメータを JSON で受け取る:
+`company-deepdive-agent` から以下のパラメータを JSON で受け取る。**`brand` フィールドは必須**（親 agent の `scope.json.brand` を転写）。受領した brand は子側で AskUserQuestion で再質問せず、そのまま fill 起動時の `--brand` 引数に伝播する:
 
 ```json
 {
@@ -144,18 +146,41 @@ B-05 顧客市場の成長性 (market-environment-pptx)
   "global_slide_offset": 11,
   "is_listed": true,
   "industry": "陸運業",
-  "analysis_years": 7
+  "analysis_years": 7,
+  "brand": "stellar_aiz"
 }
 ```
 
+`brand` フィールドが欠落している場合（古い親 agent からの呼び出し等）は `stellar_aiz` を既定として処理する。
+
 #### 単独起動の場合
 
-AskUserQuestion で以下を聞く:
+AskUserQuestion で以下を聞く（**ブランドは先頭で確定する**。詳細仕様は `skills/_common/prompts/step0_brand_clarification.md` を正本とする）:
 
-1. `parent_company_name` — 対象会社の正式名（例: 「第一交通産業株式会社」）
-2. `segment_name` — 深掘り対象のセグメント名（例: 「タクシー事業」）
-3. `industry` — 業種（任意、検索クエリ精度向上用）
-4. `analysis_years` — 顧客市場分析の年数（任意、default 7 年）
+1. **`brand`** — 出力 PPTX フォーマット（`_discover_brands()` で動的取得した選択肢から、既定 `stellar_aiz`）
+2. `parent_company_name` — 対象会社の正式名（例: 「第一交通産業株式会社」）
+3. `segment_name` — 深掘り対象のセグメント名（例: 「タクシー事業」）
+4. `industry` — 業種（任意、検索クエリ精度向上用）
+5. `analysis_years` — 顧客市場分析の年数（任意、default 7 年）
+
+ブランド質問の実装パターン（agnostic、`_discover_brands()` で動的取得）:
+
+```python
+import json, os, sys
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from brand_resolver import _discover_brands, _BRANDS_DIR
+
+discovered = _discover_brands()
+options = []
+for brand_id in discovered:
+    with open(os.path.join(_BRANDS_DIR, brand_id, "theme.json")) as f:
+        theme_data = json.load(f)
+    label = theme_data.get("label", brand_id)
+    if brand_id == "stellar_aiz":
+        label += " (Recommended)"
+    options.append({"label": label, "description": f"id={brand_id}"})
+# AskUserQuestion(question="...", header="ブランド", options=options, multiSelect=False)
+```
 
 `parent_run_id` は `YYYY-MM-DD_<parent_company_slug>` 形式で自動生成（`<parent_company_slug>` は会社名を ASCII slug 化した値）。
 `segment_slug` は `segment_name` を ASCII 化した値（例: タクシー事業 → `taxi`）を生成し、ユーザーに確認して必要なら修正させる。

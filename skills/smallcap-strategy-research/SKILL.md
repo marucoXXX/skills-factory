@@ -123,8 +123,33 @@ description: >
 
 ### Step 0: ユーザーからの受領
 
+<!-- source: skills/_common/prompts/step0_brand_clarification.md (manual sync until D2) -->
 <!-- source: skills/_common/prompts/step0_scope_clarification.md (manual sync until D2) -->
-<!-- 注: Phase 別マルチエージェント構成のため、market-overview-agent ほど詳細な scope.json は持たない。本ステップで対象会社名・調査目的・業界・深度を確定し、Step 3 で <run_id> ディレクトリに保存する。 -->
+<!-- 注: Phase 別マルチエージェント構成のため、market-overview-agent ほど詳細な scope.json は持たない。本ステップで対象会社名・調査目的・業界・深度・**ブランド**を確定し、Step 3 で <run_id> ディレクトリに保存する。 -->
+
+#### Step 0.0-pre: ブランド確認（必須・AskUserQuestion）
+
+最終アウトプット PPTX のクライアント・ブランドを確定し、`master_output.json.brand` に保存する。Phase 3 の PPTX 化で fill スキル群に `--brand` 引数として伝播される。共通原則・AskUserQuestion テンプレ・unsupported skill fallback の詳細仕様は `skills/_common/prompts/step0_brand_clarification.md` を正本とする。
+
+```python
+import json, os, sys
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from brand_resolver import _discover_brands, _BRANDS_DIR
+
+discovered = _discover_brands()  # 例: ('roleup', 'stellar_aiz')
+options = []
+for brand_id in discovered:
+    with open(os.path.join(_BRANDS_DIR, brand_id, "theme.json")) as f:
+        theme_data = json.load(f)
+    label = theme_data.get("label", brand_id)
+    if brand_id == "stellar_aiz":
+        label += " (Recommended)"
+    options.append({"label": label, "description": f"id={brand_id}"})
+# AskUserQuestion(question="...", header="ブランド", options=options, multiSelect=False)
+# 確定値は会話メモリに保持し、Step 3 で <run_id>/master_output.json.brand に永続化する。
+```
+
+#### Step 0.0: 会社・調査目的・業界
 
 ユーザー入力から以下を抽出:
 - **対象会社名**（必須）

@@ -125,20 +125,42 @@ ISSUE-004（v0.3）における新規オーケストレーター。`market-overv
 
 **進捗**: 開始時 `TaskCreate(subject="company-deepdive: Step 0 - 対象会社・出力先確認")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。**`AskUserQuestion` 必須**（自由対話での確定は禁止）。
 
-`AskUserQuestion` で以下を確定:
+<!-- source: skills/_common/prompts/step0_brand_clarification.md (manual sync until D2) -->
 
-| 質問 | 選択肢 |
-|---|---|
-| 対象会社の正式名称 | テキスト入力 |
-| 対象会社の業種・主力事業 | テキスト入力（任意、検索精度向上用） |
-| 競合社（financial-benchmark 用） | 5 社程度をユーザーが提示 or オーケストレーターが提案 |
-| 分析年数 | 5 / 7（推奨）/ 10 年 |
-| 深掘りセグメント | A. 全セグメント / B. ユーザー指定（事業名）/ C. 会社レベルのみ |
-| デッキ深度 | 簡易（中扉なし）/ 標準（推奨、9+6N 枚）/ 拡張（全社 PEST/SWOT 追加） |
+`AskUserQuestion` で以下を確定（**ブランドは先頭で確定し、`scope.json.brand` に保存する**。詳細仕様は `skills/_common/prompts/step0_brand_clarification.md` を正本とする）:
+
+| # | 質問 | 選択肢 |
+|---|---|---|
+| 1 | **ブランド**（出力 PPTX フォーマット） | `_discover_brands()` の戻り値から動的取得（既定 `stellar_aiz`）。「Other」で未配置 id 入力時は再質問 |
+| 2 | 対象会社の正式名称 | テキスト入力 |
+| 3 | 対象会社の業種・主力事業 | テキスト入力（任意、検索精度向上用） |
+| 4 | 競合社（financial-benchmark 用） | 5 社程度をユーザーが提示 or オーケストレーターが提案 |
+| 5 | 分析年数 | 5 / 7（推奨）/ 10 年 |
+| 6 | 深掘りセグメント | A. 全セグメント / B. ユーザー指定（事業名）/ C. 会社レベルのみ |
+| 7 | デッキ深度 | 簡易（中扉なし）/ 標準（推奨、9+6N 枚）/ 拡張（全社 PEST/SWOT 追加） |
+
+ブランド質問の実装パターン（agnostic、`_discover_brands()` で動的取得）:
+
+```python
+import json, os, sys
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from brand_resolver import _discover_brands, _BRANDS_DIR
+
+discovered = _discover_brands()
+options = []
+for brand_id in discovered:
+    with open(os.path.join(_BRANDS_DIR, brand_id, "theme.json")) as f:
+        theme_data = json.load(f)
+    label = theme_data.get("label", brand_id)
+    if brand_id == "stellar_aiz":
+        label += " (Recommended)"
+    options.append({"label": label, "description": f"id={brand_id}"})
+# AskUserQuestion(question="...", header="ブランド", options=options, multiSelect=False)
+```
 
 `run_id` は `YYYY-MM-DD_<company_slug>` 形式で自動生成。
 `{{WORK_DIR}}/company-deepdive-agent/<run_id>/` を作業ディレクトリ。
-`{{WORK_DIR}}/company-deepdive-agent/<run_id>/scope.json` に Step 0 の確定値を保存。
+`{{WORK_DIR}}/company-deepdive-agent/<run_id>/scope.json` に Step 0 の確定値（`brand` / `brand_label` を含む）を保存。business-deepdive-agent への内部呼び出し時は `scope.json.brand` を JSON 引数に転写し、子側で再質問しない。
 
 ### Step 0.5: 同名異社の確認（任意）
 
