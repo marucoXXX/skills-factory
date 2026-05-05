@@ -622,12 +622,35 @@ add_brand_arg(<parser_var>)  # passive: accepted but ignored until brand migrati
 
 **意義**: Phase 2 以降、orchestrator は SKILL.md 擬似コード通りに `--brand` を fill に無条件付与すれば動作する。Phase 2 で個別に brand-aware 化する際は、`add_brand_arg` の呼び出しは既に置いてあるので、`args.brand` を `resolve_brand` に渡すだけで完成。
 
+### Phase 2 進捗
+
+| 着手順 | スキル | 状態 | Pattern | コミット |
+|---|---|---|---|---|
+| 1 | `executive-summary-pptx` | ✅ 完了 | A (hardcode 駆動) | `a96f53f`(2026-05-05) |
+| 2 | `revenue-analysis-pptx` | ⏳ 未着手 | A 想定 | — |
+| 3 | `data-availability-pptx` | ⏳ 未着手 | A or B | — |
+| 4 | `financial-benchmark-pptx` | ⏳ 未着手 | A 想定 | — |
+| 5 | `company-overview-pptx-v2` | ⏳ 未着手 | A or B | — |
+
 ### Phase 2 着手点（次セッション以降）
 
-1. **BDD 系 fill 14 件の brand-aware 化** を Pattern A/B/C で順次。優先順: executive-summary → revenue-analysis → data-availability → financial-benchmark → company-overview-pptx-v2。各 fill は既に `add_brand_arg(parser)` を呼んでいるので、`args.brand` を読み出して `resolve_brand` で theme を取り、Pattern A (hardcode 駆動) / Pattern B (rPr/tcPr 駆動) / Pattern C (HTML 駆動) で brand 別出力を実装。
+1. **BDD 系 fill 14 件の brand-aware 化** を Pattern A/B/C で順次。優先順: ~executive-summary~ → revenue-analysis → data-availability → financial-benchmark → company-overview-pptx-v2。各 fill は既に `add_brand_arg(parser)` を呼んでいるので、`args.brand` を読み出して `resolve_brand` で theme を取り、Pattern A (hardcode 駆動) / Pattern B (rPr/tcPr 駆動) / Pattern C (HTML 駆動) で brand 別出力を実装。
 2. **市場系 fill 5 件**（market-share / positioning-map / competitor-summary / market-kbf / pest-analysis）の brand-aware 化（market-overview-agent × roleup の完全 native 化に必要）。
 3. **Phase 1 (iv) 残り課題**:
    - 項目 2: テンプレート/script 命名不統一（toc/section-divider/market-kbf）→ Phase 2 着手時に整理
    - 項目 3: pilot 3 (market-environment) × roleup の year suffix（"2025E"）→ Phase 2 でデータ生成側で integer 化を強制するか fill 側で strip するか決める
 
-**Phase 2（5-10 セッション）の前提**: Phase 1 (iv) E2E で wiring 自体は健全と確認済 + Phase 1.5 で fallback flow が SKILL.md 擬似コードのまま本番動作可能になった。fallback で運用可能なので、急いで brand-aware 化しなくても roleup ユーザーには「pilot 3 のみ roleup、他は stella で fallback」が透明性高く伝わる状態。
+### executive-summary-pptx 完了内容（2026-05-05、commit `a96f53f`）
+
+**手順**:
+- A1 調査: Pattern A 判定（hardcode 駆動、5 findings 縦積み layout、SHAPE_MAIN_MESSAGE/CHART_TITLE/SOURCE）
+- A2 template: cp roleup template から派生（object 8 装飾削除、Title 1/Text Placeholder 2/Source 3 + 茶色ガイド矩形を保持）。check_template_invariants 両 brand PASS
+- A3 fill: resolve_brand + _apply_theme(theme) + resolve_top_text/subtitle_text + require_source + silent_remove ガイド矩形 + Source 3 placeholder 利用
+- A4 検証: check_brand_compliance 8/8 PASS / pilot 3 regression-zero (36/36 PASS) / stella byte-stable
+- A5 SKILL.md: supported_brands [stellar_aiz, roleup]、`--brand` ドキュメント更新
+
+**重要技術発見**:
+- `add_text_box` の `font_name=FONT_NAME_JP` デフォルト引数は **module load 時に評価される**（Python late-binding）。`_apply_theme(theme)` が module global を更新しても、デフォルト引数は古い値を保持。次の Pattern A 移行（revenue-analysis 等）でも同じ落とし穴を踏む可能性が高い。**修正パターン**: `font_name=None` + 関数内 `if font_name is None: font_name = FONT_NAME_JP` で late binding を強制する。
+- exec-summary は font_size_executive_summary_body_pt（roleup 12pt）を使う特殊スキルで、`theme.font_size_body_pt(skill_id="executive-summary-pptx")` 経由でアクセス。`executive_summary_skill_ids` に skill_id が登録されているため自動切替される。
+
+**Phase 2（5-10 セッション）の前提**: Phase 1 (iv) E2E で wiring 自体は健全と確認済 + Phase 1.5 で fallback flow が SKILL.md 擬似コードのまま本番動作可能になった。fallback で運用可能なので、急いで brand-aware 化しなくても roleup ユーザーには「pilot 3 + exec-summary が roleup native、他は stella で fallback」が透明性高く伝わる状態。
