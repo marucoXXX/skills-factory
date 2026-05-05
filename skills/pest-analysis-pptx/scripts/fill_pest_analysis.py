@@ -24,10 +24,13 @@ import json
 import os
 import sys
 
-# brand_resolver bootstrap (passive --brand acceptance until brand-aware migration)
+# brand_resolver bootstrap (Phase 2 — brand-aware: stellar_aiz / roleup)
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(SKILL_DIR, "..", "_common", "lib"))
-from brand_resolver import add_brand_arg  # noqa: E402
+from brand_resolver import resolve_brand, add_brand_arg  # noqa: E402
+from format_helpers import resolve_top_text, resolve_subtitle_text, require_source  # noqa: E402
+
+SKILL_ID = "pest-analysis-pptx"
 
 from pptx import Presentation
 from pptx.dml.color import RGBColor
@@ -72,9 +75,10 @@ def _finalize_pptx(path):
 
 
 
-# ── Layout Constants ──
+# ── Layout Constants (defaults; reassigned by _apply_theme) ──
 SHAPE_MAIN_MESSAGE = "Title 1"
 SHAPE_CHART_TITLE = "Text Placeholder 2"
+SHAPE_SOURCE = "Source 3"
 
 GRID_LEFT = Inches(0.41)
 GRID_TOP = Inches(1.55)
@@ -82,15 +86,15 @@ GRID_WIDTH = Inches(12.51)
 GRID_HEIGHT = Inches(5.30)
 
 GAP = Inches(0.15)
+HEADER_H = Inches(0.55)
 
 CELL_W = (GRID_WIDTH - GAP) / 2
 CELL_H = (GRID_HEIGHT - GAP) / 2
 
-HEADER_H = Inches(0.55)
-
 SOURCE_X = Inches(0.41)
 SOURCE_Y = Inches(6.93)
 SOURCE_W = Inches(12.50)
+SOURCE_H = Inches(0.30)
 
 # ── Colors ──
 COLOR_TEXT = RGBColor(0x33, 0x33, 0x33)
@@ -139,10 +143,79 @@ COLOR_IMPACT_NEUTRAL = RGBColor(0x66, 0x66, 0x66)     # グレー
 
 FONT_NAME_JP = "Meiryo UI"
 FONT_SIZE_HEADER = Pt(16)
+FONT_SIZE_HEADER_LETTER = Pt(20)   # ヘッダーバーの大きな P/E/S/T 字 (stella: 16×1.2)
 FONT_SIZE_HEADER_EN = Pt(11)
 FONT_SIZE_ITEM = Pt(12)
 FONT_SIZE_SOURCE = Pt(10)
 FONT_SIZE_LEGEND = Pt(10)
+
+_THEME = None
+
+
+def _apply_theme(theme):
+    """Reassign module-level brand-aware globals from a resolved BrandTheme."""
+    global _THEME
+    global GRID_LEFT, GRID_TOP, GRID_WIDTH, GRID_HEIGHT, GAP, HEADER_H, CELL_W, CELL_H
+    global SOURCE_X, SOURCE_Y, SOURCE_W, SOURCE_H
+    global COLOR_TEXT, COLOR_SOURCE, LABEL_BAR_RGB, LABEL_BG_RGB
+    global COLOR_P, COLOR_E, COLOR_S, COLOR_T
+    global COLOR_P_LIGHT, COLOR_E_LIGHT, COLOR_S_LIGHT, COLOR_T_LIGHT
+    global FONT_NAME_JP
+    global FONT_SIZE_HEADER, FONT_SIZE_HEADER_LETTER, FONT_SIZE_HEADER_EN
+    global FONT_SIZE_ITEM, FONT_SIZE_SOURCE, FONT_SIZE_LEGEND
+
+    _THEME = theme
+
+    GRID_LEFT = theme.layout("grid_left_in")
+    GRID_TOP = theme.layout("grid_top_in")
+    GRID_WIDTH = theme.layout("grid_width_in")
+    GRID_HEIGHT = theme.layout("grid_height_in")
+    GAP = theme.layout("gap_in")
+    HEADER_H = theme.layout("header_h_in")
+    CELL_W = (GRID_WIDTH - GAP) / 2
+    CELL_H = (GRID_HEIGHT - GAP) / 2
+    SOURCE_X = theme.layout("source_x_in")
+    SOURCE_Y = theme.layout("source_y_in")
+    SOURCE_W = theme.layout("source_w_in")
+    SOURCE_H = theme.layout("source_h_in")
+
+    COLOR_TEXT = theme.color("text")
+    COLOR_SOURCE = theme.color("source")
+
+    if theme.id == "roleup":
+        # Brown PEST palette (single-tone like stella's blue unification).
+        LABEL_BAR_RGB = theme.color("label_bar")
+        LABEL_BG_RGB = _hex_to_rgbcolor(theme.hex("label_bg"))
+        FONT_NAME_JP = theme.font_ea
+        # roleup C4 [22,14,12,10,6]
+        FONT_SIZE_HEADER = theme.pt("font_size_subtitle_pt")        # 12pt
+        FONT_SIZE_HEADER_LETTER = theme.pt("font_size_key_message_pt")  # 14pt
+        FONT_SIZE_HEADER_EN = theme.font_size_body_pt(skill_id=SKILL_ID)  # 10pt
+        FONT_SIZE_ITEM = theme.pt("font_size_subtitle_pt")          # 12pt
+        FONT_SIZE_SOURCE = theme.pt("font_size_source_pt")          # 6pt
+        FONT_SIZE_LEGEND = theme.font_size_body_pt(skill_id=SKILL_ID)  # 10pt
+    # else stella: keep V1 hardcoded values for regression-zero.
+
+    COLOR_P = LABEL_BAR_RGB
+    COLOR_E = LABEL_BAR_RGB
+    COLOR_S = LABEL_BAR_RGB
+    COLOR_T = LABEL_BAR_RGB
+    COLOR_P_LIGHT = LABEL_BG_RGB
+    COLOR_E_LIGHT = LABEL_BG_RGB
+    COLOR_S_LIGHT = LABEL_BG_RGB
+    COLOR_T_LIGHT = LABEL_BG_RGB
+
+
+def _hex_to_rgbcolor(hex_str: str) -> RGBColor:
+    h = hex_str.lstrip("#")
+    return RGBColor(int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+def _silent_remove_shape(slide, shape_name: str) -> None:
+    for s in list(slide.shapes):
+        if s.name == shape_name:
+            sp = s._element
+            sp.getparent().remove(sp)
 
 
 # ──────────────────────────────────────────────
@@ -272,10 +345,10 @@ def build_quadrant(slide, label_jp, label_en, label_letter, items,
     r0 = etree.SubElement(p, qn("a:r"))
     rPr0 = etree.SubElement(r0, qn("a:rPr"), attrib={
         "lang": "en-US",
-        "sz": str(int(FONT_SIZE_HEADER.pt * 100 * 1.2)),  # 20pt
+        "sz": str(int(FONT_SIZE_HEADER_LETTER.pt * 100)),
         "b": "1",
     })
-    etree.SubElement(rPr0, qn("a:latin"), attrib={"typeface": "Arial"})
+    etree.SubElement(rPr0, qn("a:latin"), attrib={"typeface": FONT_NAME_JP if (_THEME and _THEME.id == "roleup") else "Arial"})
     sf0 = etree.SubElement(rPr0, qn("a:solidFill"))
     s0 = etree.SubElement(sf0, qn("a:srgbClr"))
     s0.set("val", "FFFFFF")
@@ -304,7 +377,7 @@ def build_quadrant(slide, label_jp, label_en, label_letter, items,
         "sz": str(int(FONT_SIZE_HEADER_EN.pt * 100)),
         "b": "0",
     })
-    etree.SubElement(rPr2, qn("a:latin"), attrib={"typeface": "Arial"})
+    etree.SubElement(rPr2, qn("a:latin"), attrib={"typeface": FONT_NAME_JP if (_THEME and _THEME.id == "roleup") else "Arial"})
     sf2 = etree.SubElement(rPr2, qn("a:solidFill"))
     s2 = etree.SubElement(sf2, qn("a:srgbClr"))
     s2.set("val", "FFFFFF")
@@ -364,7 +437,7 @@ def build_quadrant(slide, label_jp, label_en, label_letter, items,
                 "sz": str(int(FONT_SIZE_ITEM.pt * 100)),
                 "b": "1",
             })
-            etree.SubElement(rPr_imp, qn("a:latin"), attrib={"typeface": "Arial"})
+            etree.SubElement(rPr_imp, qn("a:latin"), attrib={"typeface": FONT_NAME_JP if (_THEME and _THEME.id == "roleup") else "Arial"})
             sf_imp = etree.SubElement(rPr_imp, qn("a:solidFill"))
             s_imp = etree.SubElement(sf_imp, qn("a:srgbClr"))
             s_imp.set("val", "{:02X}{:02X}{:02X}".format(
@@ -470,21 +543,39 @@ def _validate_input(data):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
-    ap.add_argument("--template", required=True)
+    ap.add_argument(
+        "--template", required=False, default=None,
+        help="Optional explicit template path. If omitted, resolved from --brand.",
+    )
     ap.add_argument("--output", required=True)
-    add_brand_arg(ap)  # passive: accepted but ignored until brand migration
+    add_brand_arg(ap)
     args = ap.parse_args()
+
+    theme = resolve_brand(args.brand, SKILL_DIR)
+    _apply_theme(theme)
+    template_path = args.template or theme.template_path(SKILL_DIR, "pest-analysis")
+    print(f"  ✓ Brand: {theme.id} ({theme.label})")
+    print(f"  ✓ Template: {template_path}")
 
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    require_source(data, theme, skill_id=SKILL_ID)
     _validate_input(data)
-    prs = Presentation(args.template)
+    prs = Presentation(template_path)
     slide = prs.slides[0]
 
-    set_textbox_text(find_shape(slide, SHAPE_MAIN_MESSAGE), data.get("main_message", ""))
-    set_textbox_text(find_shape(slide, SHAPE_CHART_TITLE), data.get("chart_title", "PEST分析"))
+    # Top / subtitle placeholder (brand 別)
+    top_text = resolve_top_text(data, theme)
+    sub_text = resolve_subtitle_text(data, theme)
+    set_textbox_text(find_shape(slide, SHAPE_MAIN_MESSAGE), top_text)
+    set_textbox_text(find_shape(slide, SHAPE_CHART_TITLE),
+                     sub_text or data.get("chart_title", "PEST分析"))
     print(f"  ✓ Main Message & Chart Title set")
+
+    # Roleup: silently remove brown guide rectangles carried by cp-derived template.
+    _silent_remove_shape(slide, "正方形/長方形 1")
+    _silent_remove_shape(slide, "正方形/長方形 8")
 
     pest = data.get("pest", {})
 
@@ -554,19 +645,34 @@ def main():
         )
 
     # 凡例（影響度インジケーターが使われている場合のみ）
-    if has_impact:
+    # roleup は A4 横でグリッドが下方まで広がるため、凡例の配置スペースが無く、
+    # ▲/▬/▼ 記号の色 (緑/灰/赤) で直感的に意味が伝わる前提で凡例を省略。
+    if has_impact and theme.id == "stellar_aiz":
         add_impact_legend(slide)
         print(f"  ✓ 影響度凡例を追加")
 
-    # 出典
+    # 出典: roleup は Source 3 placeholder にセット、stella は dynamic textbox を追加
     source = data.get("source", "")
     if source:
-        add_text_box(
-            slide, source,
-            SOURCE_X, SOURCE_Y, Inches(8.90), Inches(0.30),  # 凡例と重ならないよう幅を制限
-            FONT_SIZE_SOURCE, bold=False, color=COLOR_SOURCE,
-            align=PP_ALIGN.LEFT,
-        )
+        if theme.id == "stellar_aiz":
+            # 影響度凡例 (Inches(9.50)〜) と重ならないよう幅を制限
+            add_text_box(
+                slide, source,
+                SOURCE_X, SOURCE_Y, Inches(8.90), SOURCE_H,
+                FONT_SIZE_SOURCE, bold=False, color=COLOR_SOURCE,
+                align=PP_ALIGN.LEFT,
+            )
+        else:
+            source_shape = find_shape(slide, SHAPE_SOURCE)
+            if source_shape is not None:
+                set_textbox_text(source_shape, source)
+            else:
+                add_text_box(
+                    slide, source,
+                    SOURCE_X, SOURCE_Y, SOURCE_W, SOURCE_H,
+                    FONT_SIZE_SOURCE, bold=False, color=COLOR_SOURCE,
+                    align=PP_ALIGN.LEFT,
+                )
         print(f"  ✓ Source: {source[:40]}...")
 
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
