@@ -15,6 +15,8 @@ description: >
   - BDD（ビジネスDD）の文脈で対象会社の当期業績見込み・着地見込みのスライド化を求められた場合
   - 「今後の見立て」「業績見込み」「PL見込み」をDownside/Upsideで比較するスライドを作りたいという要望
   - ユーザーが財務モデルExcelをアップロードし、当期着地見込みのスライド化を求めた場合
+supported_brands: [stellar_aiz]
+
 ---
 
 # 当期着地見込み PowerPoint ジェネレーター（BDD用）

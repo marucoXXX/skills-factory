@@ -12,6 +12,8 @@ description: >
   - 「セクションごとの区切りページ」「タイトルスライド」「セクション開始ページ」という要望
   - 企業調査デッキの各セクション冒頭の中扉作成
   - 「目次のセクションごとに区切りスライドを入れたい」という要望
+supported_brands: [stellar_aiz]
+
 ---
 
 # 中扉（Section Divider）PowerPoint ジェネレーター

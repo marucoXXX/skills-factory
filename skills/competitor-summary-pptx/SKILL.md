@@ -15,6 +15,8 @@ description: >
   - 「対象会社と競合を1枚のスライドで比較したい」「比較表を作って」という要望
   - 既に対象会社と競合の情報が整理されている状態で、比較サマリー1枚の生成を求められた場合
   - `competitor-analysis-pptx` スキル（オーケストレーター）から呼び出された場合
+supported_brands: [stellar_aiz]
+
 ---
 
 # 競合比較サマリー PowerPoint ジェネレーター

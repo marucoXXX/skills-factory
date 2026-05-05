@@ -12,6 +12,8 @@ description: >
   - smallcap-strategy-research のオーケストレーターから呼び出された場合
   - 「Aspiration」「経営意図」「時間軸ロードマップ」「Aspiration & Trajectory」という言葉が出た場合
   - BDD/M&Aデューデリジェンス文脈で対象会社の Aspiration 詳細スライド3枚セットを求められた場合
+supported_brands: [stellar_aiz]
+
 ---
 
 # smallcap-aspiration-pptx — Aspiration & Trajectory 詳細（Main/Detail/Evidence 3スライド）

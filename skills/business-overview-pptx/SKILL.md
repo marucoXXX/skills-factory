@@ -13,6 +13,8 @@ description: >
   - 「○○社の○○事業の概要をスライドに」「事業セグメント単位の概要を 1 枚で」という要望
   - business-deepdive-agent から呼び出された場合
   - 多角化企業の事業ポートフォリオ内訳の各事業を 1 枚ずつスライド化する要望
+supported_brands: [stellar_aiz]
+
 ---
 
 # 事業セグメント概要 PowerPoint ジェネレーター

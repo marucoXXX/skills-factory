@@ -19,6 +19,8 @@ description: >
 
   利益プール率（%）やバー形式で「どの工程で儲かっているか」を分析する場合は
   value-chain-pptx スキル（利益プール分析）を使うこと。
+supported_brands: [stellar_aiz]
+
 ---
 
 # バリューチェーン・ポジショニング・マトリクス PowerPoint ジェネレーター

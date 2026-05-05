@@ -11,6 +11,8 @@ description: >
   - 「セクション一覧」「章立て」「構成スライド」という要望
   - 企業調査レポート・デッキの冒頭目次スライド作成
   - 「ページ番号付きの目次」「サブ項目付き目次」を求められた場合
+supported_brands: [stellar_aiz]
+
 ---
 
 # 目次（Table of Contents）PowerPoint ジェネレーター

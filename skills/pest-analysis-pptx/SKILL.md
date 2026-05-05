@@ -17,6 +17,8 @@ description: >
   - 「規制・景気・社会動向・技術トレンドをまとめて」という要望
   - ユーザーが政府統計・業界レポートを貼り付けて、PEST整理を求めた場合
   - 既にPEST形式で整理されたテキストが提示され、PowerPoint化を求められた場合
+supported_brands: [stellar_aiz]
+
 ---
 
 # PEST分析 PowerPoint ジェネレーター

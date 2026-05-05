@@ -12,6 +12,8 @@ description: >
   - smallcap-strategy-research のオーケストレーターから呼び出された場合
   - 「Capability」「ケイパビリティ」「資源配分」「Capability & Resource」「ケイパビリティ・レーダー」という言葉が出た場合
   - BDD/M&Aデューデリジェンス文脈で対象会社の Capability 詳細スライド3枚セットを求められた場合
+supported_brands: [stellar_aiz]
+
 ---
 
 # smallcap-capability-pptx — Capability & Resource 詳細（Main/Detail/Evidence 3スライド）

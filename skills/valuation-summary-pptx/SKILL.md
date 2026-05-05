@@ -15,6 +15,8 @@ description: >
   - 「財務サマリー」「Financial Summary」「DD財務分析」「主要財務指標」という要望
   - M&A DD提案書やDD最終報告書のバリュエーション・財務セクションのスライド作成を求められた場合
   - 「DD提案書のバリュエーションスライド」「DD最終報告のバリュエーション」という要望
+supported_brands: [stellar_aiz]
+
 ---
 
 # バリュエーション・財務サマリー PowerPoint ジェネレーター

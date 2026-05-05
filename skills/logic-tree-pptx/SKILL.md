@@ -13,6 +13,8 @@ description: >
   - ユーザーが議事録・文字起こしを貼り付けて、ロジックツリーやロジック整理のスライド化を求めた場合
   - 既にロジックツリー形式で整理されたテキストが提示され、PowerPoint化を求められた場合
   - 「主張と根拠をスライドにまとめて」「So What?でまとめて」という要望
+supported_brands: [stellar_aiz]
+
 ---
 
 # Logic Tree PowerPoint ジェネレーター

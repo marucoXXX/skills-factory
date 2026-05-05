@@ -13,6 +13,8 @@ description: >
   - 「市場で勝つために必要な要素」「成功要因」「市場の勝ち筋」という要望
   - market-overview-agent / strategy-report-agent オーケストレーターから呼び出された場合
   - 「KBFをスライドにして」「成功要因をパワポで整理」という要望
+supported_brands: [stellar_aiz]
+
 ---
 
 # 市場KBF（Key Business Factor）PowerPoint ジェネレーター
