@@ -83,8 +83,8 @@
 
 | フィールド | 型 | 説明 |
 |---|---|---|
-| `slide_index` | int | 違反した `section_divider` の `slide_number`（merge_order.json から転写） |
-| `type` | str | 警告種別。現在は `section_divider_position` のみ。将来追加される可能性あり |
+| `slide_index` | int | 違反した `section_divider` の `slide_number`（merge_order.json から転写）。**§4.4 brand_fallback では `-1`** を入れる（特定スライドに紐付かない全体警告の意） |
+| `type` | str | 警告種別。`section_divider_position`(merge-pptxv2 が出力) / `brand_fallback`(orchestrator が出力、§4.4 参照)。将来追加される可能性あり |
 | `message` | str | 人間可読な違反内容 |
 
 ### 重要な前提
@@ -166,15 +166,18 @@
 - `included_business_models = []`（空配列）は「全モデル統合扱い」を意味し、v0.2 までと同じ挙動（境界なし全プレイヤー対象）
 - 既存の scope.json（`included_business_models` フィールドがない）は `[]` 同等として扱う
 
-### `brand` フィールド（V1 brand-aware 拡張、format_add ブランチで導入）
+### `brand` フィールド（V1 brand-aware 拡張、Phase 0 で N 社 agnostic 化）
 
-scope.json に **任意フィールド** `brand` を追加：
+scope.json に以下のフィールドを追加（**いずれも任意**、未指定時は後方互換挙動）：
 
 | キー | 型 | 値域 | デフォルト | 役割 |
 |---|---|---|---|---|
-| `brand` | string | `"stellar_aiz"` / `"roleup"` | `"stellar_aiz"`（未指定時） | クライアント別 PPTX フォーマット切替 |
+| `brand` | string | `_common/brands/<id>/theme.json` が存在する任意の id（D1 命名規則 `^[a-z][a-z0-9_]{1,23}$` に準拠） | `"stellar_aiz"`（未指定時） | クライアント別 PPTX フォーマット切替 |
+| `brand_label` | string | 自由文字列 | （未指定可） | UI / 納品物メタデータ用の表示名 |
 
-#### 責務分担（既存原則の例外）
+**N 社 agnostic 設計**: 値域は静的列挙ではなく、`skills/_common/lib/brand_resolver.py` の `_discover_brands()` が返す結果を真実源とする。新ブランド追加（C 社・D 社…）は `_common/brands/<新 id>/theme.json` を配置するだけで、本ドキュメント・各 agent SKILL.md の改修は不要。
+
+#### 4.1 責務分担（既存原則の例外）
 
 「scope.json は orchestrator のみ読む」原則は維持しつつ、`brand` は **CLI 引数 `--brand` で fill_*.py に伝播**することを明示する。fill_*.py は scope.json を直接 open しない（既存の単体起動互換も維持）：
 
@@ -184,16 +187,62 @@ brand=$(jq -r '.brand // "stellar_aiz"' $WORK_DIR/$RUN_ID/scope.json)
 python fill_*.py --brand $brand --data ... --output ...
 ```
 
-#### V1 で brand-aware 化済の fill スクリプト
+#### 4.2 Step 0 での brand 確定 UX
+
+agent 系 SKILL.md は Step 0 冒頭で `AskUserQuestion` により brand を都度確定する（env / config 固定はしない）。共通プロンプトは `skills/_common/prompts/step0_brand_clarification.md` を正本とし、各 agent は手動コピペで参照する（manual sync until D2）。
+
+#### 4.3 fill スキルの brand 対応宣言（SKILL.md frontmatter）
+
+各 fill スキルの SKILL.md frontmatter に `supported_brands` フィールドを追加することで、当該スキルが対応している brand を宣言する：
+
+```yaml
+---
+name: example-pptx
+description: ...
+supported_brands: [stellar_aiz, roleup]
+---
+```
+
+| 形式 | 解釈 |
+|---|---|
+| `supported_brands: [a, b]`（インライン list） | 明示的に対応 brand を列挙 |
+| フィールド未指定 | `[stellar_aiz]` 扱い（後方互換、Phase 1 までの暫定） |
+| ブロック list 形式 (`- a` / `- b`) | **未対応**(`brand_resolver._read_supported_brands` の制限、Phase 0 簡素化) |
+
+orchestrator は fill 起動前に `is_brand_supported_by_skill(skill_dir, brand)` で対応有無を事前検出する。
+
+#### 4.4 未対応 fill への warning + stella fallback
+
+scope.json の brand が `stellar_aiz` 以外で、当該 fill が未対応の場合、orchestrator は以下を実施する（ユーザー Q3 確定: 2026-05-05）：
+
+1. `warnings.warn(...)` で RuntimeWarning を発出（agent 内部ログに記録）
+2. `merge_warnings.json` に `type: "brand_fallback"` のエントリを追記（**§2 のスキーマ拡張**）：
+   ```json
+   {
+     "slide_index": -1,
+     "type": "brand_fallback",
+     "message": "skill 'example-pptx' does not support brand 'roleup'; falling back to 'stellar_aiz'"
+   }
+   ```
+   `slide_index = -1` は「全体に対する警告（特定スライドに紐付かない）」を意味する。
+3. fill には `--brand stellar_aiz` を渡す（fill 本体は brand-agnostic のまま動作）
+4. 全 fill 完了後、warning 件数を集計してユーザーに納品確認 Step で提示
+
+orchestrator が既に `--brand` を渡せる pilot 3（V1 brand-aware 化済）で対応 brand なら fallback は不要。
+
+#### 4.5 V1 brand-aware 化済の fill スクリプト
+
 - `fill_customer_profile.py`（commit `b767ee3`）
 - `fill_company_history.py`（commit `c199f03`）
 - `fill_market_environment.py`（commit `128fa15`）
 
-残り 25 fill スクリプトは V2 で順次対応（ISSUE-009）。
-未対応 fill_*.py に `--brand` を渡しても無視される（後方互換）。
+残り 25 fill スクリプトは ISSUE-010 Phase 2 で順次対応（BDD 系から優先）。Phase 1 では全 fill SKILL.md に `supported_brands: [stellar_aiz]` を一括追加して fallback 検出を機能させる。
 
-#### 詳細
-`skills/_common/references/brand_migration_guide.md` を参照。
+#### 4.6 詳細
+
+- API: `skills/_common/lib/brand_resolver.py`（`_discover_brands` / `_validate_brand_id` / `is_brand_supported_by_skill` / `resolve_brand_with_fallback`）
+- 移行手順: `skills/_common/references/brand_migration_guide.md`
+- Step 0 共通プロンプト: `skills/_common/prompts/step0_brand_clarification.md`
 
 ---
 

@@ -479,7 +479,7 @@ Pilot 3 (customer-profile / company-history / market-environment) の roleup bra
 
 ## ISSUE-010: 残り 25 fill scripts への brand 展開（V2）
 
-**Status**: 保留 / **Priority**: P2 / **Decided**: 2026-05-04
+**Status**: 進行中（Phase 0 完了、Phase 1 着手待ち） / **Priority**: P2 / **Decided**: 2026-05-04 / **Updated**: 2026-05-05
 
 ### 背景
 V1（format_add ブランチ、commit `4d752b1` 〜 `128fa15`）で Pilot 3 スキル
@@ -510,4 +510,44 @@ V2 で各スキルに A4 横（11.69×8.27）+ Yu Gothic UI + 褐色アクセン
 - `skills/_common/brands/{stellar_aiz,roleup}/theme.json`
 - `skills/_common/references/brand_migration_guide.md`
 - pilot 3 commits: `b767ee3`, `c199f03`, `128fa15`
-- 計画書: `~/.claude/plans/1-pc-harness-check-2-20250928-vf-pptx-agile-kite.md`
+- 計画書: `~/.claude/plans/1-pc-harness-check-2-20250928-vf-pptx-agile-kite.md`(V1 期、参考)
+- v0.4 計画書: `~/.claude/plans/dreamy-greeting-pizza.md`(Phase 0、2026-05-05)
+
+### Phase 0 完了内容（2026-05-05）
+
+ユーザー要件「ブランド対応を全スキルに拡充 + agent 系の brand 確定 UX 作り込み」を受けて、N 社 agnostic 設計の規約と土台を確定。fill 改修は無し（Phase 2）。
+
+**ユーザー確定事項**:
+- Q1: agent Step 0 で `AskUserQuestion` 都度確定（env / config 固定はしない）
+- Q2: 将来 N 社追加前提（agnostic 設計）
+- Q3: 未対応 fill は warning + stella fallback（hard-fail せず）
+- Q4: fill 展開優先順は BDD 系から（Phase 2）
+
+**実装したもの**:
+- `skills/_common/lib/brand_resolver.py` agnostic 化:
+  - `_discover_brands(brands_dir=None)`(`os.listdir` で `theme.json` 存在 dir を動的検出、D1 命名規則で filter)
+  - `_validate_brand_id(brand)`(正規表現 `^[a-z][a-z0-9_]{1,23}$`)
+  - `is_brand_supported_by_skill(skill_dir, brand)`(SKILL.md frontmatter `supported_brands` を簡易 regex で読む、未指定は `[stellar_aiz]`)
+  - `resolve_brand_with_fallback(brand, skill_dir)`(unsupported なら warnings.warn + stella を返す one-call helper)
+  - `VALID_BRANDS` ハードコード廃止（外部参照ゼロ確認済）
+- `skills/_common/lib/test_brand_resolver.py`(新設): pytest 27 ケース全 pass
+- `skills/_common/prompts/step0_brand_clarification.md`(新設): agent 共通プロンプト、AskUserQuestion テンプレ + scope.json 保存例 + warning fallback フロー
+- `skills/_common/references/orchestrator_contract.md` §4: agnostic 化対応で §4.1〜§4.6 に再構成、`brand_fallback` warning スキーマを §2 に追記
+- `skills/_common/references/brand_migration_guide.md`: §7 チェックリストに `supported_brands` frontmatter 追記項目を追加、新章 §9「Phase 0 で確定した agnostic 規約サマリ」
+
+**検証結果**:
+- pytest: 27（brand_resolver） + 12（parse_subagent_return）= 39 件全 pass
+- Pilot 3 regression-zero: cp / me を `--brand stellar_aiz` / `--brand roleup` で起動、両方完走
+- check_brand_compliance: cp + me roleup で 20/20 PASS
+- VALID_BRANDS 外部参照: brand_resolver.py 以外でゼロ確認
+
+### Phase 1 のタスク（次セッション以降）
+
+1. **frontmatter 一括追加** — 全 fill SKILL.md に `supported_brands: [stellar_aiz]` を機械的に追加（pilot 3 は `[stellar_aiz, roleup]`）
+2. **共通プロンプトのコピペ展開** — agent 7 件（market-overview / strategy-report / company-deepdive / business-deepdive / smallcap-strategy-research / bdd-init / comparison-synthesis-agent）の Step 0 に `step0_brand_clarification.md` を埋め込み
+3. **orchestrator に warning fallback 実装** — fill 起動前の `is_brand_supported_by_skill` 呼び出しと `merge_warnings.json` への brand_fallback 追記
+4. **E2E 1 本** — market-overview-agent × roleup で疎通確認
+
+### Phase 2（5-10 セッション）
+
+BDD 系 fill 14 件を Pattern A/B/C で順次 brand-aware 化。優先順: executive-summary → revenue-analysis → data-availability → financial-benchmark → company-overview-pptx-v2。

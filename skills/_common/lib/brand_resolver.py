@@ -39,19 +39,128 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
+import warnings
 from dataclasses import dataclass, field
 from typing import Optional
 
 from pptx.dml.color import RGBColor
 from pptx.util import Inches, Pt
 
-VALID_BRANDS = ("stellar_aiz", "roleup")
 DEFAULT_BRAND = "stellar_aiz"
+
+# Brand id naming convention (D1, Phase 0, ISSUE-010):
+# - lowercase, start with letter, 2-24 chars, [a-z0-9_] only.
+# Used to validate brand id strings and to filter directory names when
+# discovering brands so .DS_Store / .git / non-brand dirs are silently skipped.
+_BRAND_ID_RE = re.compile(r"^[a-z][a-z0-9_]{1,23}$")
 
 # Resolve _common/brands/<id>/theme.json relative to this file.
 _LIB_DIR = os.path.dirname(os.path.abspath(__file__))
 _COMMON_DIR = os.path.dirname(_LIB_DIR)
 _BRANDS_DIR = os.path.join(_COMMON_DIR, "brands")
+
+# YAML frontmatter parser (Phase 0 simplification — no pyyaml dep).
+# Matches inline list format only: `supported_brands: [a, b, c]`.
+_FRONTMATTER_DELIMITER = "---"
+_FRONTMATTER_BRAND_RE = re.compile(
+    r"^supported_brands\s*:\s*\[([^\]]*)\]\s*$",
+    re.MULTILINE,
+)
+
+
+def _discover_brands(brands_dir: Optional[str] = None) -> tuple:
+    """Enumerate brand ids by scanning the brands directory.
+
+    A directory is recognized as a brand iff (a) its name matches the brand id
+    naming convention `_BRAND_ID_RE`, and (b) it contains a `theme.json` file.
+    Non-conforming names (e.g. `.DS_Store`, `.git`) are silently skipped.
+
+    Args:
+        brands_dir: Override directory to scan (used in tests). Defaults to
+                    `_BRANDS_DIR`.
+
+    Returns:
+        Alphabetically-sorted tuple of brand ids.
+    """
+    base = brands_dir if brands_dir is not None else _BRANDS_DIR
+    if not os.path.isdir(base):
+        return ()
+    found = []
+    for name in sorted(os.listdir(base)):
+        sub = os.path.join(base, name)
+        if not os.path.isdir(sub):
+            continue
+        if not _BRAND_ID_RE.match(name):
+            continue
+        if os.path.exists(os.path.join(sub, "theme.json")):
+            found.append(name)
+    return tuple(found)
+
+
+def _validate_brand_id(brand: str) -> None:
+    """Raise ValueError if brand id violates the D1 naming convention."""
+    if not isinstance(brand, str):
+        raise ValueError(f"brand must be str, got {type(brand).__name__}")
+    if not _BRAND_ID_RE.match(brand):
+        raise ValueError(
+            f"invalid brand id={brand!r}: must match {_BRAND_ID_RE.pattern} "
+            "(lowercase, start with letter, 2-24 chars, [a-z0-9_])"
+        )
+
+
+def _read_supported_brands(skill_md_path: str) -> tuple:
+    """Extract `supported_brands` list from a SKILL.md YAML frontmatter.
+
+    Only inline list format is supported: `supported_brands: [a, b, c]`.
+    Block list format (`supported_brands:\\n  - a`) is intentionally NOT
+    supported — declare with inline format only (Phase 0 simplification).
+
+    Returns:
+        Tuple of brand ids. Returns `(DEFAULT_BRAND,)` when the file lacks the
+        field, doesn't have frontmatter, or can't be read (backward compat:
+        legacy SKILL.md is assumed to support stellar_aiz only).
+    """
+    try:
+        with open(skill_md_path, encoding="utf-8") as f:
+            text = f.read()
+    except (FileNotFoundError, PermissionError, IsADirectoryError):
+        return (DEFAULT_BRAND,)
+
+    if not text.lstrip().startswith(_FRONTMATTER_DELIMITER):
+        return (DEFAULT_BRAND,)
+
+    parts = text.split(_FRONTMATTER_DELIMITER, 2)
+    if len(parts) < 3:
+        return (DEFAULT_BRAND,)
+    frontmatter = parts[1]
+
+    m = _FRONTMATTER_BRAND_RE.search(frontmatter)
+    if m is None:
+        return (DEFAULT_BRAND,)
+
+    raw = m.group(1)
+    items = tuple(s.strip().strip("'\"") for s in raw.split(",") if s.strip())
+    return items if items else (DEFAULT_BRAND,)
+
+
+def is_brand_supported_by_skill(skill_dir: str, brand: str) -> bool:
+    """Whether a skill claims support for a given brand.
+
+    Reads `supported_brands` from the skill's SKILL.md frontmatter. SKILL.md
+    without the field is treated as `[stellar_aiz]` (backward compat).
+
+    Args:
+        skill_dir: Absolute path to the skill directory (containing SKILL.md).
+        brand: Brand id to check.
+
+    Returns:
+        True iff `brand` appears in the skill's `supported_brands` list.
+    """
+    _validate_brand_id(brand)
+    skill_md = os.path.join(skill_dir, "SKILL.md")
+    supported = _read_supported_brands(skill_md)
+    return brand in supported
 
 
 def _hex_to_rgbcolor(hex_str: str) -> RGBColor:
@@ -261,7 +370,9 @@ def resolve_brand(brand: str, skill_dir: Optional[str] = None) -> BrandTheme:
     """Resolve brand id to a BrandTheme.
 
     Args:
-        brand: One of VALID_BRANDS. If not valid, raises ValueError.
+        brand: A discoverable brand id under `_common/brands/<id>/`. The id
+               must match the D1 naming convention; the directory must contain
+               a valid `theme.json`. Raises ValueError otherwise.
         skill_dir: Absolute path to the skill directory (the dir containing
                    `assets/`, `scripts/`, etc.). Used to load per-skill
                    layout.json. Pass None if the script doesn't need layout
@@ -270,8 +381,14 @@ def resolve_brand(brand: str, skill_dir: Optional[str] = None) -> BrandTheme:
     Returns:
         A frozen BrandTheme with all values resolved.
     """
-    if brand not in VALID_BRANDS:
-        raise ValueError(f"invalid brand={brand!r}; must be one of {VALID_BRANDS}")
+    _validate_brand_id(brand)
+
+    discovered = _discover_brands()
+    if brand not in discovered:
+        raise ValueError(
+            f"invalid brand={brand!r}; not discovered in {_BRANDS_DIR!r} "
+            f"(found: {discovered})"
+        )
 
     theme_data = _load_theme_json(brand)
 
@@ -312,10 +429,52 @@ def resolve_brand(brand: str, skill_dir: Optional[str] = None) -> BrandTheme:
 
 
 def add_brand_arg(parser: argparse.ArgumentParser) -> None:
-    """Register --brand on the given argparse parser. Default = stellar_aiz."""
+    """Register --brand on the given argparse parser. Default = stellar_aiz.
+
+    Choices are computed by `_discover_brands()` so adding a new brand is just
+    a matter of dropping `_common/brands/<new_id>/theme.json`. Existing fill
+    scripts pick up the new brand automatically on next invocation.
+    """
+    discovered = _discover_brands()
+    choices = discovered if discovered else (DEFAULT_BRAND,)
     parser.add_argument(
         "--brand",
         default=DEFAULT_BRAND,
-        choices=VALID_BRANDS,
-        help=f"Output brand (default: {DEFAULT_BRAND}). Options: {', '.join(VALID_BRANDS)}",
+        choices=choices,
+        help=f"Output brand (default: {DEFAULT_BRAND}). Discovered: {', '.join(choices)}",
     )
+
+
+def resolve_brand_with_fallback(
+    brand: str, skill_dir: str
+) -> tuple:
+    """Resolve a brand, falling back to stellar_aiz if the skill is unsupported.
+
+    Used by orchestrators that want a one-call solution for the
+    "warning + stella fallback" flow (D4). Equivalent to:
+
+        if is_brand_supported_by_skill(skill_dir, brand):
+            return (resolve_brand(brand, skill_dir), None)
+        else:
+            warnings.warn(...); return (resolve_brand(stellar_aiz, skill_dir), msg)
+
+    Args:
+        brand: The requested brand id.
+        skill_dir: Absolute path to the skill directory (must contain SKILL.md).
+
+    Returns:
+        `(theme, warning_message)`. `warning_message` is None if the requested
+        brand is supported; otherwise it is a human-readable string describing
+        the fallback (also emitted via `warnings.warn` as RuntimeWarning).
+    """
+    _validate_brand_id(brand)
+    if is_brand_supported_by_skill(skill_dir, brand):
+        return (resolve_brand(brand, skill_dir), None)
+
+    skill_name = os.path.basename(skill_dir.rstrip(os.sep))
+    msg = (
+        f"skill {skill_name!r} does not support brand {brand!r}; "
+        f"falling back to {DEFAULT_BRAND!r}"
+    )
+    warnings.warn(msg, RuntimeWarning, stacklevel=2)
+    return (resolve_brand(DEFAULT_BRAND, skill_dir), msg)
