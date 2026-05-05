@@ -15,7 +15,7 @@ description: >
   - 「対象会社と競合を1枚のスライドで比較したい」「比較表を作って」という要望
   - 既に対象会社と競合の情報が整理されている状態で、比較サマリー1枚の生成を求められた場合
   - `competitor-analysis-pptx` スキル（オーケストレーター）から呼び出された場合
-supported_brands: [stellar_aiz]
+supported_brands: [stellar_aiz, roleup]
 
 ---
 
@@ -192,9 +192,12 @@ pip install python-pptx lxml -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_competitor_summary.py \
   --data {{WORK_DIR}}/competitor_summary_data.json \
-  --template <SKILL_DIR>/assets/competitor-summary-template.pptx \
+  --brand stellar_aiz \
   --output {{OUTPUT_DIR}}/CompetitorSummary_output.pptx
 ```
+
+`--brand` を `roleup` に切り替えると Roleup ブランド (A4 横、Yu Gothic UI、褐色アクセント、固定 12/10/12pt フォント) で生成。
+`--template` は省略可（brand から `assets/<brand>/competitor-summary-template.pptx` を自動解決）。
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
 
