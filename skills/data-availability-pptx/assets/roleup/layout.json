@@ -1,0 +1,17 @@
+{
+  "_comment": "Roleup A4 横 (11.693×8.268 in). 左 6.80 in (テーブル) / 右 3.84 in (制約) で 2 分割。Source は cp roleup から流用 (0.41, 7.57, 10.88, 0.44)。",
+  "panel_y_in": 1.51,
+  "panel_h_in": 5.45,
+  "left_x_in": 0.41,
+  "left_w_in": 6.80,
+  "right_x_in": 7.41,
+  "right_w_in": 3.83,
+  "source_x_in": 0.41,
+  "source_y_in": 7.57,
+  "source_w_in": 10.88,
+  "source_h_in": 0.44,
+  "table_col1_w_in": 2.40,
+  "table_col2_w_in": 0.50,
+  "table_col3_w_in": 1.20,
+  "table_col4_w_in": 2.70
+}

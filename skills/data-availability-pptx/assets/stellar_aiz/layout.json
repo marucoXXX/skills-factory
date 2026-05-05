@@ -1,0 +1,17 @@
+{
+  "_comment": "Stella 16:9 (13.33×7.50 in). Mirrors V1 hardcoded values in fill_data_availability.py for regression-zero.",
+  "panel_y_in": 1.50,
+  "panel_h_in": 5.25,
+  "left_x_in": 0.41,
+  "left_w_in": 8.00,
+  "right_x_in": 8.55,
+  "right_w_in": 4.40,
+  "source_x_in": 0.41,
+  "source_y_in": 7.05,
+  "source_w_in": 12.50,
+  "source_h_in": 0.25,
+  "table_col1_w_in": 2.80,
+  "table_col2_w_in": 0.55,
+  "table_col3_w_in": 1.35,
+  "table_col4_w_in": 3.30
+}
