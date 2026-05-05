@@ -157,6 +157,7 @@ ISSUE-004（v0.3）における新規オーケストレーター。`market-overv
 
 ```python
 import json
+from skills._common.lib.parse_subagent_return import parse_subagent_return
 result = Agent(
     subagent_type="research-subagent",
     description=f"{company_name} の<論点名>調査",
@@ -172,7 +173,10 @@ result = Agent(
         "search_budget": {"min_searches": 5, "max_searches": 8}
     })
 )
-parsed = json.loads(result)
+# subagent return は parse_subagent_return() 経由で dict 化する（必須）。
+# 直接 json.loads(result) しないこと: subagent が稀に前置き文・code fence・末尾
+# Sources を混入させるため（ISSUE-009）。helper はそれらを吸収する。
+parsed = parse_subagent_return(result)
 # parsed["data"] を {{work_dir}}/data_<NN>_<topic>.json に Write で書き出す
 ```
 
