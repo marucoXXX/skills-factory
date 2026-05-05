@@ -515,6 +515,11 @@ PROFILES: dict[tuple, list[Callable]] = {
         r for r in _COMMON_ROLEUP_RULES
         if r not in (rule_chart_axis_font_size, rule_no_chart_builtin_legend)
     ],
+    ("market-kbf-pptx", "roleup"): [
+        # market-kbf もテーブルのみでチャート不在のため C10/C12 を除外
+        r for r in _COMMON_ROLEUP_RULES
+        if r not in (rule_chart_axis_font_size, rule_no_chart_builtin_legend)
+    ],
     ("company-history-pptx", "roleup"): [
         # ch にはチャートが無いため C10/C12 を除外
         r for r in _COMMON_ROLEUP_RULES
@@ -534,6 +539,7 @@ PROFILES: dict[tuple, list[Callable]] = {
     ("market-share-pptx", "stellar_aiz"): [],       # TODO: ISSUE-010
     ("positioning-map-pptx", "stellar_aiz"): [],    # TODO: ISSUE-010
     ("competitor-summary-pptx", "stellar_aiz"): [], # TODO: ISSUE-010
+    ("market-kbf-pptx", "stellar_aiz"): [],         # TODO: ISSUE-010
 }
 
 
