@@ -544,14 +544,29 @@ V2 で各スキルに A4 横（11.69×8.27）+ Yu Gothic UI + 褐色アクセン
 ### Phase 1 進捗
 
 - ✅ **(i) frontmatter 一括追加** — 全 fill SKILL.md に supported_brands を機械的追加（commit `5837223`、48 件 / pilot 3 = `[stellar_aiz, roleup]` / その他 = `[stellar_aiz]` / nttdata-pptx は除外で default `(stellar_aiz,)` 扱い、merge-pptxv2 は glob 不一致で自然除外）
-- ⏳ **(ii) 共通プロンプトのコピペ展開** — agent 7 件（market-overview / strategy-report / company-deepdive / business-deepdive / smallcap-strategy-research / bdd-init / comparison-synthesis-agent）の Step 0 に `step0_brand_clarification.md` を埋め込み
-- ⏳ **(iii) orchestrator に warning fallback 実装** — fill 起動前の `is_brand_supported_by_skill` 呼び出しと `merge_warnings.json`(または別ファイル) への brand_fallback 追記
-- ⏳ **(iv) E2E 1 本** — market-overview-agent × roleup で疎通確認
+- ✅ **(ii) 共通プロンプトのコピペ展開** — agent 7 件（market-overview / strategy-report / company-deepdive / business-deepdive / smallcap-strategy-research / bdd-init / comparison-synthesis-agent）の Step 0 に `step0_brand_clarification.md` の sync コメント + 短縮抜粋（AskUserQuestion 擬似コード + scope 保存仕様）を埋め込み（commit `42e5377`、grep で 7 件全 hit）
+- ✅ **(iii) orchestrator に warning fallback 実装** — `_common/lib/orchestrator_helpers.py` に `resolve_fill_brand_with_warning()` / `append_brand_warnings_to_merge_file()` を新設し pytest 10 ケース全 pass（commit `c07ac24`）。bdd-init を除く 6 agent の fill 起動ループに warning fallback 擬似コード差し込み（commit `a70304a`）。warning 蓄積先は `merge_warnings.json` 流用（orchestrator が merge 後に append、merge-pptxv2 の `"w"` 上書きとの干渉を回避）
+- ⏳ **(iv) E2E 1 本** — market-overview-agent × roleup で疎通確認（次セッション）
 
-**次セッションは (ii)+(iii) をまとめて実施**(密接に連動)。実装ヒント:
-- agent SKILL.md の Step 0 冒頭に `<!-- source: skills/_common/prompts/step0_brand_clarification.md (manual sync until D2) -->` コメント付きでコピペ
-- orchestrator は scope.json の brand 確定後、各 fill 起動 loop で `is_brand_supported_by_skill(skill_dir, scope_brand)` を呼ぶ
-- warning 蓄積先（既存 `merge_warnings.json` を流用するか、別ファイル `brand_warnings.json` を切るか）は (iii) 着手時に判断
+### Phase 1 (ii)+(iii) 完了内容（2026-05-05）
+
+**ユーザー確定事項**（本セッション）:
+- Q-A 共通プロンプト埋め込み方式: **短縮抜粋 + 参照リンク**（既存 `step0_scope_clarification.md` の sync 慣習に準拠）
+- Q-B warning fallback 蓄積先: **`merge_warnings.json` 流用**（§4.4 確定済スキーマと整合、別ファイル分割回避）
+- Q-C warning fallback ロジック集約: **`_common/lib/orchestrator_helpers.py` 新設**（pytest 担保 + Phase 2 以降の保守性）
+
+**重要発見**: `merge-pptxv2/scripts/merge_pptx_v2.py:321-328` の `write_merge_warnings()` は `"w"` モードで `merge_warnings.json` を**新規上書き**する。orchestrator が fill 起動前に追記すると merge 時に消えるため、**「fill ループ中はメモリバッファ → merge 完了後に read+append+write」フロー**で干渉を回避する設計を採用。
+
+**実装ファイル**:
+- 新規 `skills/_common/lib/orchestrator_helpers.py`（60 行、2 関数）
+- 新規 `skills/_common/lib/test_orchestrator_helpers.py`（pytest 10 ケース、全 pass）
+- 改修 7 agent SKILL.md（market-overview / strategy-report / company-deepdive / business-deepdive / smallcap-strategy-research / bdd-init / comparison-synthesis-agent、+450 行 / -31 行）
+
+**business-deepdive-agent の特殊対応**: 内部呼び出し JSON schema に `"brand"` フィールドを追加（親 `company-deepdive-agent` の `scope.json.brand` を子に転写、子側で AskUserQuestion 再質問しない）。`segment_summary.json` schema に `brand` / `brand_warnings` を追加し、子は `merge_warnings.json` に直接書かず親に返却する責務分離。
+
+**bdd-init の特殊対応**: 「実行手順」の冒頭に新 Step 0「ブランド確認」を新設（既存は Step 1 mkdir から開始）。Step 2 で `meta.json.brand` / `meta.json.brand_label` を保存し、後続の `bdd-report` 等が読む設計（fill を直接起動しないため (iii) は対象外）。
+
+**検証結果**: pytest 49 件全 pass（27 brand_resolver + 12 parse_subagent_return + 10 orchestrator_helpers）、sync コメント 7 件 grep ヒット、helper 単体動作確認 OK（pilot3 + roleup → roleup / swot + roleup → stellar_aiz fallback + buffer 1 件）。
 
 ### Phase 2（5-10 セッション）
 
