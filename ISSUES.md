@@ -627,6 +627,11 @@ add_brand_arg(<parser_var>)  # passive: accepted but ignored until brand migrati
 | 着手順 | スキル | 状態 | Pattern | コミット |
 |---|---|---|---|---|
 | 1 | `executive-summary-pptx` | ✅ 完了 | A (hardcode 駆動) | `a96f53f`(2026-05-05) |
+| C-1 | `market-share-pptx` | ✅ 完了 | A | `0f6dffd`(2026-05-05) |
+| C-2 | `positioning-map-pptx` | ✅ 完了 | A | `64599c8`(2026-05-05) |
+| C-3 | `competitor-summary-pptx` | ✅ 完了 | A | `fc6e5e7`(2026-05-05) |
+| C-4 | `market-kbf-pptx` | ✅ 完了 | A | `9c02a67`(2026-05-05) |
+| C-5 | `pest-analysis-pptx` | ✅ 完了 | A | `f12f738`(2026-05-05) |
 | 2 | `revenue-analysis-pptx` | ⏳ 未着手 | A 想定 | — |
 | 3 | `data-availability-pptx` | ⏳ 未着手 | A or B | — |
 | 4 | `financial-benchmark-pptx` | ⏳ 未着手 | A 想定 | — |
@@ -635,10 +640,10 @@ add_brand_arg(<parser_var>)  # passive: accepted but ignored until brand migrati
 ### Phase 2 着手点（次セッション以降）
 
 1. **BDD 系 fill 14 件の brand-aware 化** を Pattern A/B/C で順次。優先順: ~executive-summary~ → revenue-analysis → data-availability → financial-benchmark → company-overview-pptx-v2。各 fill は既に `add_brand_arg(parser)` を呼んでいるので、`args.brand` を読み出して `resolve_brand` で theme を取り、Pattern A (hardcode 駆動) / Pattern B (rPr/tcPr 駆動) / Pattern C (HTML 駆動) で brand 別出力を実装。
-2. **市場系 fill 5 件**（market-share / positioning-map / competitor-summary / market-kbf / pest-analysis）の brand-aware 化（market-overview-agent × roleup の完全 native 化に必要）。
-3. **Phase 1 (iv) 残り課題**:
-   - 項目 2: テンプレート/script 命名不統一（toc/section-divider/market-kbf）→ Phase 2 着手時に整理
-   - 項目 3: pilot 3 (market-environment) × roleup の year suffix（"2025E"）→ Phase 2 でデータ生成側で integer 化を強制するか fill 側で strip するか決める
+2. ~~**市場系 fill 5 件**（market-share / positioning-map / competitor-summary / market-kbf / pest-analysis）の brand-aware 化（market-overview-agent × roleup の完全 native 化に必要）~~ → **C-1〜C-5 全件完了 (2026-05-05)**。
+3. ~~**Phase 1 (iv) 残り課題**~~ → **完了 (2026-05-05、commit 7dec7b6)**:
+   - ~~項目 2: テンプレート/script 命名不統一（toc/section-divider/market-kbf）~~ → 統一済み
+   - ~~項目 3: pilot 3 (market-environment) × roleup の year suffix（"2025E"）~~ → fill 側で strip 実装済み (`_year_to_int`)
 
 ### executive-summary-pptx 完了内容（2026-05-05、commit `a96f53f`）
 
