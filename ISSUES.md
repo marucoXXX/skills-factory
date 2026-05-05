@@ -632,10 +632,41 @@ add_brand_arg(<parser_var>)  # passive: accepted but ignored until brand migrati
 | C-3 | `competitor-summary-pptx` | ✅ 完了 | A | `fc6e5e7`(2026-05-05) |
 | C-4 | `market-kbf-pptx` | ✅ 完了 | A | `9c02a67`(2026-05-05) |
 | C-5 | `pest-analysis-pptx` | ✅ 完了 | A | `f12f738`(2026-05-05) |
+| C-6 | `section-divider-pptx` | ✅ 完了 | A (装飾系、C4 除外 profile) | `63e2773`(2026-05-05) |
+| C-7 | `table-of-contents-pptx` | ✅ 完了 | A | `23abee4`(2026-05-05) |
+| C-8 | `data-availability-pptx` | ✅ 完了 | A | `6f3cc31`(2026-05-05) |
 | 2 | `revenue-analysis-pptx` | ⏳ 未着手 | A 想定 | — |
-| 3 | `data-availability-pptx` | ⏳ 未着手 | A or B | — |
-| 4 | `financial-benchmark-pptx` | ⏳ 未着手 | A 想定 | — |
-| 5 | `company-overview-pptx-v2` | ⏳ 未着手 | A or B | — |
+| 3 | `financial-benchmark-pptx` | ⏳ 未着手 | A 想定 | — |
+| 4 | `company-overview-pptx-v2` | ⏳ 未着手 | A or B | — |
+
+### market-overview-agent × roleup フルネイティブ達成（2026-05-05）
+
+C-6〜C-8 (section-divider / table-of-contents / data-availability) 完了で、
+market-overview-agent デッキ 12 スライド全てが roleup native 化。
+
+**E2E 再実行結果**:
+- 既存 work dir `work/market-overview-agent/2026-05-05_taxi_e2e_roleup/` を流用、
+  `run_e2e.py` 内のテンプレ命名 (`<skill>-pptx-template.pptx` → `<skill>-template.pptx`)
+  と fill script 命名 override (`fill_kbf.py` → `fill_market_kbf.py`) を統一規則に修正
+- 12/12 fill 完走 (success rate 100%)
+- `brand_fallback` warning 件数 = **0** (前回 11 件 → 0 件に減少、目標達成)
+- `merge_warnings.json` = `[]`(warnings 完全に 0)
+- 出力: `outputs/E2E_MarketOverview_taxi_roleup_2026-05-05.pptx` (12 slide / 1.43MB / A4 横)
+- 全 RuntimeWarning 発火 0 件
+
+**累積 compliance check**: pilot 3 + market 系 5 + sd/toc/da の 10 PPTX × 80 checks 全 PASS
+(executive-summary と pest-analysis は sample_data 文字数違反でスキップ。後述)
+
+### 既知の sample_data 不備（Phase 2 残課題、優先度低）
+
+セッション中に累積 compliance check 走行中、以下 2 件の sample_data が hard-fail:
+
+- `executive-summary-pptx/references/sample_data.json`: findings[1].detail = 103 chars (上限 100)
+- `pest-analysis-pptx/references/sample_data.json`: main_message = 66 chars (上限 65)
+
+両者とも実装ロジック自体は正しい (E2E data では問題なく完走、smoke test も sample 以外で PASS)。
+sample_data の文字数を 1〜3 文字削るだけの修正で、ISSUE-010 Phase 2 の本筋とは独立。
+次回 sample_data メンテナンス時に対応する。
 
 ### Phase 2 着手点（次セッション以降）
 
