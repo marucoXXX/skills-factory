@@ -546,7 +546,7 @@ V2 で各スキルに A4 横（11.69×8.27）+ Yu Gothic UI + 褐色アクセン
 - ✅ **(i) frontmatter 一括追加** — 全 fill SKILL.md に supported_brands を機械的追加（commit `5837223`、48 件 / pilot 3 = `[stellar_aiz, roleup]` / その他 = `[stellar_aiz]` / nttdata-pptx は除外で default `(stellar_aiz,)` 扱い、merge-pptxv2 は glob 不一致で自然除外）
 - ✅ **(ii) 共通プロンプトのコピペ展開** — agent 7 件（market-overview / strategy-report / company-deepdive / business-deepdive / smallcap-strategy-research / bdd-init / comparison-synthesis-agent）の Step 0 に `step0_brand_clarification.md` の sync コメント + 短縮抜粋（AskUserQuestion 擬似コード + scope 保存仕様）を埋め込み（commit `42e5377`、grep で 7 件全 hit）
 - ✅ **(iii) orchestrator に warning fallback 実装** — `_common/lib/orchestrator_helpers.py` に `resolve_fill_brand_with_warning()` / `append_brand_warnings_to_merge_file()` を新設し pytest 10 ケース全 pass（commit `c07ac24`）。bdd-init を除く 6 agent の fill 起動ループに warning fallback 擬似コード差し込み（commit `a70304a`）。warning 蓄積先は `merge_warnings.json` 流用（orchestrator が merge 後に append、merge-pptxv2 の `"w"` 上書きとの干渉を回避）
-- ⏳ **(iv) E2E 1 本** — market-overview-agent × roleup で疎通確認（次セッション）
+- ✅ **(iv) E2E 1 本** — market-overview-agent × `--brand roleup` 疎通確認完了（2026-05-05）
 
 ### Phase 1 (ii)+(iii) 完了内容（2026-05-05）
 
@@ -568,6 +568,41 @@ V2 で各スキルに A4 横（11.69×8.27）+ Yu Gothic UI + 褐色アクセン
 
 **検証結果**: pytest 49 件全 pass（27 brand_resolver + 12 parse_subagent_return + 10 orchestrator_helpers）、sync コメント 7 件 grep ヒット、helper 単体動作確認 OK（pilot3 + roleup → roleup / swot + roleup → stellar_aiz fallback + buffer 1 件）。
 
-### Phase 2（5-10 セッション）
+### Phase 1 (iv) E2E 完了内容（2026-05-05）
 
-BDD 系 fill 14 件を Pattern A/B/C で順次 brand-aware 化。優先順: executive-summary → revenue-analysis → data-availability → financial-benchmark → company-overview-pptx-v2。
+**E2E スコープ**: `market-overview-agent` × `scope.json.brand="roleup"` の Step 5（fill 起動ループ + brand fallback）+ Step 7（merge-pptxv2 + `append_brand_warnings_to_merge_file`）の疎通確認に集中。Web 検索（Step 1）/ fact-check（Step 2.5）/ visual review（Step 8）はスコープ外（brand wiring と直交）。
+
+**実行手順**: 既存 γ E2E（2026-04-28 国内タクシー市場、事業者のみ）の data 12 件を `work/market-overview-agent/2026-05-05_taxi_e2e_roleup/` にコピー → `scope.json.brand="roleup"` 設定 → Python ドライバー `run_e2e.py` で Step 5-7 を実行。
+
+**検証結果**:
+
+| 検証項目 | 期待値 | 実測値 | 結果 |
+|---|---|---|---|
+| 12 fill 完走 | 12/12 success | 12/12 | ✅ |
+| pilot 3 (market-environment) が `--brand roleup` で起動 | True | True | ✅ |
+| 非 pilot 9 skill が `--brand stellar_aiz` フォールバック | True (11 invocations: section-divider × 3 + 8 unique skills) | True | ✅ |
+| brand_fallback warning 件数 | 11 (section-divider 3 件 + 他 8 件) | 11 | ✅ |
+| `merge_warnings.json` のスキーマ整合 | §4.4 (`slide_index=-1`, `type="brand_fallback"`, `message`) | 完全一致 | ✅ |
+| merged PPTX 完走 | 12 slide | 12 slide / 842KB | ✅ |
+| `RuntimeWarning` 発火 | 11 件（fallback ごとに 1 回） | 11 件 | ✅ |
+
+**成果物**:
+- `outputs/E2E_MarketOverview_taxi_roleup_2026-05-05.pptx`(12 スライド、842KB)
+- `outputs/merge_warnings.json`(brand_fallback × 11)
+- `work/market-overview-agent/2026-05-05_taxi_e2e_roleup/{run_e2e.py, fill_results.json, merge_order.json, scope.json, data_*.json, slide_*.pptx}`
+
+**Phase 1 (iv) で炙り出した SKILL.md 整備課題（Phase 2 で対応）**:
+
+1. **`--brand` 引数の条件付き付与**: SKILL.md の擬似コード（market-overview-agent L567-L577 / strategy-report-agent / 他 5 agent）は `subprocess.run(["python", fill_script, "--brand", fill_brand, ...])` と無条件に `--brand` を渡すが、現状 `--brand` を受け付けるのは pilot 3（customer-profile / company-history / market-environment）のみ。**非 pilot 9 fill は plain `argparse.ArgumentParser` で `--brand` を未定義引数として SystemExit する**。E2E ドライバーでは `add_brand_arg` import を grep する `fill_supports_brand_flag()` ヘルパーで条件分岐を実装したが、orchestrator 側にも同等の判定が必要。Phase 2 で全 fill が `--brand` を passively 受けるように `add_brand_arg` を導入するのが本筋（その間は擬似コード側に注記）。
+2. **テンプレートパス命名の不統一**: `table-of-contents-pptx-template.pptx` / `section-divider-pptx-template.pptx` は `<skill_name>-template.pptx` 慣習から外れる（"-pptx-template" になっている）。`market-kbf-pptx` の fill script 名も `fill_kbf.py`(他は `fill_<skill_id>.py`)。orchestrator 側に explicit override が必要。Phase 2 で命名を揃えるか、orchestrator helper にマッピング dict を追加するかの判断を要する。
+3. **pilot 3 の roleup データバリデーション**: `market-environment` は roleup の `fiscal_period_format()` が ON のとき `int(d["year"])` を要求するため、`"2025E"`/`"2026E"` 等の estimated suffix 入りデータは ValueError で落ちる。Phase 2 では fill 内で suffix を strip するか、データ生成側（subagent prompt）に整数化を強制するかの判断を要する。今 E2E では手動で suffix を除去して回避。
+
+### Phase 2 着手点（次セッション以降）
+
+1. **Phase 1 (iv) 整備課題対応**:
+   - 全 fill に `add_brand_arg` を passive 導入（`--brand` 受領するが利用しない）— 30 分 × 25 fill ≒ 12h、または orchestrator 側で `fill_supports_brand_flag` を helper 化（より軽量）
+   - SKILL.md 擬似コードの `--brand` 付与を条件付き化（注記またはコード変更）
+2. **BDD 系 fill 14 件の brand-aware 化** を Pattern A/B/C で順次。優先順: executive-summary → revenue-analysis → data-availability → financial-benchmark → company-overview-pptx-v2。
+3. **市場系 fill 5 件**（market-share / positioning-map / competitor-summary / market-kbf / pest-analysis）の brand-aware 化（market-overview-agent × roleup の完全 native 化に必要）。
+
+**Phase 2（5-10 セッション）の前提**: Phase 1 (iv) E2E で wiring 自体は健全と確認済。fallback flow が運用可能なので、急いで brand-aware 化しなくても roleup ユーザーには「pilot 3 のみ roleup、他は stella で fallback」が透明性高く伝わる状態。
