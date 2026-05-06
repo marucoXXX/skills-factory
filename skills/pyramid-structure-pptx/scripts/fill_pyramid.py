@@ -14,7 +14,7 @@ fill_pyramid_native.py — N段ピラミッドをPowerPointネイティブオブ
 使い方:
   python fill_pyramid_native.py \\
     --data /home/claude/pyramid_data.json \\
-    --template <SKILL_DIR>/assets/pyramid-template-universal.pptx \\
+    --template <SKILL_DIR>/assets/pyramid-structure-template.pptx \\
     --output /mnt/user-data/outputs/PyramidStructure_output.pptx
 """
 
@@ -23,10 +23,14 @@ import os
 import json
 import sys
 
-# brand_resolver bootstrap (passive --brand acceptance until brand-aware migration)
+# brand_resolver bootstrap (Phase 2 — brand-aware: stellar_aiz / roleup)
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(SKILL_DIR, "..", "_common", "lib"))
-from brand_resolver import add_brand_arg  # noqa: E402
+from brand_resolver import resolve_brand, add_brand_arg  # noqa: E402
+from format_helpers import resolve_top_text, resolve_subtitle_text, require_source  # noqa: E402
+
+SKILL_ID = "pyramid-structure-pptx"
+_THEME = None
 
 from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
@@ -77,14 +81,13 @@ SHAPE_CHART_TITLE  = "Text Placeholder 2"
 SHAPE_DIAGRAM_AREA = "Pyramid Diagram Area"
 # ────────────────────────────────────────────────────────────
 
-# ── レイアウト定数 ─────────────────────────────────────────
-PYRAMID_TOP      = Inches(2.38)    # ピラミッドエリアの上端Y（中央寄せ）
-PYRAMID_BOTTOM   = Inches(6.27)    # ピラミッドエリアの下端Y（元の70%高さ）
-PYRAMID_CENTER_X = Inches(2.65)    # ピラミッド中心X
-PYRAMID_MAX_W    = Inches(4.10)    # 最下段の幅（最大・全段数共通）
-TIER_GAP         = Inches(0.04)    # 段と段の間の縦ギャップ
+# ── レイアウト定数 (stella 13.33×7.50 ベース; _apply_theme で roleup 用にスケール) ──
+PYRAMID_TOP      = Inches(2.38)
+PYRAMID_BOTTOM   = Inches(6.27)
+PYRAMID_CENTER_X = Inches(2.65)
+PYRAMID_MAX_W    = Inches(4.10)
+TIER_GAP         = Inches(0.04)
 
-# 段数別の最上段の幅（段数が少ないほど幅広に）
 PYRAMID_MIN_W_TABLE = {
     3: Inches(2.20),
     4: Inches(1.80),
@@ -93,12 +96,88 @@ PYRAMID_MIN_W_TABLE = {
     7: Inches(1.05),
 }
 
-DETAIL_LEFT      = Inches(5.30)    # 右側詳細エリアの左端
-DETAIL_RIGHT     = Inches(12.80)   # 右側詳細エリアの右端
-DETAIL_VLINE_X   = Inches(5.25)    # アクセント縦線のX
-DETAIL_TOP       = Inches(1.83)    # 右側詳細エリアの上端Y（元の90%高さ、中央寄せ）
-DETAIL_BOTTOM    = Inches(6.82)    # 右側詳細エリアの下端Y
+DETAIL_LEFT      = Inches(5.30)
+DETAIL_RIGHT     = Inches(12.80)
+DETAIL_VLINE_X   = Inches(5.25)
+DETAIL_TOP       = Inches(1.83)
+DETAIL_BOTTOM    = Inches(6.82)
+
+# Default colors / fonts (stella). _apply_theme(theme) overrides these for roleup.
+TIER_GRAD_TOP    = (47, 84, 150)     # 最上段濃色 (stella: 濃い青)
+TIER_GRAD_BOTTOM = (185, 205, 230)   # 最下段薄色 (stella: 薄い青)
+COLOR_FONT_LIGHT = RGBColor(0xFF, 0xFF, 0xFF)   # 上半分用
+COLOR_FONT_DARK  = RGBColor(0x1A, 0x1A, 0x2E)   # 下半分用
+COLOR_DETAIL_BG  = RGBColor(0xF3, 0xF5, 0xF8)
+COLOR_DETAIL_FG  = RGBColor(0x1A, 0x1A, 0x2E)
+COLOR_ACCENT     = RGBColor(0x44, 0x72, 0xC4)
+FONT_NAME        = "Meiryo UI"
+FONT_NAME_TITLE  = "Meiryo UI"
+
+# 段数別フォントサイズ (stella: 16/15/13/11pt 系列、roleup: 14/12/10pt 集合内)
+FONT_SIZE_TABLE = {
+    3: {"label": 16, "detail_title": 16, "detail_comment": 14},
+    4: {"label": 14, "detail_title": 15, "detail_comment": 13},
+    5: {"label": 13, "detail_title": 14, "detail_comment": 12},
+    6: {"label": 11, "detail_title": 13, "detail_comment": 11},
+    7: {"label": 10, "detail_title": 12, "detail_comment": 10},
+}
 # ────────────────────────────────────────────────────────────
+
+
+def _apply_theme(theme):
+    """roleup の場合、レイアウト・色・フォント・フォントサイズを brand 仕様に上書きする。"""
+    global PYRAMID_TOP, PYRAMID_BOTTOM, PYRAMID_CENTER_X, PYRAMID_MAX_W
+    global PYRAMID_MIN_W_TABLE, DETAIL_LEFT, DETAIL_RIGHT, DETAIL_VLINE_X
+    global DETAIL_TOP, DETAIL_BOTTOM
+    global TIER_GRAD_TOP, TIER_GRAD_BOTTOM, COLOR_FONT_LIGHT, COLOR_FONT_DARK
+    global COLOR_DETAIL_BG, COLOR_DETAIL_FG, COLOR_ACCENT
+    global FONT_NAME, FONT_NAME_TITLE, FONT_SIZE_TABLE
+    global _THEME
+    _THEME = theme
+
+    if theme.id != "roleup":
+        return
+
+    # A4 横 (11.69 × 8.27) 用にレイアウトを再計算
+    PYRAMID_TOP      = Inches(2.20)
+    PYRAMID_BOTTOM   = Inches(6.95)
+    PYRAMID_CENTER_X = Inches(2.40)
+    PYRAMID_MAX_W    = Inches(3.70)
+    PYRAMID_MIN_W_TABLE = {
+        3: Inches(2.00), 4: Inches(1.65), 5: Inches(1.40),
+        6: Inches(1.10), 7: Inches(0.95),
+    }
+    DETAIL_LEFT      = Inches(4.65)
+    DETAIL_RIGHT     = Inches(11.30)
+    DETAIL_VLINE_X   = Inches(4.60)
+    DETAIL_TOP       = Inches(1.65)
+    DETAIL_BOTTOM    = Inches(7.20)
+
+    # 色: roleup brand 茶系
+    palette = theme._defaults.get("chart_palette", []) if theme._defaults else []
+    # 最上段濃色 (label_bar = #7C4C2C)
+    top_hex = (palette[0] if palette else "#7C4C2C").lstrip("#")
+    TIER_GRAD_TOP = (int(top_hex[0:2], 16), int(top_hex[2:4], 16), int(top_hex[4:6], 16))
+    # 最下段薄色 (highlight_other = #CDCECE)
+    bottom_hex = (theme._colors.get("highlight_other", "#CDCECE")).lstrip("#")
+    TIER_GRAD_BOTTOM = (int(bottom_hex[0:2], 16), int(bottom_hex[2:4], 16), int(bottom_hex[4:6], 16))
+    COLOR_FONT_LIGHT = RGBColor(0xFF, 0xFF, 0xFF)
+    COLOR_FONT_DARK = theme.color("text")
+    COLOR_DETAIL_BG = theme.color("label_bg") if "label_bg" in theme._colors else theme.color("header_bg")
+    COLOR_DETAIL_FG = theme.color("text")
+    COLOR_ACCENT = theme.color("subtitle")  # #897141
+
+    FONT_NAME = theme._defaults.get("font_name_ja", "Yu Gothic UI")
+    FONT_NAME_TITLE = FONT_NAME
+
+    # roleup の C4 許容集合 [22, 14, 12, 10, 6] pt に整合
+    FONT_SIZE_TABLE = {
+        3: {"label": 14, "detail_title": 14, "detail_comment": 12},
+        4: {"label": 14, "detail_title": 14, "detail_comment": 12},
+        5: {"label": 12, "detail_title": 12, "detail_comment": 10},
+        6: {"label": 10, "detail_title": 12, "detail_comment": 10},
+        7: {"label": 10, "detail_title": 10, "detail_comment": 10},
+    }
 
 
 def find_shape(slide, name):
@@ -130,8 +209,8 @@ def set_placeholder_text(shape, text):
 
 def tier_fill_color(i, total):
     """段のインデックス(0=最上段)に応じて濃→薄のグラデーション"""
-    r1, g1, b1 = 47, 84, 150     # 最上段（濃い青）
-    r2, g2, b2 = 185, 205, 230   # 最下段（薄い青）
+    r1, g1, b1 = TIER_GRAD_TOP
+    r2, g2, b2 = TIER_GRAD_BOTTOM
     ratio = i / max(total - 1, 1)
     r = int(r1 + (r2 - r1) * ratio)
     g = int(g1 + (g2 - g1) * ratio)
@@ -142,8 +221,8 @@ def tier_fill_color(i, total):
 def tier_font_color(i, total):
     """上半分は白、下半分は濃色"""
     if i < total * 0.55:
-        return RGBColor(0xFF, 0xFF, 0xFF)
-    return RGBColor(0x1A, 0x1A, 0x2E)
+        return COLOR_FONT_LIGHT
+    return COLOR_FONT_DARK
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -256,7 +335,7 @@ def add_tier_rectangle(slide, tier_geo, tier_index, n_tiers, title_text):
     run.font.size = Pt(fs_table["label"])
     run.font.bold = True
     run.font.color.rgb = font_color
-    run.font.name = "Meiryo UI"
+    run.font.name = FONT_NAME_TITLE
 
     return shape
 
@@ -286,21 +365,21 @@ def add_detail_textbox(slide, tier_geo, tier_index, n_tiers, title_text, comment
     if bodyPr is not None:
         bodyPr.set("anchor", "ctr")
 
-    # 背景色（薄いグレー）
+    # 背景色
     txBox.fill.solid()
-    txBox.fill.fore_color.rgb = RGBColor(0xF3, 0xF5, 0xF8)
+    txBox.fill.fore_color.rgb = COLOR_DETAIL_BG
 
-    # タイトル行（太字・黒）
+    # タイトル行
     para = tf.paragraphs[0]
     para.space_after = Pt(2)
     run = para.add_run()
     run.text = f"{tier_index + 1}. {title_text}"
     run.font.size = Pt(fs_table["detail_title"])
     run.font.bold = True
-    run.font.color.rgb = RGBColor(0x1A, 0x1A, 0x2E)
-    run.font.name = "Meiryo UI"
+    run.font.color.rgb = COLOR_DETAIL_FG
+    run.font.name = FONT_NAME
 
-    # コメント行（黒文字）
+    # コメント行
     for comment in comments:
         p = tf.add_paragraph()
         p.space_before = Pt(1)
@@ -309,8 +388,8 @@ def add_detail_textbox(slide, tier_geo, tier_index, n_tiers, title_text, comment
         r.text = f"・{comment}"
         r.font.size = Pt(fs_table["detail_comment"])
         r.font.bold = False
-        r.font.color.rgb = RGBColor(0x1A, 0x1A, 0x2E)
-        r.font.name = "Meiryo UI"
+        r.font.color.rgb = COLOR_DETAIL_FG
+        r.font.name = FONT_NAME
 
     return txBox
 
@@ -343,53 +422,79 @@ def main():
         description="N段ピラミッドをPowerPointネイティブオブジェクトで動的生成する"
     )
     parser.add_argument("--data",     required=True, help="pyramid_data.json のパス")
-    parser.add_argument("--template", required=True, help="pyramid-template-universal.pptx のパス")
+    parser.add_argument("--template", required=False, default=None, help="(任意) テンプレートを明示指定")
     parser.add_argument("--output",   required=True, help="出力PPTXのパス")
-    add_brand_arg(parser)  # passive: accepted but ignored until brand migration
+    add_brand_arg(parser)
     args = parser.parse_args()
 
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    # Phase 2: brand-aware
+    theme = resolve_brand(args.brand, SKILL_DIR)
+    _apply_theme(theme)
+    require_source(data, theme, skill_id=SKILL_ID)
+    template_path = args.template or theme.template_path(SKILL_DIR, "pyramid-structure")
+
     pyramids = data.get("pyramids", [])
     n_tiers = len(pyramids)
-    accent_color = RGBColor(0x44, 0x72, 0xC4)
 
-    print(f"📐 {n_tiers}段ピラミッドを生成します（ネイティブオブジェクト方式）...")
+    print(f"📐 {n_tiers}段ピラミッドを生成 (brand={theme.id})...")
 
-    prs = Presentation(args.template)
+    prs = Presentation(template_path)
     slide = prs.slides[0]
 
-    # Diagram Area プレースホルダー削除
     diag = find_shape(slide, SHAPE_DIAGRAM_AREA)
     if diag:
         slide.shapes._spTree.remove(diag._element)
 
-    # Main Message
-    main_msg = data.get("main_message", "").strip()
-    if main_msg:
-        set_placeholder_text(find_shape(slide, SHAPE_MAIN_MESSAGE), main_msg)
-        print(f"  [Main Message] {main_msg[:60]}{'...' if len(main_msg) > 60 else ''}")
+    # Top text (stella: main_message / roleup: chart_title)
+    top_text = resolve_top_text(data, theme).strip()
+    if top_text:
+        set_placeholder_text(find_shape(slide, SHAPE_MAIN_MESSAGE), top_text)
+        print(f"  [Top]      {top_text[:60]}{'...' if len(top_text) > 60 else ''}")
 
-    # Chart Title
-    chart_title = data.get("chart_title", "").strip()
-    if chart_title:
-        set_placeholder_text(find_shape(slide, SHAPE_CHART_TITLE), chart_title)
-        print(f"  [Chart Title]  {chart_title}")
+    # Subtitle (stella: chart_title / roleup: main_message)
+    sub_text = resolve_subtitle_text(data, theme).strip()
+    if sub_text:
+        set_placeholder_text(find_shape(slide, SHAPE_CHART_TITLE), sub_text)
+        print(f"  [Subtitle] {sub_text[:60]}{'...' if len(sub_text) > 60 else ''}")
 
-    # ピラミッド座標計算
     tier_geos = calc_tier_geometry(n_tiers)
 
-    # 各段のShape生成
     for i, (geo, pyr_data) in enumerate(zip(tier_geos, pyramids)):
         title = pyr_data.get("title", "").strip()
         comments = [c.strip() for c in pyr_data.get("comments", [])]
 
         add_tier_rectangle(slide, geo, i, n_tiers, title)
         add_detail_textbox(slide, geo, i, n_tiers, title, comments)
-        add_accent_line(slide, geo, accent_color)
+        add_accent_line(slide, geo, COLOR_ACCENT)
 
         print(f"  [Tier {i+1}] {title} ({len(comments)} comments)")
+
+    # Source 出典 (roleup: Source 3 placeholder, stella: 動的 textbox)
+    source_text = (data.get("source") or data.get("source_label")
+                   or data.get("source_text") or "").strip()
+    if source_text:
+        if theme.is_source_required():
+            src_shape = find_shape(slide, "Source 3")
+            if src_shape is not None:
+                set_placeholder_text(src_shape, f"出典: {source_text}")
+                src_size_pt = int(theme._defaults.get("font_size_source_pt", 6))
+                src_color = theme.color("source")
+                for para in src_shape.text_frame.paragraphs:
+                    for run in para.runs:
+                        run.font.size = Pt(src_size_pt)
+                        run.font.color.rgb = src_color
+                        run.font.name = FONT_NAME
+        else:
+            tb = slide.shapes.add_textbox(Inches(0.41), Inches(7.10),
+                                          Inches(12.50), Inches(0.30))
+            tb.text_frame.text = f"出典: {source_text}"
+            for run in tb.text_frame.paragraphs[0].runs:
+                run.font.size = Pt(9)
+                run.font.color.rgb = RGBColor(0x60, 0x60, 0x60)
+        print(f"  [Source]   {source_text[:60]}")
 
     prs.save(args.output)
 

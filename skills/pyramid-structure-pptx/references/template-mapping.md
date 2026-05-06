@@ -1,6 +1,6 @@
 # テンプレートShape名マッピング表
 
-pyramid-template-universal.pptx 確認済み（2026-04、v4 — ネイティブオブジェクト動的生成方式）。
+pyramid-structure-template.pptx 確認済み（2026-04、v4 — ネイティブオブジェクト動的生成方式）。
 
 ---
 
