@@ -620,6 +620,13 @@ PROFILES: dict[tuple, list[Callable]] = {
         r for r in _COMMON_ROLEUP_RULES
         if r not in (rule_chart_axis_font_size, rule_no_chart_builtin_legend)
     ],
+    ("five-forces-pptx", "roleup"): [
+        # five-forces は Rectangle 5 (中央) + Rectangle 15/17/18/20 (周囲) +
+        # 矢印 4 本 + TextBox 30 (意味合い) の図形系スライド。
+        # chart object 不在のため C10/C12 を除外、残り 8 ルール (C1/C2/C4/C5/C6/C7/C8/C11) を適用。
+        r for r in _COMMON_ROLEUP_RULES
+        if r not in (rule_chart_axis_font_size, rule_no_chart_builtin_legend)
+    ],
     # stella 版は ISSUE-010 で stella 仕様確定後に追加 (現状 skeleton)
     ("customer-profile-pptx", "stellar_aiz"): [],   # TODO: ISSUE-010
     ("market-environment-pptx", "stellar_aiz"): [], # TODO: ISSUE-010
@@ -648,6 +655,7 @@ PROFILES: dict[tuple, list[Callable]] = {
     ("business-model-pptx", "stellar_aiz"): [],  # TODO: ISSUE-010
     ("customer-sales-detail-pptx", "stellar_aiz"): [],  # TODO: ISSUE-010
     ("current-period-forecast-pptx", "stellar_aiz"): [],  # TODO: ISSUE-010
+    ("five-forces-pptx", "stellar_aiz"): [],  # TODO: ISSUE-010
 }
 
 

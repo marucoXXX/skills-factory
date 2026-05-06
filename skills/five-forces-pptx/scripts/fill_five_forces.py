@@ -24,11 +24,17 @@ import json
 import os
 import sys
 
-# brand_resolver bootstrap (passive --brand acceptance until brand-aware migration)
+# brand_resolver bootstrap (Phase 2 — brand-aware: stellar_aiz / roleup)
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(SKILL_DIR, "..", "_common", "lib"))
-from brand_resolver import add_brand_arg  # noqa: E402
+from brand_resolver import resolve_brand, add_brand_arg  # noqa: E402
+from format_helpers import resolve_top_text, resolve_subtitle_text, require_source  # noqa: E402
+
+SKILL_ID = "five-forces-pptx"
+
 from pptx import Presentation
+from pptx.util import Inches, Pt
+from pptx.dml.color import RGBColor
 from pptx.oxml.ns import qn
 from lxml import etree
 
@@ -76,7 +82,18 @@ SHAPE_BUYER             = "Rectangle 17"      # 買い手の交渉力
 SHAPE_NEW_ENTRANT       = "Rectangle 18"      # 新規参入の脅威
 SHAPE_SUBSTITUTE        = "Rectangle 20"      # 代替品の脅威
 SHAPE_IMPLICATIONS      = "TextBox 30"        # 意味合い
+SHAPE_SOURCE            = "Source 3"           # roleup: 下端 Source placeholder
+SHAPE_GUIDE_RECT_LEFT   = "正方形/長方形 1"   # roleup: 茶色ガイド矩形 (除去対象)
+SHAPE_GUIDE_RECT_RIGHT  = "正方形/長方形 8"   # roleup: 茶色ガイド矩形 (除去対象)
 # ──────────────────────────────────────────────────────────
+
+
+def silent_remove_shape(slide, name):
+    """指定 shape をエラー出さず削除 (存在しなければ no-op)。"""
+    for sh in list(slide.shapes):
+        if sh.name == name:
+            sh._element.getparent().remove(sh._element)
+            return
 
 
 def find_shape(slide, name):
@@ -218,34 +235,39 @@ def fill_implications(slide, items):
 def main():
     parser = argparse.ArgumentParser(description="Five ForcesデータをPPTXに流し込む")
     parser.add_argument("--data",     required=True, help="five_forces_data.json のパス")
-    parser.add_argument("--template", required=True, help="five-forces-template.pptx のパス")
+    parser.add_argument("--template", required=False, default=None, help="(任意) テンプレートを明示指定")
     parser.add_argument("--output",   required=True, help="出力PPTXのパス")
-    add_brand_arg(parser)  # passive: accepted but ignored until brand migration
+    add_brand_arg(parser)
     args = parser.parse_args()
 
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    prs = Presentation(args.template)
+    # Phase 2: brand-aware
+    theme = resolve_brand(args.brand, SKILL_DIR)
+    require_source(data, theme, skill_id=SKILL_ID)
+    template_path = args.template or theme.template_path(SKILL_DIR, "five-forces")
+
+    prs = Presentation(template_path)
     slide = prs.slides[0]
 
-    # ── Main Message ──────────────────────────────────────
-    main_msg = data.get("main_message", "").strip()
-    if main_msg:
-        shape = find_shape(slide, SHAPE_MAIN_MESSAGE)
-        set_placeholder_text(shape, main_msg)
-        print(f"  [Main Message] {main_msg[:60]}{'...' if len(main_msg) > 60 else ''}")
-    else:
-        print("  ⚠ main_message が未設定です", file=sys.stderr)
+    # roleup: 茶色ガイド矩形を除去 (C1 担保)
+    silent_remove_shape(slide, SHAPE_GUIDE_RECT_LEFT)
+    silent_remove_shape(slide, SHAPE_GUIDE_RECT_RIGHT)
 
-    # ── Chart Title ───────────────────────────────────────
-    chart_title = data.get("chart_title", "").strip()
-    if chart_title:
+    # ── Top text (stella: main_message / roleup: chart_title) ──
+    top_text = resolve_top_text(data, theme).strip()
+    if top_text:
+        shape = find_shape(slide, SHAPE_MAIN_MESSAGE)
+        set_placeholder_text(shape, top_text)
+        print(f"  [Top]      {top_text[:60]}{'...' if len(top_text) > 60 else ''}")
+
+    # ── Subtitle (stella: chart_title / roleup: main_message) ──
+    sub_text = resolve_subtitle_text(data, theme).strip()
+    if sub_text:
         shape = find_shape(slide, SHAPE_CHART_TITLE)
-        set_placeholder_text(shape, chart_title)
-        print(f"  [Chart Title]  {chart_title}")
-    else:
-        print("  ⚠ chart_title が未設定です", file=sys.stderr)
+        set_placeholder_text(shape, sub_text)
+        print(f"  [Subtitle] {sub_text[:60]}{'...' if len(sub_text) > 60 else ''}")
 
     # ── Five Forces boxes ─────────────────────────────────
     force_mapping = [
@@ -269,6 +291,34 @@ def main():
         fill_implications(slide, implications)
     else:
         print("  ⚠ implications が未設定です", file=sys.stderr)
+
+    # ── Source (出典) ─────────────────────────────────────
+    source_text = (data.get("source") or data.get("source_label")
+                   or data.get("source_text") or "").strip()
+    if source_text:
+        if theme.is_source_required():
+            # roleup: Source 3 placeholder に流し込む
+            src_shape = find_shape(slide, SHAPE_SOURCE)
+            if src_shape is not None:
+                set_placeholder_text(src_shape, f"出典: {source_text}")
+                # フォントサイズ・色を保証 (C4 6pt + 茶系)
+                src_size_pt = int(theme._defaults.get("font_size_source_pt", 6))
+                src_color = theme.color("source")
+                src_font = theme._defaults.get("font_name_ja", "Yu Gothic UI")
+                for para in src_shape.text_frame.paragraphs:
+                    for run in para.runs:
+                        run.font.size = Pt(src_size_pt)
+                        run.font.color.rgb = src_color
+                        run.font.name = src_font
+        else:
+            # stella: 動的 textbox で下端に追加
+            tb = slide.shapes.add_textbox(Inches(0.41), Inches(7.10),
+                                          Inches(12.50), Inches(0.30))
+            tb.text_frame.text = f"出典: {source_text}"
+            for run in tb.text_frame.paragraphs[0].runs:
+                run.font.size = Pt(9)
+                run.font.color.rgb = RGBColor(0x60, 0x60, 0x60)
+        print(f"  [Source]   {source_text[:60]}")
 
     prs.save(args.output)
 
