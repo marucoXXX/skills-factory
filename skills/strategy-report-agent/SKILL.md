@@ -465,6 +465,17 @@ Step 1 で整理した情報を一旦 `{{WORK_DIR}}/data_*.json` として書き
 
 選択されたモード・スライドに応じて、以下のスキルを順次呼び出す。
 
+### ⚠️ 必読: fill_*.py 起動前のスキーマ確認（ISSUE-012 対策）
+
+各 fill_*.py を呼ぶ前に、**対応する `~/.claude/skills/<skill>/references/sample_data.json` を必ず Read** してスキーマ（キー名・必須/任意・ネスト構造・値の型/スケール）を確認すること。**想像で JSON を書かない**。
+
+**理由**: 2026-05-06 に positioning-map で発生した silent fail（オーケストレーターが想像で書いた JSON が fill 側に silent に無視され、空に近いスライドが出力された事故）の構造的再発防止。
+
+**現状の防衛線**:
+- positioning-map-pptx のみ hard-fail 検証あり（`_common/lib/validate_fill_input.py` 経由）
+- 他 PPTX スキルは silent fail の可能性が残るため、**sample_data.json の事前 Read を絶対省略しない**
+- 想定外キー WARN が stderr に出た場合は必ず修正する（タイポ・古いスキーマ流用のサイン）
+
 ### ⚠️ 最重要：ファイル名の番号は「最終並び順」と一致させること
 
 **過去の失敗パターン（絶対に繰り返さない）:**

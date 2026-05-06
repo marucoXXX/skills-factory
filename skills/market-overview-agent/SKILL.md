@@ -542,6 +542,17 @@ parsed = parse_subagent_return(result)
 
 strategy-report-agent v5.1 の規約と同じ。番号と最終並び順を一致させる。
 
+### ⚠️ 必読: fill_*.py 起動前のスキーマ確認（ISSUE-012 対策）
+
+各 fill_*.py を呼ぶ前に、**対応する `~/.claude/skills/<skill>/references/sample_data.json` を必ず Read** してスキーマ（キー名・必須/任意・ネスト構造・値の型/スケール）を確認すること。**想像で JSON を書かない**。
+
+**理由**: 2026-05-06 に positioning-map で発生した silent fail（オーケストレーターが想像で書いた JSON が fill 側に silent に無視され、空に近いスライドが出力された事故）の構造的再発防止。
+
+**現状の防衛線**:
+- positioning-map-pptx のみ hard-fail 検証あり（`_common/lib/validate_fill_input.py` 経由）
+- 他 PPTX スキルは silent fail の可能性が残るため、**sample_data.json の事前 Read を絶対省略しない**
+- 想定外キー WARN が stderr に出た場合は必ず修正する（タイポ・古いスキーマ流用のサイン）
+
 ### Step 5 開始前: brand fallback バッファ初期化（必須）
 
 scope.json から brand を読み出し、未対応 fill 検出用の warning バッファを初期化する。各 fill 起動前に `resolve_fill_brand_with_warning()` を呼び、未対応スキルでは `stellar_aiz` に fallback + warning を buffer に蓄積する（`skills/_common/lib/orchestrator_helpers.py` 参照）。
