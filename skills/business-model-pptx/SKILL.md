@@ -15,7 +15,7 @@ description: >
   - ユーザーが議事録・文字起こしを貼り付けて、事業モデルや取引構造のスライド化を求めた場合
   - 既に事業モデルの情報が整理されたテキストが提示され、PowerPoint化を求められた場合
   - 「ビジネスモデルキャンバス」「収益モデル」「マネタイズ構造」をスライドにしたいという要望
-supported_brands: [stellar_aiz]
+supported_brands: [stellar_aiz, roleup]
 
 ---
 
@@ -168,10 +168,15 @@ supported_brands: [stellar_aiz]
 
 ### テンプレートの参照
 
-テンプレートは `assets/business-model-template.pptx` を使用する。
+テンプレートは brand 別に分離されている (`assets/<brand>/business-model-template.pptx`)。
+`--brand` 引数を渡すか、`brand_resolver.template_path()` で自動解決される。
 
 ```bash
-TEMPLATE="<SKILL_DIR>/assets/business-model-template.pptx"
+# stella (16:9, Meiryo UI, ネイビー系)
+TEMPLATE="<SKILL_DIR>/assets/stellar_aiz/business-model-template.pptx"
+
+# roleup (A4 横, Yu Gothic UI, 茶系)
+TEMPLATE="<SKILL_DIR>/assets/roleup/business-model-template.pptx"
 ```
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
@@ -277,9 +282,12 @@ playwright install chromium 2>/dev/null
 
 python <SKILL_DIR>/scripts/fill_business_model.py \
   --data {{WORK_DIR}}/business_model_data.json \
-  --template <SKILL_DIR>/assets/business-model-template.pptx \
-  --output {{OUTPUT_DIR}}/BusinessModel_output.pptx
+  --output {{OUTPUT_DIR}}/BusinessModel_output.pptx \
+  --brand stellar_aiz
 ```
+
+`--brand roleup` を渡すと A4 横 + Yu Gothic UI + 茶系のテンプレ・配色で生成される。
+`--template` は任意 (省略時は brand 別 curated テンプレを自動解決)。
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
 
@@ -311,13 +319,17 @@ PowerPoint生成後、以下を確認：
 
 | ファイル名 | 用途 |
 |---|---|
-| `assets/business-model-template.pptx` | 事業モデルスライドテンプレート（Shape構造は references/template-mapping.md 参照） |
+| `assets/stellar_aiz/business-model-template.pptx` | stella (16:9, Meiryo UI, ネイビー系) 用テンプレート |
+| `assets/stellar_aiz/layout.json` | stella 用座標 (Title / Diagram / Implications) |
+| `assets/roleup/business-model-template.pptx` | roleup (A4 横, Yu Gothic UI, 茶系) 用 curated テンプレート |
+| `assets/roleup/layout.json` | roleup 用座標 |
 
 ## スクリプト
 
 | ファイル名 | 用途 |
 |---|---|
-| `scripts/fill_business_model.py` | JSONデータからHTMLで事業モデル図を生成→スクリーンショット→PPTXに挿入するスクリプト |
+| `scripts/fill_business_model.py` | JSONデータからHTMLで事業モデル図を生成→スクリーンショット→PPTXに挿入するスクリプト。`--brand` で stella / roleup を切替 |
+| `scripts/build_roleup_template.py` | one-shot generator: stella テンプレから roleup curated テンプレを派生生成。テンプレ更新時のみ手動実行 |
 
 ## 参考
 
@@ -338,6 +350,7 @@ PowerPoint生成後、以下を確認：
 | 出力 PPTX ファイル名 | `slide_NN_business_model.pptx`（同上） |
 | 入力ディレクトリ | `{{WORK_DIR}}/company-deepdive-agent/<parent_run_id>/segments/<segment_slug>/` |
 | 出力ディレクトリ | 同上 |
+| brand | parent (`company-deepdive-agent`) の `scope.json.brand` を `--brand` で渡す |
 
 `business-deepdive-agent` は本スキルを **5 論点中 2 番目（ビジネスモデルは？）** として呼び出す。
 作業ディレクトリは `company-deepdive-agent` 配下のセグメント別 subdir に統一し、merge は親が担当。

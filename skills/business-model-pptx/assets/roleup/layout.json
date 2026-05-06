@@ -1,0 +1,16 @@
+{
+  "_comment": "roleup A4 横 (11.693×8.268 in) 用。V1 placeholder — stella テンプレを流用するため値も stella 互換。curated roleup テンプレ導入時に再採寸する。",
+  "title_x_in": 0.41,
+  "title_y_in": 0.61,
+  "title_w_in": 12.52,
+  "title_h_in": 0.44,
+  "chart_title_y_in": 1.07,
+  "diagram_x_in": 0.41,
+  "diagram_y_in": 1.81,
+  "diagram_w_in": 8.83,
+  "diagram_h_in": 5.22,
+  "implications_x_in": 9.52,
+  "implications_y_in": 1.81,
+  "implications_w_in": 3.41,
+  "implications_h_in": 5.22
+}

@@ -598,6 +598,28 @@ PROFILES: dict[tuple, list[Callable]] = {
         if r not in (rule_chart_axis_font_size, rule_no_chart_builtin_legend)
     ],
     ("scenario-forecast-pptx", "roleup"): list(_COMMON_ROLEUP_RULES),
+    ("business-model-pptx", "roleup"): [
+        # business-model は HTML→Playwright で生成した PNG を Picture として
+        # 挿入する Pattern C スキル。chart object 不在のため C10/C12 を除外。
+        # 残り 8 ルール (C1/C2/C4/C5/C6/C7/C8/C11) を適用。
+        r for r in _COMMON_ROLEUP_RULES
+        if r not in (rule_chart_axis_font_size, rule_no_chart_builtin_legend)
+    ],
+    ("customer-sales-detail-pptx", "roleup"): [
+        # customer-sales-detail も HTML→Playwright Pattern C スキル。
+        # テーブル全体は image として挿入されるため、テキスト系ルールは
+        # placeholder (Title 1 / Text Placeholder 2 / Source 3) のみ評価される。
+        # chart object 不在で C10/C12 除外、残り 8 ルール適用。
+        r for r in _COMMON_ROLEUP_RULES
+        if r not in (rule_chart_axis_font_size, rule_no_chart_builtin_legend)
+    ],
+    ("current-period-forecast-pptx", "roleup"): [
+        # current-period-forecast も Pattern C スキル (HTML→Playwright)。
+        # テーブル全体は image 化、placeholder のみ評価される。
+        # chart object 不在で C10/C12 除外、残り 8 ルール適用。
+        r for r in _COMMON_ROLEUP_RULES
+        if r not in (rule_chart_axis_font_size, rule_no_chart_builtin_legend)
+    ],
     # stella 版は ISSUE-010 で stella 仕様確定後に追加 (現状 skeleton)
     ("customer-profile-pptx", "stellar_aiz"): [],   # TODO: ISSUE-010
     ("market-environment-pptx", "stellar_aiz"): [], # TODO: ISSUE-010
@@ -623,6 +645,9 @@ PROFILES: dict[tuple, list[Callable]] = {
     ("sales-by-customer-pptx", "stellar_aiz"): [],  # TODO: ISSUE-010
     ("valuation-summary-pptx", "stellar_aiz"): [],  # TODO: ISSUE-010
     ("scenario-forecast-pptx", "stellar_aiz"): [],  # TODO: ISSUE-010
+    ("business-model-pptx", "stellar_aiz"): [],  # TODO: ISSUE-010
+    ("customer-sales-detail-pptx", "stellar_aiz"): [],  # TODO: ISSUE-010
+    ("current-period-forecast-pptx", "stellar_aiz"): [],  # TODO: ISSUE-010
 }
 
 
