@@ -725,8 +725,38 @@ roleup ネイティブで生成可能に。
   `current-period-forecast-template.pptx` へ統一 (`brand_resolver.template_path()` 規約に揃える)
 - 全 fill が `--brand stellar_aiz / roleup` で完走、SKILL.md `supported_brands: [stellar_aiz, roleup]`
 
-**company-deepdive-agent × roleup E2E**: 3 fill 完了したので次々セッションで実施可能。
-N=1 (二幸産業) work dir があれば流用、なければ簡易 E2E driver を整備して回す。
+### company-deepdive-agent × roleup E2E 完了 (2026-05-06、N=1 二幸産業)
+
+BDD トリオ + Pattern C 3 件で必要 fill が揃ったので、N=1 二幸産業 work dir
+(`work/company-deepdive-agent/2026-04-29_nikoh_sangyo/`、15 スライド構成) を流用して
+company-deepdive-agent × roleup の Step 5 (fill 起動 + brand fallback) + Step 7
+(merge-pptxv2 + warning 集約) の wiring 疎通確認を実施。
+Web 検索 / fact-check / visual review / 子 business-deepdive-agent 起動はスコープ外。
+
+**E2E スコープ**: 既存 work dir (data + 既存 slide_*.pptx + merge_order.json + segments/facilities/) を
+一切編集せず、`scope.json` (brand=roleup) と `run_e2e.py` (~150 行) の 2 ファイル新設のみで実施。
+事前 Phase 1 調査で 15 data 全件の roleup hard-fail 0 件を確認済 (data 側修正不要)。
+
+**検証結果**:
+
+| 検証項目 | 期待値 | 実測値 | 結果 |
+|---|---|---|---|
+| 15 fill 完走 | 15/15 success | 15/15 | ✅ |
+| 会社レベル 9 + facilities 4 + footer 1 が `--brand roleup` で起動 | True | True (14 invocations) | ✅ |
+| value-chain-matrix-pptx が `--brand stellar_aiz` フォールバック | True (1 件) | True | ✅ |
+| brand_fallback warning 件数 | 1 (value-chain-matrix のみ) | 1 | ✅ |
+| `merge_warnings.json` のスキーマ整合 | §4.4 (`slide_index=-1`, `type="brand_fallback"`) | 完全一致 | ✅ |
+| merged PPTX 完走 | 15 slide / A4 横 (11.69×8.27 in) | 15 slide / 11.69×8.27 / 1.77MB | ✅ |
+| pytest regression-zero | 49 passed | 49 passed | ✅ |
+
+**成果物**:
+- `outputs/E2E_CompanyDeepdive_nikoh_sangyo_roleup_2026-05-06.pptx` (15 スライド、1.77MB)
+- `outputs/merge_warnings.json` (brand_fallback × 1)
+- `work/company-deepdive-agent/2026-04-29_nikoh_sangyo/{run_e2e.py, scope.json, fill_results.json}` (work dir 内 git untracked)
+
+**残 ISSUE-010 タスク**: `value-chain-matrix-pptx` の brand-aware 化 (現状 stella fallback で
+warning 1 件、orchestrator 経由でも安全に動作)。優先度低、トリガーは Pattern C 移行検討時。
+他の戦略フレームワーク系 (swot / five-forces / value-chain / pyramid-structure 等) も同様に fallback 運用継続中。
 
 ### executive-summary-pptx 完了内容（2026-05-05、commit `a96f53f`）
 
