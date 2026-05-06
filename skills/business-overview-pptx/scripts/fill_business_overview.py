@@ -32,6 +32,7 @@ from format_helpers import (  # noqa: E402
     apply_line_spacing,
     format_fiscal_period,
 )
+from validate_fill_input import validate_fill_input  # noqa: E402
 
 SKILL_ID = "business-overview-pptx"
 
@@ -965,6 +966,18 @@ def main():
 
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
+
+    # ISSUE-012 (2026-05-06): スキーマ齟齬の silent fail 防止
+    validate_fill_input(
+        data,
+        required_top=["main_message", "segment_name", "overview"],
+        allowed_top=[
+            "main_message", "chart_title", "source",
+            "segment_name", "overview", "performance", "parent_company",
+            "title", "subtitle",
+        ],
+        skill_name=SKILL_ID,
+    )
 
     print(f"=== 事業セグメント概要スライド生成 (brand={theme.id}) ===")
     print(f"  Template: {template_path}")

@@ -48,6 +48,7 @@ from format_helpers import (  # noqa: E402
     resolve_top_text,
     resolve_subtitle_text,
 )
+from validate_fill_input import validate_fill_input  # noqa: E402
 
 SKILL_ID = "customer-profile-pptx"
 SHAPE_SOURCE = "Source 3"   # roleup template only; stella falls back to add_textbox
@@ -942,6 +943,18 @@ def main():
 
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
+
+    # ISSUE-012 (2026-05-06): スキーマ齟齬の silent fail 防止
+    validate_fill_input(
+        data,
+        required_top=["main_message", "company_overview"],
+        allowed_top=[
+            "main_message", "chart_title", "source",
+            "company_overview", "performance",
+            "title", "subtitle",
+        ],
+        skill_name=SKILL_ID,
+    )
 
     # Phase 4 (ISSUE-011): roleup は出所必須。stella は no-op (既存 warning 維持)。
     require_source(data, theme, skill_id=SKILL_ID)

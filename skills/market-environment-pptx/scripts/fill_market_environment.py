@@ -26,6 +26,7 @@ from format_helpers import (  # noqa: E402
     resolve_top_text,
     resolve_subtitle_text,
 )
+from validate_fill_input import validate_fill_input  # noqa: E402
 
 SKILL_ID = "market-environment-pptx"
 
@@ -720,6 +721,17 @@ def main():
     print(f"  ✓ Template: {template_path}")
 
     with open(args.data, "r", encoding="utf-8") as f: data = json.load(f)
+
+    # ISSUE-012 (2026-05-06): スキーマ齟齬の silent fail 防止
+    validate_fill_input(
+        data,
+        required_top=["main_message", "chart"],
+        allowed_top=[
+            "main_message", "chart_title", "section_title", "source", "chart",
+            "title", "subtitle",
+        ],
+        skill_name=SKILL_ID,
+    )
 
     _mm = data.get("main_message", "")
     if len(_mm) > 65:

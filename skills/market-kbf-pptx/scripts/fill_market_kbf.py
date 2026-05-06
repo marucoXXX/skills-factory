@@ -32,6 +32,7 @@ SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(SKILL_DIR, "..", "_common", "lib"))
 from brand_resolver import resolve_brand, add_brand_arg  # noqa: E402
 from format_helpers import resolve_top_text, resolve_subtitle_text, require_source  # noqa: E402
+from validate_fill_input import validate_fill_input  # noqa: E402
 
 SKILL_ID = "market-kbf-pptx"
 
@@ -480,6 +481,18 @@ def main():
 
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
+
+    # ISSUE-012 (2026-05-06): スキーマ齟齬の silent fail 防止
+    validate_fill_input(
+        data,
+        required_top=["main_message", "kbf_list"],
+        allowed_top=[
+            "main_message", "chart_title", "source", "kbf_list",
+            "title", "subtitle",
+        ],
+        per_item_required={"kbf_list": ["name", "description", "player_examples"]},
+        skill_name=SKILL_ID,
+    )
 
     require_source(data, theme, skill_id=SKILL_ID)
     validate_input(data)
