@@ -1,0 +1,14 @@
+{
+  "_comment": "Roleup A4 横 (11.693×8.268 in) — customer-profile roleup と同一座標 (左右 2 分割レイアウト)。chart 利用可能高さ = 7.57 - (1.51+0.55) ≈ 5.51 inch、安全側に 4.50 inch 確保。",
+  "panel_y_in": 1.51,
+  "left_x_in": 0.41,
+  "left_w_in": 5.23,
+  "right_x_in": 6.07,
+  "right_w_in": 5.23,
+  "chart_h_in": 4.50,
+  "label_col_w_in": 1.60,
+  "source_x_in": 0.41,
+  "source_y_in": 7.57,
+  "source_w_in": 10.88,
+  "source_h_in": 0.44
+}
