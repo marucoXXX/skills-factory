@@ -570,6 +570,13 @@ PROFILES: dict[tuple, list[Callable]] = {
         r for r in _COMMON_ROLEUP_RULES
         if r not in (rule_chart_axis_font_size, rule_no_chart_builtin_legend)
     ],
+    ("shareholder-structure-pptx", "roleup"): [
+        # shareholder-structure はネイティブテーブル 2 つ (株主 + 役員) +
+        # セクションタイトル textbox の構成、chart object 不在のため
+        # C10/C12 を除外。残り 8 ルール (C1/C2/C4/C5/C6/C7/C8/C11) を適用。
+        r for r in _COMMON_ROLEUP_RULES
+        if r not in (rule_chart_axis_font_size, rule_no_chart_builtin_legend)
+    ],
     # stella 版は ISSUE-010 で stella 仕様確定後に追加 (現状 skeleton)
     ("customer-profile-pptx", "stellar_aiz"): [],   # TODO: ISSUE-010
     ("market-environment-pptx", "stellar_aiz"): [], # TODO: ISSUE-010
@@ -586,6 +593,7 @@ PROFILES: dict[tuple, list[Callable]] = {
     ("revenue-analysis-pptx", "stellar_aiz"): [],     # TODO: ISSUE-010
     ("financial-benchmark-pptx", "stellar_aiz"): [],  # TODO: ISSUE-010
     ("company-overview-pptx-v2", "stellar_aiz"): [],  # TODO: ISSUE-010
+    ("shareholder-structure-pptx", "stellar_aiz"): [],  # TODO: ISSUE-010
 }
 
 
