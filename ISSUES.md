@@ -479,7 +479,19 @@ Pilot 3 (customer-profile / company-history / market-environment) の roleup bra
 
 ## ISSUE-010: 残り 25 fill scripts への brand 展開（V2）
 
-**Status**: 進行中（Phase 0 完了、Phase 1 着手待ち） / **Priority**: P2 / **Decided**: 2026-05-04 / **Updated**: 2026-05-05
+**Status**: クローズ（主要レイヤー全完、残図形系 12 件は需要発生時に別 issue 起票） / **Priority**: P2 / **Decided**: 2026-05-04 / **Updated**: 2026-05-06 / **Closed**: 2026-05-07
+
+### クローズ判定根拠（2026-05-07）
+
+- 宣言された Phase 2 進捗テーブル (上の 21 行) は **21/21 全て ✅**
+- 主要 2 agent の roleup E2E が **warning=0 達成**（market-overview × 12 / company-deepdive × 15）
+- 累積 compliance check **31 PPTX × 262 checks 全 PASS**
+- ISSUE-012 Phase 2 で残 fill 全件に `validate_fill_input` 導入済 → silent fail 防衛線も完成
+- 残対象（L489-492 で言及された未対応分から、上記完了分を除く）:
+  - **図形系 12 件** (comparison / conceptual / gate-process / gantt-chart / growth-driver / issue-risk-list / kpi-dashboard / logic-tree / process-arrow / process-flow / project-team-structure / table-chart): orchestrator デッキでの使用頻度が低く、stella fallback で問題なく機能（passive `--brand` 受付済）
+  - **smallcap-* 5 件**: retrospective で除外決定済（feedback memory `smallcap_skills_excluded`）
+  - **nttdata-pptx**: fill 機構が無いため対象外
+- L494-496 の V2 トリガー条件「Roleup での新規クライアント納品需要顕在化 / 追加 brand 要望」が出たタイミングで、残図形系 12 件は **ISSUE-013** として新規起票して個別対応する（本 issue では追わない）。
 
 ### 背景
 V1（format_add ブランチ、commit `4d752b1` 〜 `128fa15`）で Pilot 3 スキル
