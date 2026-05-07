@@ -479,19 +479,20 @@ Pilot 3 (customer-profile / company-history / market-environment) の roleup bra
 
 ## ISSUE-010: 残り 25 fill scripts への brand 展開（V2）
 
-**Status**: クローズ（主要レイヤー全完、残図形系 12 件は需要発生時に別 issue 起票） / **Priority**: P2 / **Decided**: 2026-05-04 / **Updated**: 2026-05-06 / **Closed**: 2026-05-07
+**Status**: クローズ（主要レイヤー全完、残図形系は ISSUE-013 で別管理） / **Priority**: P2 / **Decided**: 2026-05-04 / **Updated**: 2026-05-07 / **Closed**: 2026-05-07
 
 ### クローズ判定根拠（2026-05-07）
 
-- 宣言された Phase 2 進捗テーブル (上の 21 行) は **21/21 全て ✅**
-- 主要 2 agent の roleup E2E が **warning=0 達成**（market-overview × 12 / company-deepdive × 15）
-- 累積 compliance check **31 PPTX × 262 checks 全 PASS**
+- 宣言された Phase 2 進捗テーブル (上の 21 + 本日 3 行) は **24/24 全て ✅**
+- **3 主要 agent** の roleup E2E が warning=0 達成（market-overview × 12 / company-deepdive × 15 / strategy-report × 23）
+- 累積 compliance check **8 PPTX × 68 checks 全 PASS**（pilot 3 + 戦略フレーム 2 + 本日 3）
 - ISSUE-012 Phase 2 で残 fill 全件に `validate_fill_input` 導入済 → silent fail 防衛線も完成
-- 残対象（L489-492 で言及された未対応分から、上記完了分を除く）:
-  - **図形系 12 件** (comparison / conceptual / gate-process / gantt-chart / growth-driver / issue-risk-list / kpi-dashboard / logic-tree / process-arrow / process-flow / project-team-structure / table-chart): orchestrator デッキでの使用頻度が低く、stella fallback で問題なく機能（passive `--brand` 受付済）
+- 残対象（本日 3 件完了で更新後の未対応分）:
+  - **図形系 9 件** (comparison / conceptual / gate-process / gantt-chart / kpi-dashboard / logic-tree / process-arrow / process-flow / project-team-structure): orchestrator デッキでの使用頻度が低く、stella fallback で問題なく機能（passive `--brand` 受付済）。**ISSUE-013** で個別管理。
+  - **nttdata-pptx**: fill 機構なし、対象外（ISSUE-013 で確認のみ）
   - **smallcap-* 5 件**: retrospective で除外決定済（feedback memory `smallcap_skills_excluded`）
-  - **nttdata-pptx**: fill 機構が無いため対象外
-- L494-496 の V2 トリガー条件「Roleup での新規クライアント納品需要顕在化 / 追加 brand 要望」が出たタイミングで、残図形系 12 件は **ISSUE-013** として新規起票して個別対応する（本 issue では追わない）。
+  - **stella PROFILES skeleton 35 件**: `brand_compliance_rules.py` の `# TODO: ISSUE-010` コメント残存。stella 仕様正本化後の対応として **ISSUE-014** で別管理。
+- 本日 3 件 (table-chart / issue-risk-list / growth-driver) は format_add ブランチ commit `21e578a` で完了し、strategy-report-agent × roleup E2E warning=0 を確定。
 
 ### 背景
 V1（format_add ブランチ、commit `4d752b1` 〜 `128fa15`）で Pilot 3 スキル
@@ -960,3 +961,162 @@ ISSUE-010 Phase 2 の主要レイヤー終結。残 fill (BDD 系の一部、Pat
 4. `allowed_top` は brand-aware fill なら `title` / `subtitle` も含める（`resolve_top_text` / `resolve_subtitle_text` 由来）
 
 を必須プロセスとする。
+
+---
+
+## ISSUE-013: 残孤立 9 件 + nttdata の brand-aware 化（V2 拡張）
+
+**Status**: 保留（V2 トリガー待ち） / **Priority**: P3 / **Decided**: 2026-05-07 / **Discovery**: ISSUE-010 closure note (2026-05-07)
+
+### 背景
+
+ISSUE-010 のクローズ判定（2026-05-07）で「残図形系」を別 issue として切り出すと予告したものを正式起票したもの。本日 commit `21e578a` で table-chart / issue-risk-list / growth-driver の 3 件を前倒し完了し、対象は 12 → 9 件に縮減。
+
+### 対象スキル（9 件 + 補足 1 件）
+
+| # | スキル | 想定パターン | 用途 / 使用頻度 |
+|---|---|---|---|
+| 1 | comparison-pptx | A (4 軸グリッド) | 単発、孤立 |
+| 2 | conceptual-pptx | A (3 〜 5 楕円) | 単発、孤立 |
+| 3 | gate-process-pptx | A (3 / 5 ファネル) | 単発、孤立 |
+| 4 | gantt-chart-pptx | A (横棒タイムライン) | 単発、孤立 |
+| 5 | kpi-dashboard-pptx | A (3×2 グリッド) | 単発、孤立 |
+| 6 | logic-tree-pptx | A (階層ツリー) | 単発、孤立 |
+| 7 | process-arrow-pptx | A (3 / 5 シェブロン) | 単発、孤立 |
+| 8 | process-flow-pptx | A (フロー図) | 単発、孤立 |
+| 9 | project-team-structure-pptx | A (組織図) | 単発、孤立 |
+| 補足 | nttdata-pptx | — | fill 機構なし、対象外（ISSUE-013 内では確認のみ） |
+
+すべて orchestrator (market-overview / company-deepdive / strategy-report) のデッキ構成に含まれていないため、stella fallback で問題なく動作中（passive `--brand` 受付済）。
+
+### V2 トリガー条件（どちらかを満たしたら着手）
+
+- Roleup での新規クライアント納品で当該スキルが必要になる
+- 別ブランド（C 社・D 社…）追加要望が発生して PROFILES が増える
+
+### 改修パターン（既存 24 件で確立済）
+
+`skills/_common/references/brand_migration_guide.md` に従い Pattern A 適用。各件 90 〜 120 分想定。
+1. `assets/{stellar_aiz,roleup}/<skill>-template.pptx` への整理（`git mv` + `build_roleup_template.py` 新設）
+2. `fill_*.py` への `_apply_theme(theme)` ヘルパー導入、`add_brand_arg` / `resolve_brand` / `require_source` / `template_path` 導入、font name の late-resolve 化
+3. SKILL.md frontmatter `supported_brands: [stellar_aiz, roleup]` 追記、実行例に `--brand` 切替追記
+4. `brand_compliance_rules.py` に PROFILES エントリ追加（C10/C12 適用要否はスキル特性で判断）
+5. smoke + compliance check 8/8 PASS 確認
+
+### 着手前提
+
+- ISSUE-014 (stella PROFILES skeleton 埋め) と同時着手するかは判断必要
+- nttdata-pptx は fill 機構の有無を再確認し、無いなら ISSUE-013 スコープから外して closing note 化
+
+---
+
+## ISSUE-014: stella PROFILES skeleton 35 件埋め（ISSUE-010 フォローアップ）
+
+**Status**: 保留（stella 仕様正本化が前提） / **Priority**: P3 / **Decided**: 2026-05-07 / **Discovery**: ISSUE-010 クローズ後の TODO 残存
+
+### 背景
+
+`skills/_common/lib/brand_compliance_rules.py` に 35 件の `("<skill>", "stellar_aiz"): [],  # TODO: ISSUE-010` skeleton が残存している。ISSUE-010 が 2026-05-07 にクローズしたため、当該 TODO コメントは宙吊り状態（ISSUE-010 は closed なのに参照している）。
+
+### 対象（35 件）
+
+PROFILES 内で `("<skill>", "stellar_aiz"): [],  # TODO: ISSUE-010` となっている全エントリ:
+- pilot 3: customer-profile / market-environment / company-history
+- 市場系 5: market-share / positioning-map / competitor-summary / market-kbf / pest-analysis
+- BDD/会社系 10: revenue-analysis / financial-benchmark / company-overview-pptx-v2 / shareholder-structure / business-portfolio / sga-breakdown / cost-breakdown / workforce-composition / sales-by-customer / customer-sales-detail
+- 図表系 7: section-divider / table-of-contents / data-availability / executive-summary / current-period-forecast / scenario-forecast / business-overview
+- 戦略フレームワーク 5: five-forces / swot / value-chain / value-chain-matrix / pyramid-structure
+- バリュエーション 1: valuation-summary
+- 図表/チャート 3 (本日完了分): table-chart / issue-risk-list / growth-driver
+- 業務 1: business-model
+
+### なぜ保留か
+
+stella ブランドの compliance ルール（フォントサイズ許容集合・タイトル pt・出典必須有無・チャート凡例方針等）が未確定。pilot 3 の roleup プロファイルは確定したが、stella は「テンプレ default 継承」モードで運用しており、**ルールベースの compliance check 対象にしてこなかった**。
+
+着手するには:
+1. stella ブランドの format spec を `skills/_common/brands/stellar_aiz/format_spec.md` で正本化
+2. roleup の PROFILES 構築と同じパターンで stella PROFILES を埋める
+3. 既存の stella 出力（pilot 3 + その他）が新ルールで PASS することを smoke で確認
+
+### 着手判断
+
+stella 仕様の見直し動機（クライアント側の品質要望、テンプレ更新等）が発生したタイミングで起動。当面は skeleton のままで運用上の支障なし。
+
+---
+
+## ISSUE-015: fill_issue_risk.py の overflow check が brand 整合していない
+
+**Status**: 保留（軽微） / **Priority**: P3 / **Decided**: 2026-05-07 / **Discovery**: 2026-05-07 commit `21e578a` のレビュー時
+
+### 症状
+
+`skills/issue-risk-list-pptx/scripts/fill_issue_risk.py` 446-451 行で main_message の 70 字超過警告を出すが、検査対象が `data["main_message"]` 直読みになっている。
+
+```python
+_main_msg = data.get("main_message", "")
+if len(_main_msg) > 70:
+    print(f"  ⚠ WARNING: main_message is {len(_main_msg)} chars (max 70). ...")
+```
+
+しかし実際に Title 1 placeholder に流し込まれる文字列は `resolve_top_text(data, theme)` で解決され、roleup brand では `data["chart_title"]` が選ばれる（stella と field swap される設計）。
+
+### 影響
+
+- **stella ブランド**: 警告対象 == 実際の表示文字列、正しく機能
+- **roleup ブランド**: 警告対象 != 実際の表示文字列。`data["main_message"]` が長くても roleup では subtitle に回るので警告しなくて良いケース、逆に `data["chart_title"]` が長くても警告されないケース、いずれも誤動作
+
+クラッシュは起こさず、roleup の chart_title placeholder 幅は stella の main_message より大きいため実害は限定的。ただし「警告が空振り or 見逃し」なので一貫性に欠ける。
+
+### 修正案（小、< 10 行）
+
+```python
+_top_text = resolve_top_text(data, theme)
+limit = 70 if theme.id == "stellar_aiz" else 90  # roleup A4 横は wider
+if len(_top_text) > limit:
+    print(f"  ⚠ WARNING: top text is {len(_top_text)} chars (max {limit})...", file=sys.stderr)
+```
+
+theme 解決後に移動する必要がある。
+
+### 着手判断
+
+軽微なため即時修正不要。次に issue-risk-list 周辺を触るタイミング、または ISSUE-013 着手で同様パターンを横展開する際に一緒に修正。
+
+---
+
+## ISSUE-016: strategy-report-agent の web 検索段階で文字数上限を事前遵守する prompt 制約
+
+**Status**: 保留 / **Priority**: P3 / **Decided**: 2026-05-07 / **Discovery**: 2026-05-07 commit `21e578a` の strategy-report E2E 実行時
+
+### 背景
+
+strategy-report-agent × roleup E2E (八海醸造グループ題材、commit `21e578a`) の事前点検で、過去に web 検索段階で生成された data_*.json に 6 件の roleup 仕様逸脱が発見された:
+- `data_01_exec`: findings[1]/[2].detail 130 chars → 78/70 chars に短縮（上限 100）
+- `data_05_profile` / `data_17_hakkai`: year 'FYNNNN' (str) → NNNN (int) で計 18 件修正（fiscal_period_format 整合）
+- `data_10_5f` / `data_23_irl`: source 追加（require_source 必須）
+- `data_12_me`: main_message 69 chars → 51 chars に短縮（上限 65）
+
+これらは fill scripts のバグではなく、過去に生成済みの work data が roleup 仕様に追従していなかった残骸であり、最小修正で対応した。
+
+### 課題
+
+web 検索段階の prompt（subagent / orchestrator 側）に上記制約を事前注入する仕組みが弱く、後段で hard-fail / overflow が起きる構造。具体的には:
+1. `main_message` 65 字以内の制約は `step_final_visual_review_loop.md` の after-the-fact 修正ステップにのみ存在し、初回生成時の prompt には未注入
+2. `findings.detail` 100 字制約は schema レベルでは規定されているが、subagent prompt で繰り返し強調されていない
+3. `source` 必須は roleup 専用なので、stella 慣習で省略するケースが残る
+4. `year` 型 (int vs str) は format_spec.md に規定されているが、subagent return 時に str で返すケースが発生
+
+### 改善案
+
+1. `skills/strategy-report-agent/SKILL.md` の Step 2（web 検索フェーズ）の prompt に以下を強調注入:
+   - main_message ≤ 65 chars（roleup）/ 70 chars（stella）厳守
+   - findings.detail ≤ 100 chars 厳守
+   - roleup 起動時は source 必須（hard-fail で落ちる旨を明記）
+   - year は int 型必須
+2. もしくは subagent return 後に validation helper を共通化し、orchestrator 側で reject + retry できる構造に
+3. 同様の修正が必要な orchestrator: market-overview-agent / company-deepdive-agent も同パターン
+
+### 着手判断
+
+prompt 修正だけなら 30〜60 分。次に orchestrator を触るタイミング、または同種事故が再発したら即対応。
