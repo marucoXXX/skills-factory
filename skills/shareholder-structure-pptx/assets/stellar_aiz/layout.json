@@ -1,0 +1,7 @@
+{
+  "_comment": "stella V1 hardcode 互換。TABLE_LEFT/TABLE_WIDTH/SLIDE_HEIGHT は Inches 直値で持つため layout coordinate は不要。source coord は dynamic 配置 fallback 用 (source_y_in は使われない)。",
+  "source_x_in": 0.41,
+  "source_y_in": 7.10,
+  "source_w_in": 10.0,
+  "source_h_in": 0.25
+}

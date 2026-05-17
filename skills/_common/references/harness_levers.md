@@ -72,6 +72,25 @@ Agent(
 - subagent は **return value として要約済み JSON を返却**（親 context を生データで圧迫しない）
 - 親はその JSON を直接 `data_NN_*.json` に書き出すか、追加加工してから書き出す
 
+### subagent return value のパース規約（ISSUE-009 対策）
+
+subagent return value を dict に変換する際は、`json.loads(result)` を直接呼ばず **必ず `parse_subagent_return()` 経由** で読む:
+
+```python
+from skills._common.lib.parse_subagent_return import parse_subagent_return
+parsed = parse_subagent_return(result)
+```
+
+**理由**: γ E2E (2026-05-03) で、強化版 `research-subagent.md` でも前置き説明文 / マークダウン code fence / 末尾 `Sources:` トレーリング / 二重 JSON 出力が観測された (6/6 件混入再発、context 削減効果 -50% → -20.4%)。helper はこれらを段階的に剥がして `dict` を返すため、subagent 出力の小揺らぎで親側がクラッシュしない。
+
+**helper の処理順** (`skills/_common/lib/parse_subagent_return.py`):
+1. そのまま `json.loads` を試す（規約遵守できている場合は最速）
+2. マークダウン code fence (` ```json ... ``` ` / ` ``` ... ``` `) を除去して再試行
+3. 最初に出現する均衡の取れた `{...}` ブロックを抽出して再試行（二重 JSON 出力時は最初の 1 つを優先）
+4. すべて失敗したら `ValueError`(原文 head/tail 200 字付き) を上げる
+
+被適用 orchestrator: `market-overview-agent` / `company-deepdive-agent` / `business-deepdive-agent`(他 orchestrator が subagent を呼ぶ場合は同規約を適用)。
+
 ### subagent SKILL.md author の責務
 
 - 入力 schema・出力 schema を冒頭に明示

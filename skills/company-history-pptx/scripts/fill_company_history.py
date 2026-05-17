@@ -8,8 +8,14 @@ fill_company_history.py — 会社沿革データをPPTXネイティブテーブ
 使い方:
   python fill_company_history.py \
     --data /home/claude/company_history_data.json \
-    --template <SKILL_DIR>/assets/company-history-template.pptx \
-    --output /mnt/user-data/outputs/CompanyHistory_output.pptx
+    --output /mnt/user-data/outputs/CompanyHistory_output.pptx \
+    [--brand stellar_aiz|roleup] [--template <path>]
+
+`--brand` (default: stellar_aiz) selects the output format. `--template`
+is optional; if omitted it is resolved via brand_resolver.template_path()
+which falls back to the stella default template when the requested brand
+does not yet have a curated template. Cell rPr/tcPr styling is driven by
+the template itself (no per-brand color/font overrides in this script).
 """
 
 import argparse
@@ -24,6 +30,15 @@ from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 from pptx.oxml.ns import qn
 from lxml import etree
+
+# ── brand_resolver bootstrap (skills/_common/lib/brand_resolver.py) ──
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(SKILL_DIR, "..", "_common", "lib"))
+from brand_resolver import resolve_brand, add_brand_arg  # noqa: E402
+from format_helpers import resolve_top_text, resolve_subtitle_text, require_source  # noqa: E402
+from validate_fill_input import validate_fill_input  # noqa: E402
+
+SKILL_ID = "company-history-pptx"
 
 def _finalize_pptx(path):
     """LibreOffice roundtrip to normalize OOXML so PowerPoint stops asking for repair.
@@ -64,6 +79,15 @@ def _finalize_pptx(path):
 SHAPE_MAIN_MESSAGE = "Title 1"
 SHAPE_CHART_TITLE  = "Text Placeholder 2"
 SHAPE_TABLE        = "Table 1"
+SHAPE_SOURCE       = "Source 3"  # roleup template placeholder; stella では存在しない可能性あり
+
+SKILL_ID = "company-history-pptx"
+
+# ── Brand-aware module global (slide height) ──
+# Default = stella's 7.5in for backward compat; reassigned in main() from
+# the actual loaded template's prs.slide_height so layout calculations stay
+# correct when a non-stella brand introduces a different slide size.
+SLIDE_H_DEFAULT = Inches(7.5)
 # ────────────────────────────────────────────────────────
 
 
@@ -73,6 +97,15 @@ def find_shape(slide, name):
             return shape
     print(f"  ⚠ WARNING: Shape '{name}' not found", file=sys.stderr)
     return None
+
+
+def _silent_remove_shape(slide, name):
+    """find_shape の warning を出さずに削除を試みる(brand 別 shape 名フォールバック用)"""
+    for shape in slide.shapes:
+        if shape.name == name:
+            slide.shapes._spTree.remove(shape._element)
+            return True
+    return False
 
 
 def set_textbox_text(shape, text):
@@ -92,7 +125,7 @@ def set_textbox_text(shape, text):
         t_elem.text = text
 
 
-def rebuild_history_table(slide, history_data):
+def rebuild_history_table(slide, history_data, slide_height=None):
     """
     テンプレートのテーブルを削除し、沿革データに応じた行数でネイティブテーブルを再構築する。
     ヘッダー行・データ行のセルスタイルはテンプレートから複製する。
@@ -137,7 +170,7 @@ def rebuild_history_table(slide, history_data):
     sp_tree.remove(table_shape._element)
 
     # テーブル配置の計算
-    SLIDE_HEIGHT      = Inches(7.5)
+    SLIDE_HEIGHT      = slide_height if slide_height is not None else SLIDE_H_DEFAULT
     BOTTOM_MARGIN     = Inches(0.15)
     HEADER_ROW_HEIGHT = Inches(0.35)
     MAX_TABLE_HEIGHT  = SLIDE_HEIGHT - tbl_top - BOTTOM_MARGIN
@@ -274,35 +307,84 @@ def rebuild_history_table(slide, history_data):
 def main():
     parser = argparse.ArgumentParser(description="会社沿革 PowerPoint ジェネレーター")
     parser.add_argument("--data", required=True, help="JSONデータファイルのパス")
-    parser.add_argument("--template", required=True, help="PPTXテンプレートのパス")
+    parser.add_argument(
+        "--template", required=False, default=None,
+        help="Optional explicit template path. If omitted, resolved from --brand "
+             "(via brand_resolver.template_path).",
+    )
     parser.add_argument("--output", required=True, help="出力PPTXファイルのパス")
+    add_brand_arg(parser)
     args = parser.parse_args()
+
+    theme = resolve_brand(args.brand, SKILL_DIR)
+    template_path = args.template or theme.template_path(SKILL_DIR, "company-history")
+    print(f"  ✓ Brand: {theme.id} ({theme.label})")
+    print(f"  ✓ Template: {template_path}")
 
     # JSONデータ読み込み
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    # ISSUE-012 (2026-05-06): スキーマ齟齬の silent fail 防止
+    validate_fill_input(
+        data,
+        required_top=["main_message", "history"],
+        allowed_top=[
+            "main_message", "chart_title", "source", "history",
+            "title", "subtitle",
+        ],
+        skill_name=SKILL_ID,
+    )
+
     print(f"  データ読み込み完了: {len(data.get('history', []))}件の沿革")
 
+    # roleup は出所必須 (theme.layout_rules.source_required = true)。
+    # stella は no-op で従来挙動維持。
+    require_source(data, theme, skill_id=SKILL_ID)
+
     # テンプレート読み込み
-    prs = Presentation(args.template)
+    prs = Presentation(template_path)
     slide = prs.slides[0]
 
+    # 0. roleup 公式テンプレ由来のチャート位置ガイド矩形(茶色 accent2)を出力から除去。
+    #    ガイドはチャート寸法の参考にすぎず、出力ではマスター背景(白)が見えるべき。
+    #    stella テンプレにはこれらの shape 名が存在しないため silent no-op で安全。
+    _silent_remove_shape(slide, "正方形/長方形 1")
+    _silent_remove_shape(slide, "正方形/長方形 8")
+
     # 1. メインメッセージ設定
-    main_message = data.get("main_message", "")
-    set_textbox_text(find_shape(slide, SHAPE_MAIN_MESSAGE), main_message)
-    print(f"  ✓ メインメッセージ: {main_message}")
+    # Top placeholder (stella: main_message / roleup: chart_title)
+    top_text = resolve_top_text(data, theme)
+    set_textbox_text(find_shape(slide, SHAPE_MAIN_MESSAGE), top_text)
+    print(f"  ✓ Top placeholder ({theme.top_placeholder_field()}): {top_text}")
 
     # 2. チャートタイトル設定
-    chart_title = data.get("chart_title", "会社沿革")
-    set_textbox_text(find_shape(slide, SHAPE_CHART_TITLE), chart_title)
-    print(f"  ✓ チャートタイトル: {chart_title}")
+    # Subtitle placeholder (stella: chart_title / roleup: main_message)
+    sub_text = resolve_subtitle_text(data, theme) or "会社沿革"
+    set_textbox_text(find_shape(slide, SHAPE_CHART_TITLE), sub_text)
+    print(f"  ✓ Subtitle placeholder ({theme.subtitle_placeholder_field()}): {sub_text}")
 
-    # 3. テーブル再構築
+    # 3. テーブル再構築（slide_height はテンプレートから取得 = brand 固有のスライドサイズに対応）
     history = data.get("history", [])
-    rebuild_history_table(slide, history)
+    rebuild_history_table(slide, history, slide_height=prs.slide_height)
 
-    # 3. 出力
+    # 4. 出典書き込み (Source 3 placeholder があればそこへ)。stella では shape 不在なら skip。
+    src_text = data.get("source", "")
+    if src_text:
+        src_shape = None
+        for nm in (SHAPE_SOURCE, "Source"):
+            for shape in slide.shapes:
+                if shape.name == nm:
+                    src_shape = shape
+                    break
+            if src_shape is not None:
+                break
+        if src_shape is not None:
+            display = src_text if src_text.startswith("出典") else f"出典：{src_text}"
+            set_textbox_text(src_shape, display)
+            print(f"  ✓ 出典 ({src_shape.name}): {display}")
+
+    # 5. 出力
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
     prs.save(args.output)
     _finalize_pptx(args.output)

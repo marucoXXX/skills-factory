@@ -17,6 +17,8 @@ description: >
   - ユーザーが顧客別売上のExcelファイルをアップロードして、スライド化を求めた場合
   - 「継続顧客」「リピート顧客」「主要取引先の変遷」をスライドにしたいという要望
   - 「完成工事売上高」「工事別売上」「プロジェクト別売上」を顧客別にまとめたいという要望
+supported_brands: [stellar_aiz, roleup]
+
 ---
 
 # 主要販売先売上高 PowerPoint ジェネレーター
@@ -218,10 +220,13 @@ for sheet_name in wb.sheetnames:
 pip install python-pptx openpyxl -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_sales_by_customer.py \
+  --brand stellar_aiz \
   --data {{WORK_DIR}}/sales_by_customer_data.json \
-  --template <SKILL_DIR>/assets/sales-by-customer-template.pptx \
   --output {{OUTPUT_DIR}}/SalesByCustomer_output.pptx
 ```
+
+`--brand` を `roleup` にすると Roleup Standard Format (vF 20250928、A4 横、Yu Gothic UI、本文 10pt 統一) で出力する。
+`--template` は通常省略 (brand_resolver が `assets/<brand>/sales-by-customer-template.pptx` を解決)。
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
 ※ Playwright は不要（ネイティブテーブルのみで生成）。
@@ -236,7 +241,9 @@ python -m markitdown {{OUTPUT_DIR}}/SalesByCustomer_output.pptx
 
 ## デザイン仕様
 
-### フォントサイズ（期数別）
+### フォントサイズ
+
+**stella V1**: 期数によって動的スケール (regression-zero)。
 
 | 期数 | ヘッダー | 本文 | 期タイトル | 注記 |
 |------|---------|------|-----------|------|
@@ -244,24 +251,32 @@ python -m markitdown {{OUTPUT_DIR}}/SalesByCustomer_output.pptx
 | 4期 | 12pt Bold | 11pt | 14pt Bold | 10pt Bold |
 | 5期 | 11pt Bold | 10pt | 13pt Bold | 9pt Bold |
 
+**roleup**: C4 許容セット {22, 14, 12, 10, 6} に固定。期数に依らず本文 10pt。
+
+| 期数 | ヘッダー | 本文 | 期タイトル | 注記 |
+|------|---------|------|-----------|------|
+| 全期数共通 | 12pt Bold | 10pt | 14pt Bold | 10pt Bold |
+
 ### フォント
 
-| 要素 | フォント |
-|---|---|
-| 日本語 | Meiryo UI |
-| ラテン文字 | Arial |
+| 要素 | stellar_aiz | roleup |
+|---|---|---|
+| 日本語 (ea) | Meiryo UI | Yu Gothic UI |
+| ラテン文字 (latin) | Arial | Yu Gothic UI (統一) |
 
 ### 色
 
-| 要素 | カラーコード |
-|---|---|
-| テキスト（通常） | #333333 |
-| 継続顧客テキスト | #E67E00（オレンジ） |
-| テーブルヘッダー背景 | #F0F0F0 |
-| 奇数行背景 | #FFFFFF |
-| 偶数行背景 | #FAFAFA |
-| その他行背景 | #F5F5F5 |
-| 罫線（下線） | #E0E0E0、0.5pt |
+| 要素 | stellar_aiz | roleup |
+|---|---|---|
+| テキスト（通常） | #333333 | #241A17 |
+| 継続顧客テキスト | #E67E00（オレンジ） | #C78624 (highlight_target、ベージュ系) |
+| テーブルヘッダー背景 | #F0F0F0 | #F5EFE5 (header_bg) |
+| 奇数行背景 | #FFFFFF | #FFFFFF |
+| 偶数行背景 | #FAFAFA | #F2E8DD (label_bg) |
+| その他行背景 | #F5F5F5 | #F2E8DD (label_bg) |
+| 罫線（下線） | #E0E0E0、0.5pt | #CDCECE (highlight_other)、0.5pt |
+| 出典テキスト | #666666 | #3E3A39 |
+| 出典フォント | 10pt Source textbox | 6pt Source 3 placeholder |
 
 ### テーブル幅計算（ギャップ 0.15"）
 
@@ -293,7 +308,10 @@ python -m markitdown {{OUTPUT_DIR}}/SalesByCustomer_output.pptx
 
 | ファイル名 | 用途 |
 |---|---|
-| `assets/sales-by-customer-template.pptx` | スライドテンプレート（Title 1, Text Placeholder 2, Content Area, Source） |
+| `assets/stellar_aiz/sales-by-customer-template.pptx` | stella V1 テンプレート (16:9、Title 1, Text Placeholder 2, Content Area, Source) |
+| `assets/stellar_aiz/layout.json` | stella レイアウト座標 |
+| `assets/roleup/sales-by-customer-template.pptx` | Roleup テンプレート (cp roleup 派生、A4 横、Yu Gothic UI、Source 3 placeholder) |
+| `assets/roleup/layout.json` | Roleup レイアウト座標 |
 
 ## スクリプト
 

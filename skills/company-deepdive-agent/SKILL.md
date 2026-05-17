@@ -125,20 +125,42 @@ ISSUE-004（v0.3）における新規オーケストレーター。`market-overv
 
 **進捗**: 開始時 `TaskCreate(subject="company-deepdive: Step 0 - 対象会社・出力先確認")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。**`AskUserQuestion` 必須**（自由対話での確定は禁止）。
 
-`AskUserQuestion` で以下を確定:
+<!-- source: skills/_common/prompts/step0_brand_clarification.md (manual sync until D2) -->
 
-| 質問 | 選択肢 |
-|---|---|
-| 対象会社の正式名称 | テキスト入力 |
-| 対象会社の業種・主力事業 | テキスト入力（任意、検索精度向上用） |
-| 競合社（financial-benchmark 用） | 5 社程度をユーザーが提示 or オーケストレーターが提案 |
-| 分析年数 | 5 / 7（推奨）/ 10 年 |
-| 深掘りセグメント | A. 全セグメント / B. ユーザー指定（事業名）/ C. 会社レベルのみ |
-| デッキ深度 | 簡易（中扉なし）/ 標準（推奨、9+6N 枚）/ 拡張（全社 PEST/SWOT 追加） |
+`AskUserQuestion` で以下を確定（**ブランドは先頭で確定し、`scope.json.brand` に保存する**。詳細仕様は `skills/_common/prompts/step0_brand_clarification.md` を正本とする）:
+
+| # | 質問 | 選択肢 |
+|---|---|---|
+| 1 | **ブランド**（出力 PPTX フォーマット） | `_discover_brands()` の戻り値から動的取得（既定 `stellar_aiz`）。「Other」で未配置 id 入力時は再質問 |
+| 2 | 対象会社の正式名称 | テキスト入力 |
+| 3 | 対象会社の業種・主力事業 | テキスト入力（任意、検索精度向上用） |
+| 4 | 競合社（financial-benchmark 用） | 5 社程度をユーザーが提示 or オーケストレーターが提案 |
+| 5 | 分析年数 | 5 / 7（推奨）/ 10 年 |
+| 6 | 深掘りセグメント | A. 全セグメント / B. ユーザー指定（事業名）/ C. 会社レベルのみ |
+| 7 | デッキ深度 | 簡易（中扉なし）/ 標準（推奨、9+6N 枚）/ 拡張（全社 PEST/SWOT 追加） |
+
+ブランド質問の実装パターン（agnostic、`_discover_brands()` で動的取得）:
+
+```python
+import json, os, sys
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from brand_resolver import _discover_brands, _BRANDS_DIR
+
+discovered = _discover_brands()
+options = []
+for brand_id in discovered:
+    with open(os.path.join(_BRANDS_DIR, brand_id, "theme.json")) as f:
+        theme_data = json.load(f)
+    label = theme_data.get("label", brand_id)
+    if brand_id == "stellar_aiz":
+        label += " (Recommended)"
+    options.append({"label": label, "description": f"id={brand_id}"})
+# AskUserQuestion(question="...", header="ブランド", options=options, multiSelect=False)
+```
 
 `run_id` は `YYYY-MM-DD_<company_slug>` 形式で自動生成。
 `{{WORK_DIR}}/company-deepdive-agent/<run_id>/` を作業ディレクトリ。
-`{{WORK_DIR}}/company-deepdive-agent/<run_id>/scope.json` に Step 0 の確定値を保存。
+`{{WORK_DIR}}/company-deepdive-agent/<run_id>/scope.json` に Step 0 の確定値（`brand` / `brand_label` を含む）を保存。business-deepdive-agent への内部呼び出し時は `scope.json.brand` を JSON 引数に転写し、子側で再質問しない。
 
 ### Step 0.5: 同名異社の確認（任意）
 
@@ -157,6 +179,7 @@ ISSUE-004（v0.3）における新規オーケストレーター。`market-overv
 
 ```python
 import json
+from skills._common.lib.parse_subagent_return import parse_subagent_return
 result = Agent(
     subagent_type="research-subagent",
     description=f"{company_name} の<論点名>調査",
@@ -172,7 +195,10 @@ result = Agent(
         "search_budget": {"min_searches": 5, "max_searches": 8}
     })
 )
-parsed = json.loads(result)
+# subagent return は parse_subagent_return() 経由で dict 化する（必須）。
+# 直接 json.loads(result) しないこと: subagent が稀に前置き文・code fence・末尾
+# Sources を混入させるため（ISSUE-009）。helper はそれらを吸収する。
+parsed = parse_subagent_return(result)
 # parsed["data"] を {{work_dir}}/data_<NN>_<topic>.json に Write で書き出す
 ```
 
@@ -252,7 +278,42 @@ parsed = json.loads(result)
 
 **進捗**: 開始時 `TaskCreate(subject="company-deepdive: Step 5 - 会社レベル PPTX 生成 (8 枚)")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。本 Step 中は `validate_pptx_after_fill.py` hook が各 fill_*.py 実行後に PPTX 整合性を自動検証する。
 
-各論点を対応 PPTX スキル（上記マッピング）の `fill_*.py` で生成。
+#### ⚠️ 必読: fill_*.py 起動前のスキーマ確認（ISSUE-012 対策）
+
+各 fill_*.py を呼ぶ前に、**対応する `~/.claude/skills/<skill>/references/sample_data.json` を必ず Read** してスキーマ（キー名・必須/任意・ネスト構造・値の型/スケール）を確認すること。**想像で JSON を書かない**。
+
+**理由**: 2026-05-06 に positioning-map で発生した silent fail（オーケストレーターが想像で書いた JSON が fill 側に silent に無視され、空に近いスライドが出力された事故）の構造的再発防止。
+
+**現状の防衛線**:
+- positioning-map-pptx のみ hard-fail 検証あり（`_common/lib/validate_fill_input.py` 経由）
+- 他 PPTX スキルは silent fail の可能性が残るため、**sample_data.json の事前 Read を絶対省略しない**
+- 想定外キー WARN が stderr に出た場合は必ず修正する（タイポ・古いスキーマ流用のサイン）
+
+#### Step 5 開始前: brand fallback バッファ初期化（必須）
+
+scope.json から brand を読み出し、未対応 fill 検出用の warning バッファを初期化する。各 fill 起動前に `resolve_fill_brand_with_warning()` を呼び、未対応スキルでは `stellar_aiz` に fallback + warning を buffer に蓄積する（`skills/_common/lib/orchestrator_helpers.py` 参照）。
+
+```python
+import json, os, sys, subprocess
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from orchestrator_helpers import (
+    resolve_fill_brand_with_warning,
+    append_brand_warnings_to_merge_file,
+)
+
+with open("{{WORK_DIR}}/company-deepdive-agent/<run_id>/scope.json", encoding="utf-8") as f:
+    scope = json.load(f)
+scope_brand = scope.get("brand", "stellar_aiz")
+brand_warnings: list = []  # Step 8 後に merge_warnings.json へ append する
+
+# 各 fill 起動例:
+# skill_dir = os.path.join("{{SKILL_DIR}}", "executive-summary-pptx")
+# fill_brand = resolve_fill_brand_with_warning(skill_dir, scope_brand, brand_warnings)
+# subprocess.run(["python", os.path.join(skill_dir, "scripts", "fill_executive_summary.py"),
+#                 "--brand", fill_brand, "--data", "...", "--output", "..."], check=True)
+```
+
+各論点を対応 PPTX スキル（上記マッピング）の `fill_*.py` で生成。すべての起動で `--brand <fill_brand>` を渡す。
 
 | Slide | スキル | data ファイル | output ファイル |
 |---|---|---|---|
@@ -381,6 +442,18 @@ python3 ~/.claude/skills/merge-pptxv2/scripts/merge_pptx_v2.py \
 ```
 
 完了後、`{{OUTPUT_DIR}}/<run_id>/merge_warnings.json` を確認（`section_divider_position` 違反 0 件であること）。
+
+#### Step 8 後: brand_warnings を merge_warnings.json に追記（必須）
+
+merge-pptxv2 は `merge_warnings.json` を `"w"` モードで上書きするため、Step 5/6 中に蓄積した `brand_warnings`（および business-deepdive-agent の子オーケストレータが返した brand_warnings 群）は merge 完了後にここでまとめて追記する。
+
+```python
+append_brand_warnings_to_merge_file(
+    "{{OUTPUT_DIR}}/<run_id>/merge_warnings.json", brand_warnings,
+)
+# brand_warnings が空なら no-op（既存ファイルは触らない）。
+# Step 10 等の最終ユーザー伝達でも warning 件数 + 内訳を提示する。
+```
 
 ### Step 9: visual-quality-reviewer + 自動修正ループ（最大 2 ラウンド）
 

@@ -17,6 +17,8 @@ description: >
   - 「規制・景気・社会動向・技術トレンドをまとめて」という要望
   - ユーザーが政府統計・業界レポートを貼り付けて、PEST整理を求めた場合
   - 既にPEST形式で整理されたテキストが提示され、PowerPoint化を求められた場合
+supported_brands: [stellar_aiz, roleup]
+
 ---
 
 # PEST分析 PowerPoint ジェネレーター
@@ -203,9 +205,13 @@ pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_pest_analysis.py \
   --data {{WORK_DIR}}/pest_data.json \
-  --template <SKILL_DIR>/assets/pest-analysis-template.pptx \
+  --brand stellar_aiz \
   --output {{OUTPUT_DIR}}/PEST_output.pptx
 ```
+
+`--brand` を `roleup` に切り替えると Roleup ブランド (A4 横、Yu Gothic UI、褐色アクセント) で生成。
+roleup では PEST 4 象限が褐色トーンで統一され、影響度凡例は省略 (▲▬▼ 記号の色で意味を伝達)。
+`--template` は省略可（brand から `assets/<brand>/pest-analysis-template.pptx` を自動解決）。
 
 ---
 

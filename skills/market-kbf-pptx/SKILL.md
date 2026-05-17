@@ -13,6 +13,8 @@ description: >
   - 「市場で勝つために必要な要素」「成功要因」「市場の勝ち筋」という要望
   - market-overview-agent / strategy-report-agent オーケストレーターから呼び出された場合
   - 「KBFをスライドにして」「成功要因をパワポで整理」という要望
+supported_brands: [stellar_aiz, roleup]
+
 ---
 
 # 市場KBF（Key Business Factor）PowerPoint ジェネレーター
@@ -167,11 +169,14 @@ description: >
 ```bash
 pip install python-pptx lxml -q --break-system-packages
 
-python {{SKILL_DIR}}/scripts/fill_kbf.py \
+python {{SKILL_DIR}}/scripts/fill_market_kbf.py \
   --data {{WORK_DIR}}/market_kbf_data.json \
-  --template {{SKILL_DIR}}/assets/market-kbf-template.pptx \
+  --brand stellar_aiz \
   --output {{OUTPUT_DIR}}/MarketKBF_output.pptx
 ```
+
+`--brand` を `roleup` に切り替えると Roleup ブランド (A4 横、Yu Gothic UI、褐色アクセント、12/14/10/10pt) で生成。
+`--template` は省略可（brand から `assets/<brand>/market-kbf-template.pptx` を自動解決）。
 
 ### 出力確認
 
@@ -268,7 +273,7 @@ python -m markitdown {{OUTPUT_DIR}}/MarketKBF_output.pptx
 
 | ファイル名 | 用途 |
 |---|---|
-| `scripts/fill_kbf.py` | JSONデータからKBFテーブル（3行×3列）をネイティブで生成 |
+| `scripts/fill_market_kbf.py` | JSONデータからKBFテーブル（3行×3列）をネイティブで生成 |
 
 ## 参考
 

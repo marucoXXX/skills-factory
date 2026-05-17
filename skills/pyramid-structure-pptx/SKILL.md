@@ -13,6 +13,8 @@ description: >
   - ユーザーが議事録・文字起こしを貼り付けて、ピラミッド構造での整理やスライド化を求めた場合
   - 既にピラミッド形式で整理されたテキストが提示され、PowerPoint化を求められた場合
   - 「主張を構造化してスライドに」「ロジックをピラミッドで表現して」「階層的にスライドにまとめて」という要望
+supported_brands: [stellar_aiz, roleup]
+
 ---
 
 # Pyramid Structure PowerPoint ジェネレーター
@@ -153,7 +155,7 @@ McKinsey出身のBarbara Mintoが提唱したPyramid Principleの核心。結論
 段数問わず共通の1テンプレートを使用する：
 
 ```bash
-TEMPLATE="assets/pyramid-template-universal.pptx"
+TEMPLATE="assets/pyramid-structure-template.pptx"
 ```
 
 ※ `assets/` はこのスキルフォルダ配下を指す。フルパスはスキルの設置場所に応じて読み替えること。
@@ -207,7 +209,7 @@ TEMPLATE="assets/pyramid-template-universal.pptx"
 ```bash
 python <スキルフォルダ>/scripts/fill_pyramid.py \
   --data {{WORK_DIR}}/pyramid_data.json \
-  --template <スキルフォルダ>/assets/pyramid-template-universal.pptx \
+  --template <スキルフォルダ>/assets/pyramid-structure-template.pptx \
   --output {{OUTPUT_DIR}}/PyramidStructure_output.pptx
 ```
 
@@ -239,7 +241,7 @@ PowerPoint生成後、以下を確認：
 
 | ファイル名 | 用途 |
 |---|---|
-| `assets/pyramid-template-universal.pptx` | 全段数共通のPPTXテンプレート（Title + ChartTitle + DiagramArea） |
+| `assets/pyramid-structure-template.pptx` | 全段数共通のPPTXテンプレート（Title + ChartTitle + DiagramArea） |
 
 ## スクリプト
 

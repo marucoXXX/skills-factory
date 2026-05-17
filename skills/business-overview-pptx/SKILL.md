@@ -13,6 +13,8 @@ description: >
   - 「○○社の○○事業の概要をスライドに」「事業セグメント単位の概要を 1 枚で」という要望
   - business-deepdive-agent から呼び出された場合
   - 多角化企業の事業ポートフォリオ内訳の各事業を 1 枚ずつスライド化する要望
+supported_brands: [stellar_aiz, roleup]
+
 ---
 
 # 事業セグメント概要 PowerPoint ジェネレーター
@@ -130,10 +132,13 @@ JSON の `performance.mode` で切り替え:
 pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_business_overview.py \
+  --brand stellar_aiz \
   --data {{WORK_DIR}}/data_NN_business_overview.json \
-  --template <SKILL_DIR>/assets/business-overview-template.pptx \
   --output {{OUTPUT_DIR}}/slide_NN_business_overview.pptx
 ```
+
+`--brand` を `roleup` にすると Roleup Standard Format (vF 20250928) で出力する。
+`--template` は通常省略 (brand_resolver が `assets/<brand>/business-overview-template.pptx` を解決)。
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
 
@@ -163,47 +168,50 @@ python -m markitdown {{OUTPUT_DIR}}/slide_NN_business_overview.pptx
 
 ## デザイン仕様
 
-### フォントサイズ一覧
+### フォントサイズ一覧 (stella V1 / roleup C4 厳守)
 
-| 要素 | サイズ | 備考 |
-|---|---|---|
-| メインメッセージ | テンプレート準拠 | Bold、Title 1 |
-| チャートタイトル | テンプレート準拠 | |
-| セクションタイトル | 14pt | Bold、下線付き |
-| 事業概要ラベル | 14pt | Bold、「•」付き |
-| 事業概要値 | 14pt | Regular |
-| KPI 名 | 12pt | Bold |
-| KPI 値 | 28pt | Bold、青 (#4E79A7) |
-| KPI 補足 | 10pt | グレー (#666666) |
-| データラベル | 12pt | |
-| 凡例・単位表記 | 12pt | |
-| 軸（年ラベル） | 11pt | 縦書き |
-| CAGR 数値 | 16pt | Bold、楕円内 |
-| 出典 | 10pt | グレー (#666666) |
+| 要素 | stellar_aiz | roleup | 備考 |
+|---|---|---|---|
+| メインメッセージ / スライドタイトル | テンプレート準拠 | テンプレート準拠 (22pt) | Title 1 |
+| サブタイトル / チャートタイトル | テンプレート準拠 | テンプレート準拠 (12pt) | Text Placeholder 2 |
+| セクションタイトル | 14pt Bold center | 12pt サブタイトル色 (#897141) left | roleup は下線無し (テンプレ object 8 が下線役) |
+| 事業概要ラベル / 値 | 14pt | 10pt (font_size_body_pt) | bullet "•" 付き |
+| KPI 名 | 12pt Bold | 12pt Bold | サブ見出し相当 |
+| KPI 値 | 28pt Bold (#4E79A7) | 22pt Bold (#7C4C2C) | featured number。roleup C4 許容セット最大 |
+| KPI 補足 | 10pt (#666666) | 10pt (#3E3A39) | |
+| データラベル | 12pt | 10pt | |
+| 凡例・単位表記 | 12pt | 10pt | |
+| 軸（年ラベル） | 11pt | 10pt | 縦書き |
+| CAGR 数値 | 16pt Bold | 14pt Bold (font_size_key_message_pt) | roleup C4 許容セット |
+| 出典 | 10pt (#666666) | 6pt Source 3 placeholder (#3E3A39) | |
 
 ### 色
 
-| 要素 | カラーコード |
-|---|---|
-| テキスト | #333333 |
-| 棒グラフ（売上高） | #4E79A7 |
-| 折れ線・マーカー（営業利益率） | #003366 |
-| 営業利益率データラベル | #FFFFFF（白） |
-| KPI カード背景 | #F7F7F7 |
-| KPI カード枠線 | #D0D0D0 |
-| 出典テキスト | #666666 |
+| 要素 | stellar_aiz | roleup |
+|---|---|---|
+| テキスト | #333333 | #241A17 |
+| 棒グラフ（売上高） | #4E79A7 | #7C4C2C (accent_revenue_bar) |
+| 折れ線・マーカー（営業利益率） | #003366 | #604C3F (accent_op_margin_line) |
+| 営業利益率データラベル | #FFFFFF（白） | #FFFFFF（白） |
+| KPI カード背景 | #F7F7F7 | #F2E8DD (label_bg) |
+| KPI カード枠線 | #D0D0D0 | #CDCECE (highlight_other) |
+| 出典テキスト | #666666 | #3E3A39 |
 
 ### レイアウト定数
 
-| 要素 | 値 |
-|---|---|
-| 左パネル開始 X | 0.41in |
-| 右パネル開始 X | 6.50in |
-| パネル開始 Y | 1.50in |
-| 左パネル幅 | 5.80in |
-| 右パネル幅 | 6.40in |
-| ラベル列幅（左テーブル） | 1.60in（事業向けに広め） |
-| CAGR gap_above | 1.20in |
+`assets/<brand>/layout.json` に外出し。両 brand に同じキーセット。
+
+| 要素 | stellar_aiz | roleup |
+|---|---|---|
+| 左パネル開始 X | 0.41 in | 0.41 in |
+| 左パネル幅 | 5.80 in | 5.23 in |
+| 右パネル開始 X | 6.50 in | 6.07 in |
+| 右パネル幅 | 6.40 in | 5.23 in |
+| パネル開始 Y | 1.50 in | 1.51 in |
+| チャート/カード高 | 4.80 in | 4.50 in |
+| ラベル列幅（左テーブル） | 1.60 in | 1.60 in |
+| 出典 X / Y / W / H | 0.41 / 7.05 / 8.00 / 0.30 in | 0.41 / 7.57 / 10.88 / 0.44 in |
+| CAGR gap_above | 1.20 in | 1.20 in |
 
 ---
 
@@ -225,6 +233,9 @@ python -m markitdown {{OUTPUT_DIR}}/slide_NN_business_overview.pptx
 
 | ファイル名 | 用途 |
 |---|---|
-| `assets/business-overview-template.pptx` | スライドテンプレート（customer-profile ベース） |
-| `scripts/fill_business_overview.py` | JSON データから PPTX を生成するスクリプト |
-| `references/sample_data.json` | サンプル JSON（第一交通産業 タクシー事業） |
+| `assets/stellar_aiz/business-overview-template.pptx` | stella V1 テンプレート（customer-profile ベース、16:9） |
+| `assets/stellar_aiz/layout.json` | stella レイアウト座標 |
+| `assets/roleup/business-overview-template.pptx` | Roleup テンプレート（cp roleup 派生、A4 横、Yu Gothic UI） |
+| `assets/roleup/layout.json` | Roleup レイアウト座標 |
+| `scripts/fill_business_overview.py` | JSON データから PPTX を生成するスクリプト（brand-aware） |
+| `references/sample_data.json` | サンプル JSON（第一交通産業 タクシー事業、revenue_chart モード） |

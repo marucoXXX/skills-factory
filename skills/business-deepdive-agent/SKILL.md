@@ -131,9 +131,11 @@ B-05 顧客市場の成長性 (market-environment-pptx)
 
 **進捗**: 開始時 `TaskCreate(subject="business-deepdive: Step 0 - 引数受領")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。単独起動の場合は `AskUserQuestion` 必須。
 
+<!-- source: skills/_common/prompts/step0_brand_clarification.md (manual sync until D2) -->
+
 #### 内部呼び出しの場合（推奨）
 
-`company-deepdive-agent` から以下のパラメータを JSON で受け取る:
+`company-deepdive-agent` から以下のパラメータを JSON で受け取る。**`brand` フィールドは必須**（親 agent の `scope.json.brand` を転写）。受領した brand は子側で AskUserQuestion で再質問せず、そのまま fill 起動時の `--brand` 引数に伝播する:
 
 ```json
 {
@@ -144,18 +146,41 @@ B-05 顧客市場の成長性 (market-environment-pptx)
   "global_slide_offset": 11,
   "is_listed": true,
   "industry": "陸運業",
-  "analysis_years": 7
+  "analysis_years": 7,
+  "brand": "stellar_aiz"
 }
 ```
 
+`brand` フィールドが欠落している場合（古い親 agent からの呼び出し等）は `stellar_aiz` を既定として処理する。
+
 #### 単独起動の場合
 
-AskUserQuestion で以下を聞く:
+AskUserQuestion で以下を聞く（**ブランドは先頭で確定する**。詳細仕様は `skills/_common/prompts/step0_brand_clarification.md` を正本とする）:
 
-1. `parent_company_name` — 対象会社の正式名（例: 「第一交通産業株式会社」）
-2. `segment_name` — 深掘り対象のセグメント名（例: 「タクシー事業」）
-3. `industry` — 業種（任意、検索クエリ精度向上用）
-4. `analysis_years` — 顧客市場分析の年数（任意、default 7 年）
+1. **`brand`** — 出力 PPTX フォーマット（`_discover_brands()` で動的取得した選択肢から、既定 `stellar_aiz`）
+2. `parent_company_name` — 対象会社の正式名（例: 「第一交通産業株式会社」）
+3. `segment_name` — 深掘り対象のセグメント名（例: 「タクシー事業」）
+4. `industry` — 業種（任意、検索クエリ精度向上用）
+5. `analysis_years` — 顧客市場分析の年数（任意、default 7 年）
+
+ブランド質問の実装パターン（agnostic、`_discover_brands()` で動的取得）:
+
+```python
+import json, os, sys
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from brand_resolver import _discover_brands, _BRANDS_DIR
+
+discovered = _discover_brands()
+options = []
+for brand_id in discovered:
+    with open(os.path.join(_BRANDS_DIR, brand_id, "theme.json")) as f:
+        theme_data = json.load(f)
+    label = theme_data.get("label", brand_id)
+    if brand_id == "stellar_aiz":
+        label += " (Recommended)"
+    options.append({"label": label, "description": f"id={brand_id}"})
+# AskUserQuestion(question="...", header="ブランド", options=options, multiSelect=False)
+```
 
 `parent_run_id` は `YYYY-MM-DD_<parent_company_slug>` 形式で自動生成（`<parent_company_slug>` は会社名を ASCII slug 化した値）。
 `segment_slug` は `segment_name` を ASCII 化した値（例: タクシー事業 → `taxi`）を生成し、ユーザーに確認して必要なら修正させる。
@@ -171,6 +196,7 @@ AskUserQuestion で以下を聞く:
 
 ```python
 import json
+from skills._common.lib.parse_subagent_return import parse_subagent_return
 result = Agent(
     subagent_type="research-subagent",
     description=f"{segment_name} の<論点名>調査",
@@ -186,7 +212,10 @@ result = Agent(
         "search_budget": {"min_searches": 5, "max_searches": 8}
     })
 )
-parsed = json.loads(result)
+# subagent return は parse_subagent_return() 経由で dict 化する（必須）。
+# 直接 json.loads(result) しないこと: subagent が稀に前置き文・code fence・末尾
+# Sources を混入させるため（ISSUE-009）。helper はそれらを吸収する。
+parsed = parse_subagent_return(result)
 # parsed["data"] を {{work_dir}}/data_<NN>_<topic>.json に Write で書き出す
 # parsed["open_questions"] / parsed["sources_summary"] は segment_data_availability.json と segment_summary.json に転記
 ```
@@ -277,35 +306,59 @@ parsed = json.loads(result)
 
 **進捗**: 開始時 `TaskCreate(subject="business-deepdive: Step 4 - PPTX 生成 (5枚)")` → 完了時 `TaskUpdate(completed)` + `task_state.json` 更新。本 Step 中は `validate_pptx_after_fill.py` hook が各 fill_*.py 実行後に PPTX 整合性を自動検証する（壊れていれば exit 2 で停止）。
 
-承認後、5 つの PPTX を生成:
+#### Step 4 開始前: brand fallback バッファ初期化（必須）
+
+Step 0 で受領した（または単独起動時に確定した）`brand` を使い、5 つの fill 起動それぞれで `resolve_fill_brand_with_warning()` を呼ぶ。**本スキルは merge を実施しない**ため、`brand_warnings` は `segment_summary.json` に含めて親（company-deepdive-agent）に返却し、親が merge 完了後に `merge_warnings.json` へ追記する責務を持つ。
+
+```python
+import os, sys, subprocess
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from orchestrator_helpers import resolve_fill_brand_with_warning
+
+scope_brand = "stellar_aiz"  # Step 0 で受領した brand（既定 stellar_aiz）
+brand_warnings: list = []
+
+# 5 fill それぞれに対して同じパターン:
+# skill_dir = os.path.join("{{SKILL_DIR}}", "<skill-name>-pptx")
+# fill_brand = resolve_fill_brand_with_warning(skill_dir, scope_brand, brand_warnings)
+# subprocess.run(["python", os.path.join(skill_dir, "scripts", "fill_<name>.py"),
+#                 "--brand", fill_brand, "--data", "...", "--output", "..."], check=True)
+```
+
+承認後、5 つの PPTX を生成（すべての起動で `--brand <fill_brand>` を渡す）:
 
 ```bash
 # 1. 事業の概要
 python ~/.claude/skills/business-overview-pptx/scripts/fill_business_overview.py \
+  --brand stellar_aiz \
   --data <work_dir>/data_<NN>_business_overview.json \
   --template ~/.claude/skills/business-overview-pptx/assets/business-overview-template.pptx \
   --output <work_dir>/slide_<NN>_business_overview.pptx
 
 # 2. ビジネスモデル
 python ~/.claude/skills/business-model-pptx/scripts/fill_business_model.py \
+  --brand stellar_aiz \
   --data <work_dir>/data_<NN+1>_business_model.json \
   --template ~/.claude/skills/business-model-pptx/assets/business-model-template.pptx \
   --output <work_dir>/slide_<NN+1>_business_model.pptx
 
 # 3. 差別化（バリューチェーン上のポジション）
 python ~/.claude/skills/value-chain-matrix-pptx/scripts/fill_value_chain_matrix.py \
+  --brand stellar_aiz \
   --data <work_dir>/data_<NN+2>_value_chain_matrix.json \
   --template ~/.claude/skills/value-chain-matrix-pptx/assets/value-chain-matrix-template.pptx \
   --output <work_dir>/slide_<NN+2>_value_chain_matrix.pptx
 
 # 4. 主要顧客プロファイル
 python ~/.claude/skills/customer-profile-pptx/scripts/fill_customer_profile.py \
+  --brand stellar_aiz \
   --data <work_dir>/data_<NN+3>_customer_profile.json \
   --template ~/.claude/skills/customer-profile-pptx/assets/customer-profile-template.pptx \
   --output <work_dir>/slide_<NN+3>_customer_profile.pptx
 
 # 5. 顧客市場の成長性
 python ~/.claude/skills/market-environment-pptx/scripts/fill_market_environment.py \
+  --brand stellar_aiz \
   --data <work_dir>/data_<NN+4>_market_environment.json \
   --template ~/.claude/skills/market-environment-pptx/assets/market-environment-template.pptx \
   --output <work_dir>/slide_<NN+4>_market_environment.pptx
@@ -344,11 +397,15 @@ python ~/.claude/skills/market-environment-pptx/scripts/fill_market_environment.
   "data_gaps": [
     "セグメント別営業利益率の詳細内訳",
     "..."
-  ]
+  ],
+  "brand": "stellar_aiz",
+  "brand_warnings": []
 }
 ```
 
 `open_questions` は親 `comparison-synthesis-agent` で全社統合の検証論点に集約される。
+
+`brand` は Step 0 で受領した値をそのまま転記。`brand_warnings` は Step 4 で蓄積した未対応 fill 検出ログ（空配列なら 0 件）。**親 `company-deepdive-agent` は本セグメントの `brand_warnings` を全セグメント分まとめて受け取り、merge 完了後に `merge_warnings.json` へ追記する責務を持つ**。子側（本スキル）は `merge_warnings.json` を直接書かない。
 
 ### Step 6: 終了
 

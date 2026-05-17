@@ -19,6 +19,8 @@ description: >
 
   利益プール率（%）やバー形式で「どの工程で儲かっているか」を分析する場合は
   value-chain-pptx スキル（利益プール分析）を使うこと。
+supported_brands: [stellar_aiz, roleup]
+
 ---
 
 # バリューチェーン・ポジショニング・マトリクス PowerPoint ジェネレーター
@@ -185,9 +187,12 @@ pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_value_chain_matrix.py \
   --data {{WORK_DIR}}/value_chain_matrix_data.json \
-  --template <SKILL_DIR>/assets/value-chain-matrix-template.pptx \
-  --output {{OUTPUT_DIR}}/ValueChainMatrix_output.pptx
+  --output {{OUTPUT_DIR}}/ValueChainMatrix_output.pptx \
+  [--brand stellar_aiz | roleup]
 ```
+
+`--template` を省略すると `--brand` (default `stellar_aiz`) に応じて
+`assets/<brand>/value-chain-matrix-template.pptx` が自動解決される。
 
 ※ `<SKILL_DIR>` は実際のスキルインストールパスに置き換えること。
 
@@ -274,8 +279,10 @@ python -m markitdown {{OUTPUT_DIR}}/ValueChainMatrix_output.pptx
 
 | ファイル | 用途 |
 |---|---|
-| `assets/value-chain-matrix-template.pptx` | スライドテンプレート（customer-profile-pptxと同系） |
-| `scripts/fill_value_chain_matrix.py` | 生成スクリプト |
+| `assets/stellar_aiz/value-chain-matrix-template.pptx` | stella ブランドのテンプレート (16:9) |
+| `assets/roleup/value-chain-matrix-template.pptx` | roleup ブランドのテンプレート (A4 横、Yu Gothic UI) |
+| `scripts/fill_value_chain_matrix.py` | 生成スクリプト (brand-aware) |
+| `scripts/build_roleup_template.py` | roleup テンプレ生成 (one-shot) |
 | `references/sample_data.json` | サンプル（自動車部品業界、7段階） |
 | `references/sample_data_5stages.json` | サンプル（食品業界、5段階） |
 

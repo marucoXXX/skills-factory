@@ -1,0 +1,3 @@
+{
+  "_comment": "Phase 3 — A4 横 (11.693×8.268 in) 公式テンプレ slide3 (レイアウト①: フルワイド本文) ベース。fill_company_history.py は theme.layout() を呼ばず、Text Placeholder 2 (subtitle, 公式テンプレ位置 0.42,1.51,5.44,0.36) shape の left/top/width をテーブル起点として動的に使用するため layout coordinate は不要。"
+}

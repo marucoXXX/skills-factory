@@ -32,6 +32,34 @@ IM・Web情報からBDDプロジェクトの状態ファイル一式を初期化
 
 ## 実行手順
 
+### Step 0: ブランド確認（必須）
+
+<!-- source: skills/_common/prompts/step0_brand_clarification.md (manual sync until D2) -->
+
+BDDプロジェクトの最終アウトプット（`bdd-report` 等で生成される PPTX デッキ）の**出力ブランド**を確定し、Step 2 で `meta.json.brand` に保存する。共通原則・AskUserQuestion テンプレ・自由記述ハンドリング・unsupported skill fallback の詳細仕様は `skills/_common/prompts/step0_brand_clarification.md` を正本とする。
+
+bdd-init 自体は fill スキルを直接起動しないが、後続スキル（`bdd-report` 等）が `meta.json.brand` を読んで `--brand` 引数を伝播する設計のため、初期化段階で確定しておく。
+
+```python
+import json, os, sys
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "..", "_common", "lib"))
+from brand_resolver import _discover_brands, _BRANDS_DIR
+
+discovered = _discover_brands()  # 例: ('roleup', 'stellar_aiz')
+options = []
+for brand_id in discovered:
+    with open(os.path.join(_BRANDS_DIR, brand_id, "theme.json")) as f:
+        theme_data = json.load(f)
+    label = theme_data.get("label", brand_id)
+    if brand_id == "stellar_aiz":
+        label += " (Recommended)"
+    options.append({"label": label, "description": f"id={brand_id}"})
+# AskUserQuestion(question="このBDDデッキはどのクライアント・ブランドのフォーマットで出力しますか？",
+#                 header="ブランド", options=options, multiSelect=False)
+# 確定値は Step 2 で meta.json.brand / meta.json.brand_label に保存。
+# 「Other」で _discover_brands に含まれない id を入力された場合は AskUserQuestion を再実行。
+```
+
 ### Step 1: ディレクトリ構造を作成
 
 ```bash
@@ -45,6 +73,8 @@ mkdir -p bdd-project/outputs
 ユーザー入力から `meta.json` を作成。`phase` の初期値:
 - IM入手前 = `Phase1_PublicInfo`
 - IM入手済み = `Phase2_IM`
+
+Step 0 で確定したブランドを `meta.json.brand`（id 文字列、既定 `"stellar_aiz"`）と `meta.json.brand_label`（UI 表示用、任意）として保存する。後続 BDD スキル群（`bdd-report` 等）はこの値を読んで fill スキルへ `--brand` を伝播する責務を持つ。
 
 ### Step 3: コア論点を issues.json にコピー
 

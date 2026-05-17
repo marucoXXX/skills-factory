@@ -202,7 +202,38 @@ Step 10: ユーザーへ提示（PPTX + MDの2ファイル）
 
 ## Step 0: 市場スコープ確認
 
-**進捗**: 開始時 `TaskCreate(subject="market-overview: Step 0 - スコープ確認")` → Step 0.0 / 0.5 完了後にまとめて `TaskUpdate(completed)` + `task_state.json` 更新。**`AskUserQuestion` 必須**(自由対話での確定は禁止、Step 0.0 と Step 0.5 両方で必須)。
+**進捗**: 開始時 `TaskCreate(subject="market-overview: Step 0 - スコープ確認")` → Step 0.0-pre / 0.0 / 0.5 完了後にまとめて `TaskUpdate(completed)` + `task_state.json` 更新。**`AskUserQuestion` 必須**(自由対話での確定は禁止、Step 0.0-pre / 0.0 / 0.5 全てで必須)。
+
+<!-- source: skills/_common/prompts/step0_brand_clarification.md (manual sync until D2) -->
+
+### Step 0.0-pre: ブランド確認（必須）
+
+本デッキの**出力ブランド**（クライアント別 PPTX フォーマット）を `scope.json.brand` に保存する。共通原則・AskUserQuestion テンプレ・自由記述ハンドリング・unsupported skill fallback の詳細仕様は `skills/_common/prompts/step0_brand_clarification.md` を正本とする。
+
+実装パターン（agnostic、`_discover_brands()` で動的取得）:
+
+```python
+import json, os, sys
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from brand_resolver import _discover_brands, _BRANDS_DIR
+
+discovered = _discover_brands()  # 例: ('roleup', 'stellar_aiz')
+options = []
+for brand_id in discovered:
+    with open(os.path.join(_BRANDS_DIR, brand_id, "theme.json")) as f:
+        theme_data = json.load(f)
+    label = theme_data.get("label", brand_id)
+    if brand_id == "stellar_aiz":
+        label += " (Recommended)"
+    options.append({"label": label, "description": f"id={brand_id}"})
+
+AskUserQuestion(
+    question="このデッキはどのクライアント・ブランドのフォーマットで出力しますか？",
+    header="ブランド", options=options, multiSelect=False,
+)
+# 確定値は scope.json.brand に文字列保存（既定 "stellar_aiz"）。
+# 「Other」で _discover_brands に含まれない id を入力された場合は AskUserQuestion を再実行。
+```
 
 <!-- source: skills/_common/prompts/step0_scope_clarification.md (manual sync until D2) -->
 
@@ -267,6 +298,8 @@ D. その他（自由記述）
   "highlight_company": null,
   "included_business_models": ["タクシー事業者"],
   "excluded_segments": ["配車アプリ事業者"],
+  "brand": "stellar_aiz",
+  "brand_label": "Stellar AIZ（既定）",
   "run_id": "2026-04-27_taxi_industry_operators",
   "started_at": "2026-04-27T10:00:00+09:00"
 }
@@ -293,6 +326,7 @@ D. その他（自由記述）
 
 ```python
 import json
+from skills._common.lib.parse_subagent_return import parse_subagent_return
 result = Agent(
     subagent_type="research-subagent",
     description=f"{market_name} の<論点名>調査",
@@ -312,7 +346,10 @@ result = Agent(
         "search_budget": {"min_searches": 5, "max_searches": 8}
     })
 )
-parsed = json.loads(result)
+# subagent return は parse_subagent_return() 経由で dict 化する（必須）。
+# 直接 json.loads(result) しないこと: subagent が稀に前置き文・code fence・末尾
+# Sources を混入させるため（ISSUE-009）。helper はそれらを吸収する。
+parsed = parse_subagent_return(result)
 # parsed["data"] を {{WORK_DIR}}/<run_id>/data_<NN>_<topic>.json に Write で書き出す
 # parsed["open_questions"] を data_12_data_availability.json と FactCheck_Report.md に転記
 ```
@@ -505,12 +542,58 @@ parsed = json.loads(result)
 
 strategy-report-agent v5.1 の規約と同じ。番号と最終並び順を一致させる。
 
+### ⚠️ 必読: fill_*.py 起動前のスキーマ確認（ISSUE-012 対策）
+
+各 fill_*.py を呼ぶ前に、**対応する `~/.claude/skills/<skill>/references/sample_data.json` を必ず Read** してスキーマ（キー名・必須/任意・ネスト構造・値の型/スケール）を確認すること。**想像で JSON を書かない**。
+
+**理由**: 2026-05-06 に positioning-map で発生した silent fail（オーケストレーターが想像で書いた JSON が fill 側に silent に無視され、空に近いスライドが出力された事故）の構造的再発防止。
+
+**現状の防衛線**:
+- positioning-map-pptx のみ hard-fail 検証あり（`_common/lib/validate_fill_input.py` 経由）
+- 他 PPTX スキルは silent fail の可能性が残るため、**sample_data.json の事前 Read を絶対省略しない**
+- 想定外キー WARN が stderr に出た場合は必ず修正する（タイポ・古いスキーマ流用のサイン）
+
+### Step 5 開始前: brand fallback バッファ初期化（必須）
+
+scope.json から brand を読み出し、未対応 fill 検出用の warning バッファを初期化する。各 fill 起動前に `resolve_fill_brand_with_warning()` を呼び、未対応スキルでは `stellar_aiz` に fallback + warning を buffer に蓄積する（`skills/_common/lib/orchestrator_helpers.py` 参照）。
+
+```python
+import json, os, sys, subprocess
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from orchestrator_helpers import (
+    resolve_fill_brand_with_warning,
+    append_brand_warnings_to_merge_file,
+)
+
+with open("{{WORK_DIR}}/<run_id>/scope.json", encoding="utf-8") as f:
+    scope = json.load(f)
+scope_brand = scope.get("brand", "stellar_aiz")
+brand_warnings: list = []  # Step 7 後に merge_warnings.json へ append する
+```
+
 ### 共通実行パターン
+
+各 fill 起動前に `resolve_fill_brand_with_warning(skill_dir, scope_brand, brand_warnings)` で fill に渡す brand を確定する。supported なら `scope_brand` がそのまま、未対応なら `stellar_aiz` が返り `brand_warnings` に `brand_fallback` エントリが追記される。
+
+```python
+skill_dir = os.path.join("{{SKILL_DIR}}", "<dependency_skill>")
+fill_brand = resolve_fill_brand_with_warning(skill_dir, scope_brand, brand_warnings)
+subprocess.run([
+    "python", os.path.join(skill_dir, "scripts", "fill_<name>.py"),
+    "--brand", fill_brand,
+    "--data", "{{WORK_DIR}}/<run_id>/data_NN_<name>.json",
+    "--template", os.path.join(skill_dir, "assets", "<template>.pptx"),
+    "--output", "{{WORK_DIR}}/<run_id>/slide_NN_<name>.pptx",
+], check=True)
+```
+
+bash で直接書く場合（既存スキル踏襲、warning fallback は使わない場合）:
 
 ```bash
 pip install python-pptx -q --break-system-packages
 
 python {{SKILL_DIR}}/<dependency_skill>/scripts/fill_<name>.py \
+  --brand "$(jq -r '.brand // "stellar_aiz"' {{WORK_DIR}}/<run_id>/scope.json)" \
   --data {{WORK_DIR}}/<run_id>/data_NN_<name>.json \
   --template {{SKILL_DIR}}/<dependency_skill>/assets/<template>.pptx \
   --output {{WORK_DIR}}/<run_id>/slide_NN_<name>.pptx
@@ -660,6 +743,18 @@ python {{SKILL_DIR}}/merge-pptxv2/scripts/merge_pptx_v2.py \
 `<market_name>` はスネークケース化（例: `HRTech`）、`<date>` は実行日（YYYY-MM-DD）。
 `--merge-order` を指定すると `section_divider` 位置検証が走り、結果は出力 PPTX と同じ
 ディレクトリの `merge_warnings.json` に保存される（違反ゼロでも空配列で出力される）。
+
+### merge 完了後: brand_warnings を merge_warnings.json に追記（必須）
+
+merge-pptxv2 は `merge_warnings.json` を `"w"` モードで上書きするため、Step 5 中に蓄積した `brand_warnings` は merge 完了後にここで追記する。
+
+```python
+append_brand_warnings_to_merge_file(
+    "{{OUTPUT_DIR}}/merge_warnings.json", brand_warnings,
+)
+# brand_warnings が空なら no-op（既存ファイルは触らない）。
+# 末尾の Step 8（残存 issue 判断）でユーザーに warning 件数 + 内訳を提示すること。
+```
 
 ### マージ後の最終検証
 

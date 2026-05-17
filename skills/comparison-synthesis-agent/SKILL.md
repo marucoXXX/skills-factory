@@ -89,14 +89,39 @@ N+1 全社共通の検証論点 (issue-risk-list-pptx)
 
 ### Step 0: 比較対象の確定
 
-`AskUserQuestion` で以下を確定:
+<!-- source: skills/_common/prompts/step0_brand_clarification.md (manual sync until D2) -->
 
-| 質問 | 選択肢 |
-|---|---|
-| 比較対象の会社（複数選択）| `work/company-deepdive-agent/` 配下の run_id 一覧から複数選択 |
-| 対象市場名 | テキスト入力（例: 国内タクシー市場）|
-| 事業セグメント横並び比較を含めるか | A. 含める（推奨）/ B. 会社レベルのみ |
-| 検証論点の集約方法 | A. 各社の open_questions を集約（推奨）/ B. 全社共通の論点のみ抽出 |
+`AskUserQuestion` で以下を確定（**ブランドは先頭で確定**。詳細仕様は `skills/_common/prompts/step0_brand_clarification.md` を正本とする）:
+
+| # | 質問 | 選択肢 |
+|---|---|---|
+| 1 | **ブランド**（出力 PPTX フォーマット） | `_discover_brands()` の戻り値から動的取得（既定 `stellar_aiz`）。各社 deepdive run_id の `scope.json.brand` が割れている場合は本ステップで再確定する |
+| 2 | 比較対象の会社（複数選択）| `work/company-deepdive-agent/` 配下の run_id 一覧から複数選択 |
+| 3 | 対象市場名 | テキスト入力（例: 国内タクシー市場）|
+| 4 | 事業セグメント横並び比較を含めるか | A. 含める（推奨）/ B. 会社レベルのみ |
+| 5 | 検証論点の集約方法 | A. 各社の open_questions を集約（推奨）/ B. 全社共通の論点のみ抽出 |
+
+ブランド質問の実装パターン（agnostic、`_discover_brands()` で動的取得）:
+
+```python
+import json, os, sys
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from brand_resolver import _discover_brands, _BRANDS_DIR
+
+discovered = _discover_brands()
+options = []
+for brand_id in discovered:
+    with open(os.path.join(_BRANDS_DIR, brand_id, "theme.json")) as f:
+        theme_data = json.load(f)
+    label = theme_data.get("label", brand_id)
+    if brand_id == "stellar_aiz":
+        label += " (Recommended)"
+    options.append({"label": label, "description": f"id={brand_id}"})
+# 推奨: 各社 deepdive run_id の scope.json.brand を読んで「全社一致なら既定値、割れていたら再確定」をデフォルト提示。
+# AskUserQuestion(question="...", header="ブランド", options=options, multiSelect=False)
+```
+
+確定したブランドは本 agent の比較デッキ全体（fill スキル群への `--brand` 引数）で使う。各社 deepdive デッキを再 merge する場合は、既存の各社デッキは元の brand のまま、新規追加スライド群は確定したブランドで生成する（混在が嫌な場合はユーザーに警告して全社再生成を提案）。
 
 ### Step 1: 各社 Deepdive データの読み込み
 
@@ -125,7 +150,29 @@ N+1 全社共通の検証論点 (issue-risk-list-pptx)
 
 ### Step 3: 比較スライド生成
 
-各論点に応じて既存 PPTX スキルを呼び出し:
+#### Step 3 開始前: brand fallback バッファ初期化（必須）
+
+Step 0 で確定した `scope_brand` を使い、未対応 fill 検出用の warning バッファを初期化する。各 fill 起動前に `resolve_fill_brand_with_warning()` を呼び、未対応スキルでは `stellar_aiz` に fallback + warning を buffer に蓄積する（`skills/_common/lib/orchestrator_helpers.py` 参照）。
+
+```python
+import os, sys, subprocess
+sys.path.insert(0, os.path.join("{{SKILL_DIR}}", "..", "_common", "lib"))
+from orchestrator_helpers import (
+    resolve_fill_brand_with_warning,
+    append_brand_warnings_to_merge_file,
+)
+
+scope_brand = "stellar_aiz"  # Step 0 で確定した値（会話メモリから）
+brand_warnings: list = []  # Step 5 (merge) 後に merge_warnings.json へ append する
+
+# 各 fill 起動例:
+# skill_dir = os.path.join("{{SKILL_DIR}}", "competitor-summary-pptx")
+# fill_brand = resolve_fill_brand_with_warning(skill_dir, scope_brand, brand_warnings)
+# subprocess.run(["python", os.path.join(skill_dir, "scripts", "fill_competitor_summary.py"),
+#                 "--brand", fill_brand, "--data", "...", "--output", "..."], check=True)
+```
+
+各論点に応じて既存 PPTX スキルを呼び出し（すべての起動で `--brand <fill_brand>` を渡す）:
 
 | スライド | スキル |
 |---|---|
@@ -150,6 +197,18 @@ N+1 全社共通の検証論点 (issue-risk-list-pptx)
 会社レベル比較 + 事業セグメント別比較 + 検証論点 + データアベイラビリティを結合。
 
 `outputs/Comparison_<業界>_<date>.pptx` に保存。
+
+#### merge 完了後: brand_warnings を merge_warnings.json に追記（必須）
+
+merge-pptxv2 は `merge_warnings.json` を `"w"` モードで上書きするため、Step 3 中に蓄積した `brand_warnings` は merge 完了後にここで追記する。
+
+```python
+append_brand_warnings_to_merge_file(
+    "outputs/Comparison_<業界>_<date>/merge_warnings.json", brand_warnings,
+)
+# brand_warnings が空なら no-op（既存ファイルは触らない）。
+# Step 7（ユーザーへ提示）でも warning 件数 + 内訳を必ず提示する。
+```
 
 ### Step 6: visual-quality-reviewer + 自動修正ループ
 

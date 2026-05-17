@@ -15,7 +15,20 @@ Usage:
     --output /mnt/user-data/outputs/MarketEnvironment_output.pptx
 """
 
-import argparse, copy, json, math, os, sys
+import argparse, copy, json, math, os, re, sys
+
+# ── brand_resolver bootstrap (skills/_common/lib/brand_resolver.py) ──
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(SKILL_DIR, "..", "_common", "lib"))
+from brand_resolver import resolve_brand, add_brand_arg  # noqa: E402
+from format_helpers import (  # noqa: E402
+    format_fiscal_period,
+    resolve_top_text,
+    resolve_subtitle_text,
+)
+from validate_fill_input import validate_fill_input  # noqa: E402
+
+SKILL_ID = "market-environment-pptx"
 
 from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
@@ -66,7 +79,9 @@ SHAPE_CHART_TITLE  = "Text Placeholder 2"
 SHAPE_CONTENT_AREA = "Content Area"
 SHAPE_SOURCE       = "Source"
 
-# ── レイアウト定数 ──
+# ── Brand-aware module globals ──
+# Default values match stella for safety; reassigned in main() via _apply_theme(theme)
+# after argparse resolves --brand. SHAPE_* names above are template-structure invariants.
 PANEL_Y = Inches(1.50)
 CHART_X = Inches(0.50);  CHART_W = Inches(9.00);  CHART_H = Inches(5.00)
 CHART_Y = PANEL_Y + Inches(0.55)
@@ -75,9 +90,10 @@ CAGR_X  = Inches(9.80);  CAGR_W  = Inches(3.20)
 COLOR_TEXT   = RGBColor(0x33, 0x33, 0x33)
 COLOR_SOURCE = RGBColor(0x66, 0x66, 0x66)
 
-# ─── 共通配色（正本: skills/_common/styles/chart_palette.md） ───
-# 編集時は _common/styles/chart_palette.md と他 4 スキルの fill_*.py も同期更新
-# CHART_PALETTE には TARGET_COLOR(赤) と OTHER_COLOR(灰) を含めない（palette 外で固定）
+# ─── 配色（brand 経由で resolve、stella 既定値を初期値として保持） ───
+# V1 以降は brand theme.json (skills/_common/brands/<id>/theme.json) が単一情報源。
+# 旧来 skills/_common/styles/chart_palette.md の手動同期運用は stella のみ継続
+# （brand-aware にすると Roleup 等は theme.json から自動 resolve され同期負荷が消える）。
 CHART_PALETTE = [
     "#4E79A7", "#F28E2B", "#59A14F", "#76B7B2",
     "#EDC948", "#B07AA1", "#FF9DA7", "#9C755F",
@@ -87,12 +103,72 @@ TARGET_COLOR = "#E15759"
 LABEL_BAR_COLOR = "#4E79A7"
 LABEL_BG_COLOR = "#E8EEF5"
 
+FONT_JP = "Meiryo UI"
+COLOR_SUBTITLE = RGBColor(0x33, 0x33, 0x33)  # default = text; reassigned in _apply_theme
+
+# Phase 4 (ISSUE-011): module-level theme reference so chart helpers can read
+# fiscal_period_format / line_height_pt / layout_rule without an extra parameter.
+_THEME = None
+
+
+def _body_pt(stella_fallback_pt):
+    """本文・表・チャート要素フォントの brand 別解決ヘルパー。
+
+    Roleup: theme.font_size_body_pt (= 10pt 統一)。ユーザー指示
+      「タイトル/キーメッセージ/サブタイトル/出典 以外は 10pt」に準拠。
+    Stella: 旧 hardcode 値を維持(regression-zero)。
+    """
+    if _THEME is None or _THEME.id == "stellar_aiz":
+        return Pt(stella_fallback_pt)
+    return _THEME.pt("font_size_body_pt")
+
+
+def _body_sz(stella_fallback_sz_str):
+    """OOXML sz 属性 (100×pt の文字列) 用の brand 別解決ヘルパー。"""
+    if _THEME is None or _THEME.id == "stellar_aiz":
+        return stella_fallback_sz_str
+    return str(_THEME.pt_value("font_size_body_pt") * 100)
+
 
 def _palette_color(index: int, total: int) -> str:
     if total <= 1:
         return CHART_PALETTE[0]
     return CHART_PALETTE[index % len(CHART_PALETTE)]
-FONT_JP      = "Meiryo UI"
+
+
+def _apply_theme(theme):
+    """Reassign module-level brand-aware globals from a resolved BrandTheme.
+
+    Called once from main() after `--brand` is parsed. Module-load-time
+    defaults above remain correct for direct imports / tests that don't
+    go through main() (regression safety net).
+    """
+    global PANEL_Y, CHART_X, CHART_W, CHART_H, CHART_Y, CAGR_X, CAGR_W
+    global COLOR_TEXT, COLOR_SOURCE, COLOR_SUBTITLE
+    global CHART_PALETTE, OTHER_COLOR, TARGET_COLOR, LABEL_BAR_COLOR, LABEL_BG_COLOR
+    global FONT_JP
+    global _THEME
+    _THEME = theme
+
+    PANEL_Y = theme.layout("panel_y_in")
+    CHART_X = theme.layout("chart_x_in")
+    CHART_W = theme.layout("chart_w_in")
+    CHART_H = theme.layout("chart_h_in")
+    CHART_Y = PANEL_Y + theme.layout("chart_y_offset_in")
+    CAGR_X  = theme.layout("cagr_x_in")
+    CAGR_W  = theme.layout("cagr_w_in")
+
+    COLOR_TEXT     = theme.color("text")
+    COLOR_SOURCE   = theme.color("source")
+    COLOR_SUBTITLE = theme.color("subtitle")  # roleup #897141 / stella #333333 (= text)
+
+    CHART_PALETTE   = list(theme.chart_palette)
+    OTHER_COLOR     = theme.hex("highlight_other")
+    TARGET_COLOR    = theme.hex("highlight_target")
+    LABEL_BAR_COLOR = theme.hex("label_bar")
+    LABEL_BG_COLOR  = theme.hex("label_bg")
+
+    FONT_JP = theme.font_ea
 
 # ── ユーティリティ ──
 def find_shape(slide, name):
@@ -114,6 +190,21 @@ def set_textbox_text(shape, text):
 def remove_shape(slide, name):
     s = find_shape(slide, name)
     if s: slide.shapes._spTree.remove(s._element); print(f"  ✓ Removed '{name}'")
+
+def _silent_remove_shape(slide, name):
+    """find_shape の warning を出さずに削除を試みる(brand 別 shape 名フォールバック用)"""
+    for s in slide.shapes:
+        if s.name == name:
+            slide.shapes._spTree.remove(s._element)
+            return True
+    return False
+
+def _silent_find_shape(slide, name):
+    """find_shape の warning を出さずに検索する(brand 別 shape 名フォールバック用)"""
+    for s in slide.shapes:
+        if s.name == name:
+            return s
+    return None
 
 def _hex2rgb(h):
     h = h.replace("#","")
@@ -213,6 +304,13 @@ def _reorder_plot_area(pa):
     for c in axes:    pa.append(c)
     for c in others:  pa.append(c)
 
+def _year_to_int(year) -> int:
+    s = str(year)
+    digits = re.sub(r"\D", "", s)
+    if not digits:
+        raise ValueError(f"year value contains no digits: {year!r}")
+    return int(digits)
+
 # ── チャート生成 ──
 def build_stacked_combo_chart(slide, cfg, left, top, w, h):
     from pptx.chart.data import CategoryChartData
@@ -223,7 +321,12 @@ def build_stacked_combo_chart(slide, cfg, left, top, w, h):
     n_ser     = len(bars_cfg)
 
     cd = CategoryChartData()
-    cd.categories = [d["year"] for d in data]
+    # categories: roleup なら "YY/MM期" (公式 vF 例)、stella は西暦 4 桁を維持
+    if _THEME is not None and _THEME.fiscal_period_format():
+        fy_month = cfg.get("fiscal_year_end_month", 12)
+        cd.categories = [format_fiscal_period(_year_to_int(d["year"]), fy_month, _THEME) for d in data]
+    else:
+        cd.categories = [d["year"] for d in data]
     for si, sb in enumerate(bars_cfg):
         cd.add_series(sb["series_name"],
                       [d["bars"][si] if si < len(d.get("bars",[])) else 0 for d in data])
@@ -349,8 +452,9 @@ def build_stacked_combo_chart(slide, cfg, left, top, w, h):
         pp = p.find(qn('a:pPr'))
         if pp is None: pp = etree.SubElement(p, qn('a:pPr'))
         dr = pp.find(qn('a:defRPr'))
-        if dr is None: dr = etree.SubElement(pp, qn('a:defRPr'), attrib={'sz':'1100'})
-        else: dr.set('sz','1100')
+        ax_sz = _body_sz('1100')  # roleup: 10pt 統一 / stella: 11pt 維持
+        if dr is None: dr = etree.SubElement(pp, qn('a:defRPr'), attrib={'sz': ax_sz})
+        else: dr.set('sz', ax_sz)
         if dr.find(qn('a:latin')) is None: etree.SubElement(dr, qn('a:latin'), attrib={'typeface':FONT_JP})
         if dr.find(qn('a:ea')) is None: etree.SubElement(dr, qn('a:ea'), attrib={'typeface':FONT_JP})
 
@@ -387,10 +491,45 @@ def _add_dlbls(ser, pos, fmt, fc, sz):
     etree.SubElement(sf, qn('a:srgbClr'), attrib={'val':fc})
 
 # ── 注釈・凡例 ──
-def add_unit_label(slide, text, left, top):
-    tb = slide.shapes.add_textbox(left, top, Inches(3.0), Inches(0.25))
+def add_section_subtitle(slide, text, left, top, width, theme):
+    """サブタイトル(セクション見出し)を動的 textbox で配置。
+
+    customer-profile/add_section_title 相当の機能だが、
+    market-environment は section_title フィールドが任意のため、
+    呼び出し側で `if text` でガードする想定。
+
+    色・align は theme.subtitle / layout_rule(subtitle_align) 由来。
+    roleup: 12pt 左寄せ #897141 / stella: 14pt 中央寄せ #333333。
+    """
+    txBox = slide.shapes.add_textbox(left, top, width, Inches(0.30))
+    tf = txBox.text_frame
+    tf.word_wrap = True
+    p = tf.paragraphs[0]
+    align_str = theme.layout_rule("subtitle_align", "center")
+    p.alignment = PP_ALIGN.LEFT if align_str == "left" else PP_ALIGN.CENTER
+    run = p.add_run()
+    run.text = text
+    run.font.size = theme.pt("font_size_section_pt")
+    run.font.bold = True
+    run.font.color.rgb = theme.color("subtitle")
+    run.font.name = theme.font_ea
+    return txBox
+
+
+def add_unit_label(slide, text, left, top, width=None, height=None):
+    """Unit label textbox.
+
+    width default: stella regression のため 3.0 inch (旧挙動)。
+    height default: stella regression のため 0.25 inch (旧挙動)。
+    roleup ではテキスト幅・高さにフィットする値を呼出側で指定。
+    """
+    if width is None:
+        width = Inches(3.0)
+    if height is None:
+        height = Inches(0.25)
+    tb = slide.shapes.add_textbox(left, top, width, height)
     p = tb.text_frame.paragraphs[0]; p.alignment = PP_ALIGN.LEFT
-    r = p.add_run(); r.text = text; r.font.size = Pt(11)
+    r = p.add_run(); r.text = text; r.font.size = _body_pt(11)
     r.font.color.rgb = COLOR_TEXT; r.font.name = FONT_JP
 
 def add_custom_legend(slide, cfg, left, top, w):
@@ -408,7 +547,7 @@ def add_custom_legend(slide, cfg, left, top, w):
         tb = slide.shapes.add_textbox(tx, int(top), Inches(1.0), lh)
         tb.text_frame.word_wrap = False
         r = tb.text_frame.paragraphs[0].add_run()
-        r.text = lc["series_name"]; r.font.size = Pt(11); r.font.color.rgb = COLOR_TEXT; r.font.name = FONT_JP
+        r.text = lc["series_name"]; r.font.size = _body_pt(11); r.font.color.rgb = COLOR_TEXT; r.font.name = FONT_JP
         ix = tx + Inches(1.0) + Inches(0.15)
     n_bars_total = len(bars)
     for sb_idx, sb in enumerate(bars):
@@ -419,7 +558,7 @@ def add_custom_legend(slide, cfg, left, top, w):
         tb = slide.shapes.add_textbox(tx, int(top), Inches(1.5), lh)
         tb.text_frame.word_wrap = False
         r = tb.text_frame.paragraphs[0].add_run()
-        r.text = sb["series_name"]; r.font.size = Pt(11); r.font.color.rgb = COLOR_TEXT; r.font.name = FONT_JP
+        r.text = sb["series_name"]; r.font.size = _body_pt(11); r.font.color.rgb = COLOR_TEXT; r.font.name = FONT_JP
         ix = tx + Inches(1.5) + Inches(0.10)
     print("  ✓ 凡例")
 
@@ -433,7 +572,7 @@ def add_cagr_annotations(slide, cfg, left, top, w):
         tb = slide.shapes.add_textbox(left, int(y), w, Inches(0.25))
         tb.text_frame.word_wrap = True
         r = tb.text_frame.paragraphs[0].add_run()
-        r.text = ann.get("label",""); r.font.size = Pt(11); r.font.bold = True
+        r.text = ann.get("label",""); r.font.size = _body_pt(11); r.font.bold = True
         r.font.color.rgb = COLOR_TEXT; r.font.name = FONT_JP
         ln = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, int(y+Inches(0.25)), w, Inches(0.015))
         ln.fill.solid(); ln.fill.fore_color.rgb = COLOR_TEXT; ln.line.fill.background()
@@ -441,12 +580,12 @@ def add_cagr_annotations(slide, cfg, left, top, w):
         for it in ann.get("items",[]):
             nb = slide.shapes.add_textbox(left, int(y), Inches(1.1), Inches(0.28))
             r = nb.text_frame.paragraphs[0].add_run()
-            r.text = f"{it['name']}："; r.font.size = Pt(11)
+            r.text = f"{it['name']}："; r.font.size = _body_pt(11)
             r.font.color.rgb = COLOR_TEXT; r.font.name = FONT_JP
             vb = slide.shapes.add_textbox(int(left+Inches(1.1)), int(y), int(w-Inches(1.1)), Inches(0.28))
             vb.text_frame.paragraphs[0].alignment = PP_ALIGN.RIGHT
             r = vb.text_frame.paragraphs[0].add_run()
-            r.text = it['value']; r.font.size = Pt(15); r.font.bold = True
+            r.text = it['value']; r.font.size = _body_pt(15); r.font.bold = True
             r.font.color.rgb = COLOR_TEXT; r.font.name = FONT_JP
             y += Inches(0.30)
         y += Inches(0.15)
@@ -516,7 +655,7 @@ def add_growth_annotations(slide, cfg, cl, ct, cw, ch):
         ov.text_frame.word_wrap = False
         ov.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
         r = ov.text_frame.paragraphs[0].add_run()
-        r.text = val; r.font.size = Pt(14); r.font.bold = True
+        r.text = val; r.font.size = _body_pt(14); r.font.bold = True
         r.font.color.rgb = COLOR_TEXT; r.font.name = FONT_JP
     print(f"  ✓ CAGR注釈: {len(gas)}個")
 
@@ -565,10 +704,34 @@ def add_period_separator(slide, cfg, cl, ct, cw, ch):
 # ── メイン ──
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", required=True); ap.add_argument("--template", required=True)
+    ap.add_argument("--data", required=True)
+    ap.add_argument(
+        "--template", required=False, default=None,
+        help="Optional explicit template path. If omitted, resolved from --brand "
+             "(via brand_resolver.template_path).",
+    )
     ap.add_argument("--output", required=True)
+    add_brand_arg(ap)
     args = ap.parse_args()
+
+    theme = resolve_brand(args.brand, SKILL_DIR)
+    _apply_theme(theme)
+    template_path = args.template or theme.template_path(SKILL_DIR, "market-environment")
+    print(f"  ✓ Brand: {theme.id} ({theme.label})")
+    print(f"  ✓ Template: {template_path}")
+
     with open(args.data, "r", encoding="utf-8") as f: data = json.load(f)
+
+    # ISSUE-012 (2026-05-06): スキーマ齟齬の silent fail 防止
+    validate_fill_input(
+        data,
+        required_top=["main_message", "chart"],
+        allowed_top=[
+            "main_message", "chart_title", "section_title", "source", "chart",
+            "title", "subtitle",
+        ],
+        skill_name=SKILL_ID,
+    )
 
     _mm = data.get("main_message", "")
     if len(_mm) > 65:
@@ -577,18 +740,50 @@ def main():
         )
 
     print("=== 市場環境分析スライド生成（ネイティブPPTX）===")
-    prs = Presentation(args.template); slide = prs.slides[0]
+    prs = Presentation(template_path); slide = prs.slides[0]
 
-    set_textbox_text(find_shape(slide, SHAPE_MAIN_MESSAGE), data.get("main_message",""))
-    set_textbox_text(find_shape(slide, SHAPE_CHART_TITLE), data.get("chart_title","市場環境分析"))
+    # Top placeholder (stella: main_message / roleup: chart_title)
+    top_text = resolve_top_text(data, theme)
+    set_textbox_text(find_shape(slide, SHAPE_MAIN_MESSAGE), top_text)
+    # Subtitle placeholder (stella: chart_title / roleup: main_message)
+    sub_text = resolve_subtitle_text(data, theme) or "市場環境分析"
+    set_textbox_text(find_shape(slide, SHAPE_CHART_TITLE), sub_text)
     src = data.get("source","")
-    if src: set_textbox_text(find_shape(slide, SHAPE_SOURCE), f"出典：{src}")
-    remove_shape(slide, SHAPE_CONTENT_AREA)
+    if src:
+        # roleup 公式テンプレでは shape 名が "Source 3"。stella は "Source"。
+        # 両方を試して見つかった方を更新する(silent fallback)。
+        src_shape = _silent_find_shape(slide, SHAPE_SOURCE) or _silent_find_shape(slide, "Source 3")
+        if src_shape is not None:
+            set_textbox_text(src_shape, f"出典：{src}")
+        else:
+            print(f"  ⚠ Source shape not found (tried '{SHAPE_SOURCE}', 'Source 3')", file=sys.stderr)
+    # ガイド矩形(チャート位置決め用)を除去:
+    #   stella: "Content Area" / roleup: "正方形/長方形 1"(茶色 accent2)
+    # 出力ではマスター背景(白)が見えるよう両方 silent に削除を試みる。
+    _silent_remove_shape(slide, SHAPE_CONTENT_AREA)
+    _silent_remove_shape(slide, "正方形/長方形 1")
 
     cfg = data.get("chart", {})
     ul = cfg.get("unit_label","")
-    if ul: add_unit_label(slide, ul, CHART_X, PANEL_Y)
-    add_custom_legend(slide, cfg, CHART_X, PANEL_Y + Inches(0.25), CHART_W)
+
+    if theme.id == "stellar_aiz":
+        # stella: 既存挙動維持 (生成順序・座標が旧と完全一致 → regression-zero)
+        if ul:
+            add_unit_label(slide, ul, CHART_X, PANEL_Y)
+        add_custom_legend(slide, cfg, CHART_X, PANEL_Y + Inches(0.25), CHART_W)
+    else:
+        # roleup (ユーザー視覚調整 2026-05-04):
+        # サブタイトル: panel_y+0.05 に section_title (12pt 左寄せ #897141)
+        # 凡例: panel_y+0.51, chart_x+0.21 (0.62 in)
+        # 単位ラベル: 凡例右側 chart 右上 (6.52, panel_y+0.51) に幅 1.39 in
+        section_title = data.get("section_title", "")
+        if section_title:
+            add_section_subtitle(slide, section_title, CHART_X, PANEL_Y + Inches(0.05),
+                                 CHART_W + CAGR_W, theme)
+        add_custom_legend(slide, cfg, CHART_X + Inches(0.21), PANEL_Y + Inches(0.51), CHART_W)
+        if ul:
+            add_unit_label(slide, ul, Inches(6.52), PANEL_Y + Inches(0.51),
+                           Inches(1.39), height=Inches(0.27))
     build_stacked_combo_chart(slide, cfg, CHART_X, CHART_Y, CHART_W, CHART_H)
     add_period_separator(slide, cfg, CHART_X, CHART_Y, CHART_W, CHART_H)
     add_growth_annotations(slide, cfg, CHART_X, CHART_Y, CHART_W, CHART_H)

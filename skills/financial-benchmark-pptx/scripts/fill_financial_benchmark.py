@@ -1,23 +1,23 @@
 """
 fill_financial_benchmark.py — 財務ベンチマーク比較スライドをPPTXネイティブオブジェクトで生成
 
+Phase 2 (ISSUE-010): brand-aware で stellar_aiz / roleup を出し分け。
+チャートは MSO_SHAPE.RECTANGLE で手動描画 (chart object 不在のため C10/C12 適用外)。
+
 レイアウト:
   - 上部: メインメッセージ + チャートタイトル
   - 2×3グリッド: 6つの小型バーチャート（1指標/1チャート）
-      [売上高]    [成長率CAGR]   [営業利益率]
-      [EBITDA率]  [ROE]          [自己資本比率]
   - 下部: 出典
 
 各小型チャート:
   - タイトル（指標名 + 単位）
   - 水平バーチャート（MSO_SHAPE.RECTANGLE で手動描画）
-  - 対象会社は赤でハイライト、その他は紺
+  - 対象会社は強調色でハイライト、その他は通常色
   - 企業名（左）+ 値ラベル（バーの右端）
 
 Usage:
-  python fill_financial_benchmark.py \
+  python fill_financial_benchmark.py --brand stellar_aiz \
     --data /home/claude/financial_benchmark_data.json \
-    --template <path>/financial-benchmark-template.pptx \
     --output /mnt/user-data/outputs/FinancialBenchmark_output.pptx
 """
 
@@ -25,6 +25,15 @@ import argparse
 import json
 import os
 import sys
+
+# brand_resolver bootstrap (Phase 2 — brand-aware: stellar_aiz / roleup)
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(SKILL_DIR, "..", "_common", "lib"))
+from brand_resolver import resolve_brand, add_brand_arg  # noqa: E402
+from format_helpers import resolve_top_text, resolve_subtitle_text, require_source  # noqa: E402
+from validate_fill_input import validate_fill_input  # noqa: E402
+
+SKILL_ID = "financial-benchmark-pptx"
 
 from pptx import Presentation
 from pptx.dml.color import RGBColor
@@ -68,24 +77,26 @@ def _finalize_pptx(path):
         pass
 
 
-
-# ── Layout Constants ──
+# ── Layout / Style globals (defaults reassigned by _apply_theme) ──
 SHAPE_MAIN_MESSAGE = "Title 1"
 SHAPE_CHART_TITLE = "Text Placeholder 2"
+SHAPE_SOURCE = "Source 3"
 
-# 6チャートを2x3グリッドで配置
 GRID_LEFT = Inches(0.41)
 GRID_TOP = Inches(1.50)
 GRID_WIDTH = Inches(12.51)
 GRID_HEIGHT = Inches(5.40)
+CELL_GAP_X = Inches(0.15)
+CELL_GAP_Y = Inches(0.20)
+LABEL_COL_W = Inches(1.15)
+VALUE_COL_W = Inches(0.85)
+SOURCE_X = Inches(0.41)
+SOURCE_Y = Inches(7.00)
+SOURCE_W = Inches(12.50)
+SOURCE_H = Inches(0.25)
 
 N_COLS = 3
 N_ROWS = 2
-CELL_GAP_X = Inches(0.15)
-CELL_GAP_Y = Inches(0.20)
-
-CELL_W = (GRID_WIDTH - CELL_GAP_X * (N_COLS - 1)) / N_COLS
-CELL_H = (GRID_HEIGHT - CELL_GAP_Y * (N_ROWS - 1)) / N_ROWS
 
 # 各セル内部のレイアウト
 CHART_TITLE_H = Inches(0.35)
@@ -94,32 +105,92 @@ BAR_AREA_BOTTOM_MARGIN = Inches(0.05)
 BAR_AREA_LEFT_MARGIN = Inches(0.10)
 BAR_AREA_RIGHT_MARGIN = Inches(0.10)
 
-# バーのサイズ
-LABEL_COL_W = Inches(1.15)   # 企業名列の幅
-VALUE_COL_W = Inches(0.85)   # 値ラベル列の幅
-
-SOURCE_X = Inches(0.41)
-SOURCE_Y = Inches(7.00)
-SOURCE_W = Inches(12.50)
-
-# ── Colors ──
+# Defaults (stella V1 colors; reassigned in main() via _apply_theme).
 COLOR_TEXT = RGBColor(0x33, 0x33, 0x33)
 COLOR_SOURCE = RGBColor(0x66, 0x66, 0x66)
 COLOR_WHITE = RGBColor(0xFF, 0xFF, 0xFF)
 COLOR_CELL_BG = RGBColor(0xFA, 0xFA, 0xFA)
 COLOR_CELL_BORDER = RGBColor(0xDD, 0xDD, 0xDD)
 COLOR_TITLE_UNDERLINE = RGBColor(0x33, 0x33, 0x33)
-
-COLOR_BAR_DEFAULT = RGBColor(0x4E, 0x79, 0xA7)  # 紺 - 通常企業
-COLOR_BAR_TARGET = RGBColor(0xE1, 0x57, 0x59)   # 赤 - 対象会社
-COLOR_BAR_NEGATIVE = RGBColor(0xB8, 0x3A, 0x3A) # 濃赤 - マイナス値のバー
-COLOR_BAR_TARGET_NEG = RGBColor(0x8B, 0x2C, 0x2E)  # 濃赤 - 対象会社のマイナス値
+COLOR_BAR_DEFAULT = RGBColor(0x4E, 0x79, 0xA7)
+COLOR_BAR_TARGET = RGBColor(0xE1, 0x57, 0x59)
+COLOR_BAR_NEGATIVE = RGBColor(0xB8, 0x3A, 0x3A)
+COLOR_BAR_TARGET_NEG = RGBColor(0x8B, 0x2C, 0x2E)
+COLOR_NA = RGBColor(0x99, 0x99, 0x99)
 
 FONT_NAME_JP = "Meiryo UI"
 FONT_SIZE_CHART_TITLE = Pt(11)
 FONT_SIZE_COMPANY = Pt(10)
 FONT_SIZE_VALUE = Pt(10)
 FONT_SIZE_SOURCE = Pt(10)
+
+# Theme module-global; populated in main() via _apply_theme(theme).
+_THEME = None
+
+
+def _apply_theme(theme):
+    """Reassign module-level brand-aware globals from a resolved BrandTheme."""
+    global _THEME
+    global GRID_LEFT, GRID_TOP, GRID_WIDTH, GRID_HEIGHT, CELL_GAP_X, CELL_GAP_Y
+    global LABEL_COL_W, VALUE_COL_W, SOURCE_X, SOURCE_Y, SOURCE_W, SOURCE_H
+    global COLOR_TEXT, COLOR_SOURCE, COLOR_CELL_BG, COLOR_CELL_BORDER, COLOR_TITLE_UNDERLINE
+    global COLOR_BAR_DEFAULT, COLOR_BAR_TARGET, COLOR_BAR_NEGATIVE, COLOR_BAR_TARGET_NEG
+    global FONT_NAME_JP, FONT_SIZE_CHART_TITLE, FONT_SIZE_COMPANY, FONT_SIZE_VALUE, FONT_SIZE_SOURCE
+
+    _THEME = theme
+
+    GRID_LEFT = theme.layout("grid_left_in")
+    GRID_TOP = theme.layout("grid_top_in")
+    GRID_WIDTH = theme.layout("grid_width_in")
+    GRID_HEIGHT = theme.layout("grid_height_in")
+    CELL_GAP_X = theme.layout("cell_gap_x_in")
+    CELL_GAP_Y = theme.layout("cell_gap_y_in")
+    LABEL_COL_W = theme.layout("label_col_w_in")
+    VALUE_COL_W = theme.layout("value_col_w_in")
+    SOURCE_X = theme.layout("source_x_in")
+    SOURCE_Y = theme.layout("source_y_in")
+    SOURCE_W = theme.layout("source_w_in")
+    SOURCE_H = theme.layout("source_h_in")
+
+    COLOR_TEXT = theme.color("text")
+    COLOR_SOURCE = theme.color("source")
+    COLOR_TITLE_UNDERLINE = theme.color("text")
+    COLOR_BAR_DEFAULT = theme.color("label_bar")
+    COLOR_BAR_TARGET = theme.color("highlight_target")
+
+    FONT_NAME_JP = theme.font_ea
+
+    if theme.id == "stellar_aiz":
+        # V1 hardcoded values for regression-zero.
+        COLOR_CELL_BG = RGBColor(0xFA, 0xFA, 0xFA)
+        COLOR_CELL_BORDER = RGBColor(0xDD, 0xDD, 0xDD)
+        COLOR_BAR_NEGATIVE = RGBColor(0xB8, 0x3A, 0x3A)
+        COLOR_BAR_TARGET_NEG = RGBColor(0x8B, 0x2C, 0x2E)
+        FONT_SIZE_CHART_TITLE = Pt(11)
+        FONT_SIZE_COMPANY = Pt(10)
+        FONT_SIZE_VALUE = Pt(10)
+        FONT_SIZE_SOURCE = Pt(10)
+    else:
+        # Roleup: brand 一貫性で cell BG/border は brand 色、negative bar は
+        # accent_op_margin_line で代用 (ユーザー判断 2026-05-06)。bold で対象
+        # 識別を担保。
+        COLOR_CELL_BG = theme.color("label_bg")
+        COLOR_CELL_BORDER = theme.color("highlight_other")
+        COLOR_BAR_NEGATIVE = theme.color("accent_op_margin_line")
+        COLOR_BAR_TARGET_NEG = theme.color("accent_op_margin_line")
+        # C4 allowed set: {22, 14, 12, 10, 6}
+        body = theme.font_size_body_pt(skill_id=SKILL_ID)
+        FONT_SIZE_CHART_TITLE = body
+        FONT_SIZE_COMPANY = body
+        FONT_SIZE_VALUE = body
+        FONT_SIZE_SOURCE = theme.pt("font_size_source_pt")
+
+
+def _silent_remove_shape(slide, shape_name):
+    for s in list(slide.shapes):
+        if s.name == shape_name:
+            sp = s._element
+            sp.getparent().remove(sp)
 
 
 # ──────────────────────────────────────────────
@@ -151,7 +222,13 @@ def set_textbox_text(shape, text):
 
 def add_text_box(slide, text, left, top, width, height, font_size, bold=False,
                  color=None, align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.MIDDLE,
-                 font_name=FONT_NAME_JP):
+                 font_name=None):
+    # font_name / color default to current module globals (post-_apply_theme).
+    # Late binding via None sentinel avoids capturing pre-theme defaults.
+    if font_name is None:
+        font_name = FONT_NAME_JP
+    if color is None:
+        color = COLOR_TEXT
     tb = slide.shapes.add_textbox(left, top, width, height)
     tf = tb.text_frame
     tf.word_wrap = False
@@ -165,10 +242,7 @@ def add_text_box(slide, text, left, top, width, height, font_size, bold=False,
     run.font.size = font_size
     run.font.bold = bold
     run.font.name = font_name
-    if color is not None:
-        run.font.color.rgb = color
-    else:
-        run.font.color.rgb = COLOR_TEXT
+    run.font.color.rgb = color
     return tb
 
 
@@ -177,17 +251,14 @@ def format_value(val, unit="", decimals=1, show_sign=False):
     if val is None:
         return "—"
 
-    # decimalsに応じてフォーマット
     if decimals == 0:
         num_str = f"{val:,.0f}"
     else:
         num_str = f"{val:,.{decimals}f}"
 
-    # 符号付き表示
     if show_sign and val > 0 and not num_str.startswith("+"):
         num_str = "+" + num_str
 
-    # 単位付加
     if unit:
         return f"{num_str}{unit}"
     return num_str
@@ -198,13 +269,9 @@ def format_value(val, unit="", decimals=1, show_sign=False):
 # ──────────────────────────────────────────────
 def draw_bar_chart_cell(slide, metric, companies, target_company,
                          left, top, width, height):
-    """
-    1つの指標に対する水平バーチャートを描画する
-    """
-    # セル背景（薄い枠線付き矩形）
-    cell_bg = slide.shapes.add_shape(
-        MSO_SHAPE.RECTANGLE, left, top, width, height
-    )
+    """1つの指標に対する水平バーチャートを描画する"""
+    # セル背景
+    cell_bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, left, top, width, height)
     cell_bg.fill.solid()
     cell_bg.fill.fore_color.rgb = COLOR_CELL_BG
     cell_bg.line.color.rgb = COLOR_CELL_BORDER
@@ -212,10 +279,10 @@ def draw_bar_chart_cell(slide, metric, companies, target_company,
     cell_bg.shadow.inherit = False
     cell_bg.text_frame.text = ""
 
-    # 指標タイトル（上部）
+    # 指標タイトル
     metric_name = metric.get("name", "指標")
     unit = metric.get("unit", "")
-    title_text = f"{metric_name}（{unit}）" if unit else metric_name
+    title_text = f"{metric_name}({unit})" if unit else metric_name
 
     add_text_box(
         slide, title_text,
@@ -235,49 +302,40 @@ def draw_bar_chart_cell(slide, metric, companies, target_company,
     line.fill.fore_color.rgb = COLOR_TITLE_UNDERLINE
     line.line.fill.background()
 
-    # バーエリアの計算
     bar_area_top = top + CHART_TITLE_H + BAR_AREA_TOP_MARGIN + Inches(0.05)
     bar_area_h = height - CHART_TITLE_H - BAR_AREA_TOP_MARGIN - BAR_AREA_BOTTOM_MARGIN - Inches(0.05)
     bar_area_left = left + BAR_AREA_LEFT_MARGIN
     bar_area_right = left + width - BAR_AREA_RIGHT_MARGIN
 
-    # バーの開始位置（企業名列の右）
     bar_start_x = bar_area_left + LABEL_COL_W
-    # バーの最大幅（値ラベル列を除く）
     bar_max_w = bar_area_right - bar_start_x - VALUE_COL_W
 
-    # 値と最大値を取得
     values_dict = metric.get("values", {})
     decimals = metric.get("decimals", 1)
     show_sign = metric.get("show_sign", False)
 
-    # 各社の値を取り出し
     rows = []
     for comp in companies:
         name = comp["name"]
         val = values_dict.get(name)
         rows.append({"name": name, "value": val})
 
-    # オプションでソート
-    sort_order = metric.get("sort", "keep")  # "keep", "desc", "asc"
+    sort_order = metric.get("sort", "keep")
     if sort_order == "desc":
         rows.sort(key=lambda r: (r["value"] if r["value"] is not None else float("-inf")), reverse=True)
     elif sort_order == "asc":
         rows.sort(key=lambda r: (r["value"] if r["value"] is not None else float("inf")))
 
-    # 最大絶対値を計算（バー幅の基準）
     vals_numeric = [r["value"] for r in rows if r["value"] is not None]
     if not vals_numeric:
         return
     max_abs = max(abs(v) for v in vals_numeric) or 1
     has_negative = any(v < 0 for v in vals_numeric)
 
-    # 行の高さを計算
     n_rows = len(rows)
     row_h = bar_area_h // n_rows
-    bar_h = Emu(int(row_h * 0.60))  # バーの高さは行の60%
+    bar_h = Emu(int(row_h * 0.60))
 
-    # 負の値がある場合、ゼロラインを中央に設定
     if has_negative:
         zero_x = bar_start_x + bar_max_w // 2
         half_bar_max_w = bar_max_w // 2
@@ -294,7 +352,7 @@ def draw_bar_chart_cell(slide, metric, companies, target_company,
         cell_y_center = row_y + row_h // 2
         bar_y = cell_y_center - bar_h // 2
 
-        # 企業名ラベル（左）
+        # 企業名ラベル
         label_x = bar_area_left
         label_tb = slide.shapes.add_textbox(
             label_x, row_y, LABEL_COL_W, row_h,
@@ -315,7 +373,6 @@ def draw_bar_chart_cell(slide, metric, companies, target_company,
 
         # バー描画
         if val is None:
-            # N/A表示
             na_tb = slide.shapes.add_textbox(
                 bar_start_x, row_y, bar_max_w, row_h,
             )
@@ -329,23 +386,20 @@ def draw_bar_chart_cell(slide, metric, companies, target_company,
             nrun.text = "N/A"
             nrun.font.size = FONT_SIZE_VALUE
             nrun.font.name = FONT_NAME_JP
-            nrun.font.color.rgb = RGBColor(0x99, 0x99, 0x99)
+            nrun.font.color.rgb = COLOR_NA
             nrun.font.italic = True
             continue
 
-        # バーの長さ
         bar_length = Emu(int(half_bar_max_w * abs(val) / max_abs))
 
         if val >= 0:
-            # 正の値: ゼロから右に伸びる
             bar_x = zero_x
             bar_color = COLOR_BAR_TARGET if is_target else COLOR_BAR_DEFAULT
         else:
-            # 負の値: ゼロから左に伸びる
             bar_x = zero_x - bar_length
             bar_color = COLOR_BAR_TARGET_NEG if is_target else COLOR_BAR_NEGATIVE
 
-        if bar_length > Emu(100):  # 極小の場合は描画スキップ
+        if bar_length > Emu(100):
             bar = slide.shapes.add_shape(
                 MSO_SHAPE.RECTANGLE,
                 bar_x, bar_y, bar_length, bar_h,
@@ -356,12 +410,8 @@ def draw_bar_chart_cell(slide, metric, companies, target_company,
             bar.shadow.inherit = False
             bar.text_frame.text = ""
 
-        # 値ラベル（バーの右端の右側）
         val_text = format_value(val, unit="", decimals=decimals, show_sign=show_sign)
 
-        # 値ラベルの配置:
-        # 正の値: バーの右端の右側
-        # 負の値: バーの左端の左側
         if val >= 0:
             vlabel_x = bar_x + bar_length + Inches(0.04)
             vlabel_w = VALUE_COL_W
@@ -371,7 +421,6 @@ def draw_bar_chart_cell(slide, metric, companies, target_company,
             vlabel_w = VALUE_COL_W
             vlabel_align = PP_ALIGN.RIGHT
 
-        # はみ出しチェック
         if vlabel_x + vlabel_w > bar_area_right:
             vlabel_x = bar_area_right - vlabel_w
         if vlabel_x < bar_area_left + LABEL_COL_W:
@@ -403,19 +452,51 @@ def draw_bar_chart_cell(slide, metric, companies, target_company,
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
-    ap.add_argument("--template", required=True)
+    ap.add_argument(
+        "--template", required=False, default=None,
+        help="Optional explicit template path. If omitted, resolved from --brand "
+             "(via brand_resolver.template_path).",
+    )
     ap.add_argument("--output", required=True)
+    add_brand_arg(ap)
     args = ap.parse_args()
+
+    theme = resolve_brand(args.brand, SKILL_DIR)
+    _apply_theme(theme)
+    template_path = args.template or theme.template_path(SKILL_DIR, "financial-benchmark")
+    print(f"  ✓ Brand: {theme.id} ({theme.label})")
+    print(f"  ✓ Template: {template_path}")
 
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    prs = Presentation(args.template)
+    # ISSUE-012 (2026-05-06): スキーマ齟齬の silent fail 防止
+    validate_fill_input(
+        data,
+        required_top=["main_message", "companies", "metrics"],
+        allowed_top=[
+            "main_message", "chart_title", "source",
+            "target_company", "companies", "metrics",
+            "title", "subtitle",
+        ],
+        skill_name=SKILL_ID,
+    )
+
+    require_source(data, theme, skill_id=SKILL_ID)
+
+    prs = Presentation(template_path)
     slide = prs.slides[0]
 
-    set_textbox_text(find_shape(slide, SHAPE_MAIN_MESSAGE), data.get("main_message", ""))
-    set_textbox_text(find_shape(slide, SHAPE_CHART_TITLE), data.get("chart_title", "財務ベンチマーク"))
-    print(f"  ✓ Main Message & Chart Title set")
+    top_text = resolve_top_text(data, theme)
+    sub_text = resolve_subtitle_text(data, theme) or "財務ベンチマーク"
+    set_textbox_text(find_shape(slide, SHAPE_MAIN_MESSAGE), top_text)
+    set_textbox_text(find_shape(slide, SHAPE_CHART_TITLE), sub_text)
+    print(f"  ✓ Top placeholder ({theme.top_placeholder_field()}): {top_text[:40]}")
+    print(f"  ✓ Subtitle placeholder ({theme.subtitle_placeholder_field()}): {sub_text[:40]}")
+
+    # Roleup: silently remove brown guide rectangles carried by template.
+    _silent_remove_shape(slide, "正方形/長方形 1")
+    _silent_remove_shape(slide, "正方形/長方形 8")
 
     companies = data.get("companies", [])
     metrics = data.get("metrics", [])
@@ -425,34 +506,48 @@ def main():
         print("  ✗ ERROR: 'companies' and 'metrics' are required", file=sys.stderr)
         sys.exit(1)
 
-    # 指標数に応じてグリッド配置
     n_metrics = len(metrics)
     if n_metrics > N_ROWS * N_COLS:
         print(f"  ⚠ WARNING: {n_metrics} metrics > grid capacity ({N_ROWS * N_COLS}). Only first {N_ROWS * N_COLS} will be shown.", file=sys.stderr)
         metrics = metrics[: N_ROWS * N_COLS]
         n_metrics = len(metrics)
 
+    cell_w = (GRID_WIDTH - CELL_GAP_X * (N_COLS - 1)) / N_COLS
+    cell_h = (GRID_HEIGHT - CELL_GAP_Y * (N_ROWS - 1)) / N_ROWS
+
     print(f"\n  各指標のチャート生成:")
     for i, metric in enumerate(metrics):
         row = i // N_COLS
         col = i % N_COLS
-        cell_x = GRID_LEFT + (CELL_W + CELL_GAP_X) * col
-        cell_y = GRID_TOP + (CELL_H + CELL_GAP_Y) * row
+        cell_x = GRID_LEFT + (cell_w + CELL_GAP_X) * col
+        cell_y = GRID_TOP + (cell_h + CELL_GAP_Y) * row
 
         draw_bar_chart_cell(
             slide, metric, companies, target_company,
-            cell_x, cell_y, CELL_W, CELL_H,
+            cell_x, cell_y, cell_w, cell_h,
         )
 
-    # 出典
+    # 出典: roleup は Source 3 placeholder、stella は dynamic textbox。
     source = data.get("source", "")
     if source:
-        add_text_box(
-            slide, source,
-            SOURCE_X, SOURCE_Y, SOURCE_W, Inches(0.25),
-            FONT_SIZE_SOURCE, bold=False, color=COLOR_SOURCE,
-            align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.TOP,
-        )
+        if theme.id == "stellar_aiz":
+            add_text_box(
+                slide, source,
+                SOURCE_X, SOURCE_Y, SOURCE_W, SOURCE_H,
+                FONT_SIZE_SOURCE, bold=False, color=COLOR_SOURCE,
+                align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.TOP,
+            )
+        else:
+            source_shape = find_shape(slide, SHAPE_SOURCE)
+            if source_shape is not None:
+                set_textbox_text(source_shape, source)
+            else:
+                add_text_box(
+                    slide, source,
+                    SOURCE_X, SOURCE_Y, SOURCE_W, SOURCE_H,
+                    FONT_SIZE_SOURCE, bold=False, color=COLOR_SOURCE,
+                    align=PP_ALIGN.LEFT, anchor=MSO_ANCHOR.TOP,
+                )
         print(f"  ✓ Source: {source[:40]}...")
 
     os.makedirs(os.path.dirname(args.output), exist_ok=True)

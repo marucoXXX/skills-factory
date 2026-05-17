@@ -12,6 +12,8 @@ description: >
   - smallcap-strategy-research のオーケストレーターから呼び出された場合
   - 「Where to play」「事業領域マップ」「事業領域・顧客・地域の選択」という言葉が出た場合
   - BDD/M&Aデューデリジェンス文脈で対象会社のWhere to play詳細スライド3枚セットを求められた場合
+supported_brands: [stellar_aiz]
+
 ---
 
 # smallcap-where-to-play-pptx — Where to play 詳細（Main/Detail/Evidence 3スライド）

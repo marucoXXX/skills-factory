@@ -13,6 +13,8 @@ description: >
   - smallcap-strategy-research のオーケストレーターから呼び出された場合
   - 「戦略仮説サマリー」「4次元戦略カード」「strategy summary」という言葉が出た場合
   - BDD/M&Aデューデリジェンス文脈で4次元戦略仮説の俯瞰スライドを求められた場合
+supported_brands: [stellar_aiz]
+
 ---
 
 # smallcap-strategy-summary-pptx — 戦略仮説サマリーカード（4次元俯瞰）

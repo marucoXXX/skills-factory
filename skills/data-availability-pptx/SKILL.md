@@ -16,6 +16,8 @@ description: >
   - BDDレポート・企業調査レポートの冒頭やAppendixでのスコープ・制約明示スライド作成
   - 「公開情報だけで調査したので、その範囲を示したい」という要望
   - ユーザーが「調査の限界」「ヒアリングなしで取れた情報の一覧」を求めた場合
+supported_brands: [stellar_aiz, roleup]
+
 ---
 
 # データアベイラビリティ PowerPoint ジェネレーター
@@ -179,9 +181,14 @@ pip install python-pptx -q --break-system-packages
 
 python <SKILL_DIR>/scripts/fill_data_availability.py \
   --data {{WORK_DIR}}/data_availability_data.json \
-  --template <SKILL_DIR>/assets/data-availability-template.pptx \
+  --brand stellar_aiz \
   --output {{OUTPUT_DIR}}/DataAvailability_output.pptx
 ```
+
+`--brand` は `stellar_aiz`（既定、16:9 / Meiryo UI / 14-11-10pt / 紺×薄紺 / イエロー panel）か
+`roleup`（A4 横 / Yu Gothic UI / 12-10pt / 茶色×label_bg / ベージュ panel）を指定。
+`--template` を省略すると brand に応じたテンプレートが自動解決される。
+ステータス色 (✓緑/△オレンジ/✗赤) は universal indicator として両 brand 共通。
 
 ---
 
@@ -244,8 +251,11 @@ python <SKILL_DIR>/scripts/fill_data_availability.py \
 
 | ファイル | 用途 |
 |---|---|
-| `assets/data-availability-template.pptx` | スライドテンプレート |
-| `scripts/fill_data_availability.py` | 生成スクリプト |
+| `assets/stellar_aiz/data-availability-template.pptx` | スライドテンプレート (stellar_aiz, 16:9) |
+| `assets/stellar_aiz/layout.json` | stellar_aiz レイアウト座標 (V1 hardcode 値ミラー) |
+| `assets/roleup/data-availability-template.pptx` | スライドテンプレート (roleup, A4 横) |
+| `assets/roleup/layout.json` | roleup レイアウト座標 (slide_w 11.69 in に合わせ左 6.80 / 右 3.83 in に再計算) |
+| `scripts/fill_data_availability.py` | 生成スクリプト (Pattern A: brand-aware) |
 | `references/sample_data.json` | サンプルデータ（対象会社競合分析の架空カバレッジ例） |
 
 ---

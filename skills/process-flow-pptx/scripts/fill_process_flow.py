@@ -21,6 +21,12 @@ import argparse
 import json
 import os
 import sys
+
+# brand_resolver bootstrap (passive --brand acceptance until brand-aware migration)
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(SKILL_DIR, "..", "_common", "lib"))
+from brand_resolver import add_brand_arg  # noqa: E402
+from validate_fill_input import validate_fill_input  # noqa: E402
 from pptx import Presentation
 from pptx.oxml.ns import qn
 from lxml import etree
@@ -265,10 +271,19 @@ def main():
     parser.add_argument("--data",     required=True,  help="process_flow_data.json のパス")
     parser.add_argument("--template", default=None,   help="テンプレートPPTXのパス（省略時はデフォルト）")
     parser.add_argument("--output",   required=True,  help="出力PPTXのパス")
+    add_brand_arg(parser)  # passive: accepted but ignored until brand migration
     args = parser.parse_args()
 
     with open(args.data, "r", encoding="utf-8") as f:
         data = json.load(f)
+
+    # ISSUE-012 (2026-05-06): スキーマ齟齬の silent fail 防止
+    validate_fill_input(
+        data,
+        required_top=["main_message", "steps"],
+        allowed_top=["main_message", "chart_title", "steps", "features"],
+        skill_name="process-flow-pptx",
+    )
 
     # テンプレート読み込み
     template_path = args.template if args.template else TEMPLATE

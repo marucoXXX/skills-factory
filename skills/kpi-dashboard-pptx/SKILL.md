@@ -13,6 +13,8 @@ description: >
   - 既にKPI・指標が整理されたテキストが提示され、ダッシュボード形式でのPowerPoint化を求められた場合
   - 「事業KPI」「プロダクトKPI」「HR KPI」「営業KPI」「OKR」をスライドにしたいという要望
   - 「KPIモニタリング」「KPIレビュー」「経営ダッシュボード」をスライドにしたいという要望
+supported_brands: [stellar_aiz]
+
 ---
 
 # KPI・メトリクスダッシュボード PowerPoint ジェネレーター

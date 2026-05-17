@@ -1,0 +1,68 @@
+{
+  "$schema_version": "2.0",
+  "id": "stellar_aiz",
+  "label": "Stellar AIZ Default",
+  "slide_size": {
+    "width_in": 13.33,
+    "height_in": 7.50,
+    "aspect": "16:9"
+  },
+  "fonts": {
+    "latin": "Arial",
+    "ea": "Meiryo UI",
+    "fallback_ea": ["MS PGothic", "Hiragino Sans"]
+  },
+  "colors": {
+    "text": "#333333",
+    "source": "#666666",
+    "header_bg": "#F5F0D0",
+    "highlight_target": "#E15759",
+    "highlight_other": "#BAB0AC",
+    "label_bar": "#4E79A7",
+    "label_bg": "#E8EEF5",
+    "accent_revenue_bar": "#4E79A7",
+    "accent_op_margin_line": "#003366",
+    "cagr_arrow": "#333333",
+    "subtitle": "#333333"
+  },
+  "chart_palette": [
+    "#4E79A7",
+    "#F28E2B",
+    "#59A14F",
+    "#76B7B2",
+    "#EDC948",
+    "#B07AA1",
+    "#FF9DA7",
+    "#9C755F"
+  ],
+  "defaults": {
+    "font_size_label_pt": 14,
+    "font_size_value_pt": 14,
+    "font_size_section_pt": 14,
+    "font_size_chart_title_pt": 11,
+    "font_size_data_label_pt": 11,
+    "font_size_legend_pt": 12,
+    "font_size_source_pt": 10,
+    "font_size_axis_pt": 11,
+    "font_size_cagr_pt": 16,
+
+    "font_size_title_pt": 28,
+    "font_size_subtitle_pt": 14,
+    "font_size_key_message_pt": 14,
+    "font_size_body_pt": 14,
+    "font_size_executive_summary_body_pt": 14,
+
+    "negative_format": "minus",
+    "zero_text": "0"
+  },
+  "layout_rules": {
+    "uniform_table_width": false,
+    "source_required": false,
+    "subtitle_align": "center"
+  },
+  "executive_summary_skill_ids": [],
+  "placeholder_role_mapping": {
+    "top_placeholder_field": "main_message",
+    "subtitle_placeholder_field": "chart_title"
+  }
+}

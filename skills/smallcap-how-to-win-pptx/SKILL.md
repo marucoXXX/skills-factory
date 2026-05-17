@@ -12,6 +12,8 @@ description: >
   - smallcap-strategy-research のオーケストレーターから呼び出された場合
   - 「How to win」「差別化軸」「価値連鎖の進化」「価値連鎖フロー」という言葉が出た場合
   - BDD/M&Aデューデリジェンス文脈で対象会社のHow to win詳細スライド3枚セットを求められた場合
+supported_brands: [stellar_aiz]
+
 ---
 
 # smallcap-how-to-win-pptx — How to win 詳細（Main/Detail/Evidence 3スライド）
