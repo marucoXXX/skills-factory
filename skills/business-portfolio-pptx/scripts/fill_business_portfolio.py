@@ -686,7 +686,16 @@ def main():
 
     source = data.get("source", "")
     if source:
-        body = source if source.startswith("出典") else f"出典：{source}"
+        # 既知プレフィックス (出典 / 出所 / Source) を半角・全角コロン込みで除去してから
+        # 「出典：」を統一付加。JSON 側の表記揺れ (例: "出所：…") が
+        # 「出典：出所：…」と二重プレフィックスになる問題を防ぐ。
+        cleaned = source.strip()
+        for prefix in ("出典：", "出典:", "出典", "出所：", "出所:", "出所",
+                       "Source：", "Source:", "Source", "source：", "source:", "source"):
+            if cleaned.startswith(prefix):
+                cleaned = cleaned[len(prefix):].lstrip("：:").strip()
+                break
+        body = f"出典：{cleaned}"
         source_shape = find_shape(slide, SHAPE_SOURCE, warn=False)
         if source_shape is not None:
             write_source_placeholder(source_shape, body, FONT_SIZE_SOURCE_PT)
